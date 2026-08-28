@@ -3,15 +3,24 @@
     "codegraph": {
       "type": "stdio",
       "command": "codegraph",
-      "args": [
-        "serve",
-        "--mcp"
-      ]
+      "args": ["serve", "--mcp"]
     },
     "playwright": {
       "type": "stdio",
       "command": "npx",
       "args": ["@playwright/mcp", "--output-dir", "/tmp/playwright-mcp"]
+    },
+    "cms": {
+      "type": "http",
+      "url": "https://cms.mcp.opal.optimizely.com/mcp"
+    },
+    "optimizely-exp": {
+      "type": "http",
+      "url": "https://exp.mcp.opal.optimizely.com/mcp"
+    },
+    "optimizely-analytics": {
+      "type": "http",
+      "url": "https://analytics.mcp.opal.optimizely.com/mcp"
     }
   }
 }
