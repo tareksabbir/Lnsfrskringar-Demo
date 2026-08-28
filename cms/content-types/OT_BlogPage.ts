@@ -1,0 +1,132 @@
+import { contentType } from '@optimizely/cms-sdk'
+import { OT_Author } from './OT_Author'
+
+export const OT_BlogPage = contentType({
+  key: 'OT_BlogPage',
+  displayName: 'Blog Page',
+  baseType: '_page',
+  mayContainTypes: ['*'], // All child content types allowed
+  properties: {
+    enableExternalPreview: {
+      type: 'boolean',
+      displayName: 'Enable External Preview Link',
+      description: 'When enabled, a shareable preview link is generated in the CMS editor so reviewers can view this draft in the live front-end without a CMS login.',
+      group: 'OT_Content',
+      sortOrder: 5,
+    },
+    blogStyle: {
+      type: 'string',
+      format: 'selectOne',
+      displayName: 'Blog Style',
+      group: 'OT_Style',
+      sortOrder: 5,
+      enum: [
+        { value: 'editorial',   displayName: 'Editorial (Split Layout)' },
+        { value: 'atmospheric', displayName: 'Atmospheric (Glass)' },
+        { value: 'impact',      displayName: 'Impact (Display Type)' },
+      ],
+    },
+    headline:     { type: 'string', isLocalized: true, maxLength: 120, displayName: 'Headline',      group: 'OT_Content', sortOrder: 10, indexingType: 'searchable' },
+    subHeadline:  { type: 'string', isLocalized: true, maxLength: 200, displayName: 'Sub-headline',  group: 'OT_Content', sortOrder: 20, indexingType: 'searchable' },
+    topic: {
+      type: 'string',
+      format: 'selectOne',
+      displayName: 'Topic',
+      group: 'OT_Content',
+      sortOrder: 30,
+      enum: [
+        { value: 'news',       displayName: 'News' },
+        { value: 'insights',   displayName: 'Insights' },
+        { value: 'leadership', displayName: 'Leadership' },
+        { value: 'stories',    displayName: 'Stories' },
+        { value: 'innovation', displayName: 'Innovation' },
+        { value: 'culture',    displayName: 'Culture' },
+        { value: 'events',     displayName: 'Events' },
+        { value: 'resources',  displayName: 'Resources' },
+      ],
+    },
+    featuredImage: { type: 'contentReference', allowedTypes: ['_image'], displayName: 'Featured Image', group: 'OT_Content', sortOrder: 40 },
+    featuredVideo: { type: 'contentReference', allowedTypes: ['_video'], displayName: 'Featured Video', group: 'OT_Content', sortOrder: 50 },
+    body:          { type: 'richText', isLocalized: true, displayName: 'Body', group: 'OT_Content', sortOrder: 60, indexingType: 'searchable' },
+    authorRef: {
+      type: 'contentReference',
+      allowedTypes: [OT_Author],
+      displayName: 'Author',
+      group: 'OT_Content',
+      sortOrder: 70,
+    },
+    readTime: { type: 'string', isLocalized: true, maxLength: 20, displayName: 'Read Time (e.g. "8 min read")', group: 'OT_Content', sortOrder: 80 },
+
+    // ── SEO / Search & Discovery ──────────────────────────────────────────────
+    // Identical field keys to BlankExperience so lib/metadata.ts has one code path.
+    seoTitle: {
+      type: 'string',
+      displayName: 'Page Title',
+      description: 'Appears in the browser tab and search results. Recommended 50–60 characters. Falls back to Site Name if blank.',
+      group: 'OT_SEO',
+      sortOrder: 10,
+      indexingType: 'searchable',
+    },
+    seoDescription: {
+      type: 'string',
+      displayName: 'Meta Description',
+      description: 'Appears in search engine result snippets. Recommended 120–160 characters. Falls back to the site-level Default Meta Description.',
+      group: 'OT_SEO',
+      sortOrder: 20,
+      indexingType: 'searchable',
+    },
+    canonicalUrl: {
+      type: 'url',
+      displayName: 'Canonical URL',
+      description: "Override only. Leave blank to use the page's own URL. Use when this content is syndicated or duplicated from another URL.",
+      group: 'OT_SEO',
+      sortOrder: 30,
+    },
+    ogImage: {
+      type: 'contentReference',
+      displayName: 'Social Share Image',
+      description: 'Image shown when this page is shared on social platforms. Recommended 1200×630px. Falls back to the site-level Default Social Share Image.',
+      allowedTypes: ['_image'],
+      group: 'OT_SEO',
+      sortOrder: 40,
+    },
+    pageAnswer: {
+      type: 'string',
+      displayName: 'AI Answer Summary',
+      description: 'A 1–3 sentence plain-language answer to the primary question this page addresses. Used in structured data and as a direct signal to AI answer engines (Perplexity, ChatGPT Browsing, Gemini). Write as if answering the question directly — no marketing language.',
+      group: 'OT_SEO',
+      sortOrder: 50,
+      indexingType: 'searchable',
+    },
+    schemaType: {
+      type: 'string',
+      displayName: 'Schema Type',
+      description: 'The structured data type for this page. Controls which JSON-LD block is generated. When set to FAQ Page, pair with an Accordion block on the page to populate the question/answer pairs.',
+      format: 'selectOne',
+      enum: [
+        { value: 'none',    displayName: 'None' },
+        { value: 'WebPage', displayName: 'Web Page' },
+        { value: 'Article', displayName: 'Article' },
+        { value: 'FAQPage', displayName: 'FAQ Page' },
+        { value: 'Product', displayName: 'Product' },
+        { value: 'Event',   displayName: 'Event' },
+      ],
+      group: 'OT_SEO',
+      sortOrder: 60,
+    },
+    noIndex: {
+      type: 'boolean',
+      displayName: 'Hide from Search Engines',
+      description: 'When enabled, adds noindex/nofollow robots directives and excludes this page from the sitemap. Use for thank-you pages, campaign landing pages, or draft content.',
+      group: 'OT_SEO',
+      sortOrder: 70,
+    },
+    customSchemaJson: {
+      type: 'string',
+      displayName: 'Custom Schema JSON (Advanced)',
+      description: 'Developer escape hatch. Paste a valid JSON-LD object here to override or extend the generated structured data. Must be valid JSON. Merged with the generated schema — do not include @context. Leave blank unless the Schema Type options above do not cover your use case.',
+      group: 'OT_SEO',
+      sortOrder: 80,
+    },
+  },
+})

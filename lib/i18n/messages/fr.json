@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "openMenu": "Ouvrir la navigation",
+    "closeMenu": "Fermer la navigation",
+    "home": "Accueil",
+    "skipToMain": "Aller au contenu principal"
+  },
+  "locale": {
+    "selector": "Choisir la langue",
+    "current": "Langue actuelle"
+  },
+  "theme": {
+    "toggleLight": "Passer en mode clair",
+    "toggleDark": "Passer en mode sombre"
+  },
+  "search": {
+    "trigger": "Rechercher",
+    "placeholder": "Que cherchez-vous ?",
+    "placeholderCompact": "Rechercher sur le site...",
+    "inputLabel": "Requête de recherche",
+    "close": "Fermer la recherche",
+    "noResults": "Aucun résultat pour « {query} »",
+    "noResultsHint": "Essayez un autre terme ou effacez les filtres",
+    "searching": "Recherche en cours",
+    "resultsFor": "Résultats pour « {query} »",
+    "result": "1 résultat",
+    "results": "{count} résultats",
+    "trySearching": "Essayez de rechercher",
+    "compact": "Mode compact",
+    "expand": "Recherche complète",
+    "semanticOn": "Recherche sémantique active",
+    "semanticOff": "Activer la recherche sémantique par IA",
+    "aiRanked": "Classé par IA",
+    "siteSearch": "Recherche sur le site",
+    "searchResults": "Résultats de recherche",
+    "contentTypeFilter": "Filtre par type",
+    "clearFilter": "Effacer"
+  },
+  "forms": {
+    "submit": "Envoyer",
+    "submitting": "Envoi en cours...",
+    "required": "Obligatoire",
+    "fieldRequired": "{field} est obligatoire",
+    "fieldInvalid": "{field} n'est pas valide",
+    "successMessage": "Formulaire envoyé avec succès.",
+    "errorMessage": "Une erreur s'est produite. Veuillez réessayer.",
+    "characters": "{count} caractères restants"
+  },
+  "blog": {
+    "readMore": "Lire la suite",
+    "readTime": "{time} min de lecture",
+    "publishedOn": "Publié le",
+    "by": "Par",
+    "relatedArticles": "Plus d'articles",
+    "backToIndex": "Tous les articles"
+  },
+  "a11y": {
+    "externalLink": "S'ouvre dans un nouvel onglet"
+  }
+}

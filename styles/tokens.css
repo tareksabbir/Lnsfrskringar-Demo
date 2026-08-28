@@ -1,0 +1,354 @@
+/* Site Accelerator Design Tokens
+ *
+ * Color tokens use semantic role names, not brand names. Replace the
+ * values below to apply a new theme without touching any component code.
+ *
+ * Dark mode is the default. Light mode is activated by setting
+ * data-theme="light" on <html> (handled automatically by ThemeProvider).
+ *
+ * Token guide:
+ *   brand          — the committed color; fills hero panels and primary CTAs
+ *   brand-hover    — darker variant of brand; used for hover/depth states
+ *   canvas         — outermost page background (darkest dark / lightest light)
+ *   surface        — component surfaces, one tone above canvas
+ *   fg             — primary text; adapts to canvas in both modes
+ *   fg-muted       — secondary text, nav links at rest, metadata
+ *   fg-on-brand    — text/borders on brand-colored fills; always light for contrast
+ */
+
+/* ── Dark (default) ────────────────────────────────────────────────────────── */
+:root {
+  /* Brand — constant across modes. Replace both to rebrand. */
+  --ot-brand:       oklch(55% 0.18  195); /* primary fill: hero panels, CTAs          */
+  --ot-brand-hover: oklch(38% 0.16  195); /* brand depth: hover on brand surfaces      */
+
+  /* Accent — signal green (#68E371). Constant across modes. */
+  --ot-accent:          oklch(82% 0.19 145);  /* signal green — badges, highlights, alt CTAs    */
+  --ot-accent-hover:    oklch(68% 0.17 145);  /* deeper green for hover states                  */
+  --ot-fg-on-accent:    oklch(12% 0.012 195); /* dark text/icons on accent surfaces              */
+
+  /* Grounds — flip between modes */
+  --ot-canvas:  oklch(12% 0.012 195); /* dark mode page background                 */
+  --ot-surface: oklch(20% 0.022 195); /* dark mode component panels, sections      */
+
+  /* Text — flip between modes */
+  --ot-fg:           oklch(97% 0.005 195); /* dark mode primary text — light on dark    */
+  --ot-fg-muted:     oklch(68% 0.06  195); /* dark mode secondary text, muted           */
+  --ot-fg-on-brand:  oklch(97% 0.005 195); /* always light — brand teal needs contrast  */
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --ot-font-sans:      var(--font-poppins), system-ui, sans-serif;
+  --ot-font-mono:      var(--font-geist-mono), ui-monospace, monospace;
+  --ot-font-syne:      var(--font-syne), system-ui, sans-serif; /* Syne variable (wght 400–800) — accent display moments */
+  --ot-font-signature: var(--font-signature), cursive;          /* Caveat 400 — QuoteBlock laser signature (thin handwriting) */
+  --ot-font-neon:      var(--font-tilt-neon), system-ui, sans-serif; /* Tilt Neon 400 — PrimaryText "neon" effect only (monoline glass tube) */
+
+  /* Display / accent role font — FIXED to Syne (no longer themeable). Drives the
+   * `.font-display` accent utility for select areas (e.g. the Impact blog). The
+   * themeable axis now swaps the PRIMARY family (--ot-font-sans, set by
+   * buildThemeCSS() from the ThemeManager "Primary Font" field). Mono and
+   * signature are intentionally NOT themed. */
+  --ot-font-display:   var(--ot-font-syne);
+
+  /* Scale */
+  --ot-text-display:  clamp(3rem, 8vw, 6rem);
+  --ot-text-hero:     clamp(2.75rem, 7vw, 5rem);  /* hero headline — larger than headline, smaller than full display */
+  --ot-text-headline: clamp(1.75rem, 4vw, 2.75rem);
+  --ot-text-subhead:  1.5rem;   /* prose h2 / sub-headline tier between headline and title */
+  --ot-text-title:    1.25rem;
+  --ot-text-body:     1rem;
+  --ot-text-label:    0.8125rem;
+
+  /* Line heights */
+  --ot-leading-display:  0.9;
+  --ot-leading-display-safe: 1.15;  /* display scale on overflow-hidden grounds — clears the descender clipping that 0.9 causes */
+  --ot-leading-headline: 1.05;
+  --ot-leading-subhead:  1.15;
+  --ot-leading-title:    1.3;
+  --ot-leading-body:     1.65;
+
+  /* Letter spacing */
+  --ot-tracking-display:  -0.03em;
+  --ot-tracking-headline: -0.02em;
+  --ot-tracking-subhead:  -0.02em;
+  --ot-tracking-title:    -0.01em;
+  --ot-tracking-label:     0.06em;
+
+  /* Measure (line length) — single source of truth for reading-column widths.
+   * Body copy lives in the comfortable 45–75ch band; these three cover the roles
+   * that were previously scattered as one-off max-w-[NNch] values across blocks. */
+  --ot-measure-tight: 52ch;   /* hero ledes, tight statement columns           */
+  --ot-measure:       65ch;    /* default long-form reading measure             */
+  --ot-measure-wide:  72ch;    /* generous editorial / multi-clause body        */
+
+  /* Font weights */
+  --ot-weight-display:  800;
+  --ot-weight-headline: 700;
+  --ot-weight-title:    600;
+  --ot-weight-body:     400;
+  --ot-weight-label:    600;
+
+  /* ── Spacing ─────────────────────────────────────────────────────────────── */
+  --ot-space-xs:  4px;
+  --ot-space-sm:  8px;
+  --ot-space-md:  16px;
+  --ot-space-lg:  32px;
+  --ot-space-xl:  64px;
+  --ot-space-2xl: 128px;
+
+  /* ── Border radius ───────────────────────────────────────────────────────── */
+  --ot-radius-none:  0px;
+  --ot-radius-input: 4px; /* the only non-zero radius in the system */
+
+  /* Corner Style axis — themeable via ThemeManager "Corner Style".
+   * Default Sharp (0px) → pixel-identical to today. buildThemeCSS() raises these
+   * to the Soft / Rounded value sets in lib/theme-axes.ts. surface = cards /
+   * panels / glass; control = buttons. Inputs keep --ot-radius-input untouched. */
+  --ot-radius-surface: 0px;
+  --ot-radius-control: 0px;
+
+  /* ── Elevation ───────────────────────────────────────────────────────────── */
+  --ot-shadow-hover-lift: 0 8px 32px var(--ot-bloom-brand-faint);
+
+  /* ── Motion ──────────────────────────────────────────────────────────────── */
+  --ot-ease-kinetic: cubic-bezier(0.16, 1, 0.3, 1); /* expo out — entrances     */
+  --ot-ease-quick:   cubic-bezier(0.25, 1, 0.5, 1); /* quart out — UI states   */
+  --ot-ease-smooth:  cubic-bezier(0.33, 1, 0.68, 1); /* cubic out — collapse/expand: gentle start, no snap */
+  --ot-ease-accordion: cubic-bezier(0.65, 0, 0.35, 1); /* ease-in-out cubic — accordion: symmetric, very smooth both directions */
+
+  /* Motion Intensity axis — themeable via ThemeManager "Motion Intensity".
+   * A single unitless multiplier scales the whole --ot-dur-* system below.
+   * Default 1 → identical timing to today; buildThemeCSS() sets 1.3 (Calm —
+   * slower) or 0.7 (Energetic — faster). This ONLY affects the no-preference durations — the
+   * @media (prefers-reduced-motion: reduce) static blocks are independent and
+   * always win, so the OS preference remains the absolute floor. */
+  --ot-motion-scale: 1;
+
+  /* Durations — scale mirrors the easing tokens. Theme-invariant, so defined
+   * once here (NOT duplicated into the light/dark blocks). Each is the base
+   * value × --ot-motion-scale (a unitless multiplier on a <time> is valid CSS),
+   * so the entire system — including the ambient loops — scales from one knob. */
+  /* UI / state / entrance durations */
+  --ot-dur-fast:  calc(150ms * var(--ot-motion-scale));
+  --ot-dur-quick: calc(200ms * var(--ot-motion-scale));
+  --ot-dur-base:  calc(320ms * var(--ot-motion-scale));
+  --ot-dur-slow:  calc(600ms * var(--ot-motion-scale));
+  /* Accordion expand/collapse — deliberately slower than dur-base for a smooth,
+   * luxurious reveal. Scales with motion-scale like the rest of the system. */
+  --ot-dur-accordion: calc(620ms * var(--ot-motion-scale));
+  /* Ambient continuous loops */
+  --ot-dur-breathe: calc(9s * var(--ot-motion-scale));
+  --ot-dur-liquid:  calc(8s * var(--ot-motion-scale));
+
+  /* ── Accent display weight ────────────────────────────────────────────────
+   * Default weight for the Syne accent role. (Tilt Neon, used only by the neon
+   * effect via --ot-font-neon, is likewise single-weight 400 — it always renders
+   * at 400 regardless of any font-weight set on the heading.)
+   * ──────────────────────────────────────────────────────────────────────── */
+  --ot-weight-syne: 400;
+
+  /* ── Bloom / halo alpha variants ─────────────────────────────────────────
+   * CSS Relative Color Syntax derives these from --ot-brand and --ot-accent.
+   * Used by the chromatic shadow bloom and glow frame in ImageBlock/VideoBlock.
+   * They update automatically whenever --ot-brand or --ot-accent change via
+   * the CMS theme override.
+   * ──────────────────────────────────────────────────────────────────────── */
+  --ot-bloom-brand:        oklch(from var(--ot-brand) l c h / 0.80);
+  --ot-bloom-brand-ring:   oklch(from var(--ot-brand) l c h / 0.50);
+  --ot-bloom-brand-faint:  oklch(from var(--ot-brand) l c h / 0.25);
+  --ot-bloom-brand-border: oklch(from var(--ot-brand) l c h / 0.15);
+  --ot-bloom-accent:        oklch(from var(--ot-accent) l c h / 0.60);
+  --ot-bloom-accent-ring:   oklch(from var(--ot-accent) l c h / 0.45);
+  --ot-bloom-accent-border: oklch(from var(--ot-accent) l c h / 0.18);
+  --ot-bloom-accent-faint:  oklch(from var(--ot-accent) l c h / 0.13);
+
+  /* ── Callout intent color system ─────────────────────────────────────────
+   * Fixed hue-based anchor colors for semantic callout intent types.
+   * success and brand track --ot-accent / --ot-brand so ThemeManager
+   * overrides automatically propagate to those intent treatments.
+   *
+   * -bg      18% alpha tint (dark) / 10% (light) — intent color reads clearly on dark canvas
+   * -border  40% alpha (dark) / 22% (light) — visible but not aggressive
+   * -fg      dark mode: brightened for visibility on dark canvas
+   *          (light mode overrides in [data-theme="light"] below)
+   * ──────────────────────────────────────────────────────────────────────── */
+  --ot-intent-neutral: oklch(70% 0.04 220);
+  --ot-intent-info:    oklch(68% 0.14 210);
+  --ot-intent-success: var(--ot-accent);
+  --ot-intent-warning: oklch(78% 0.16 60);
+  --ot-intent-danger:  oklch(62% 0.20 15);
+  --ot-intent-brand:   var(--ot-brand);
+
+  --ot-intent-neutral-bg: oklch(from var(--ot-intent-neutral) l c h / 0.18);
+  --ot-intent-info-bg:    oklch(from var(--ot-intent-info)    l c h / 0.18);
+  --ot-intent-success-bg: oklch(from var(--ot-intent-success) l c h / 0.18);
+  --ot-intent-warning-bg: oklch(from var(--ot-intent-warning) l c h / 0.18);
+  --ot-intent-danger-bg:  oklch(from var(--ot-intent-danger)  l c h / 0.18);
+  --ot-intent-brand-bg:   oklch(from var(--ot-intent-brand)   l c h / 0.18);
+
+  --ot-intent-neutral-border: oklch(from var(--ot-intent-neutral) l c h / 0.40);
+  --ot-intent-info-border:    oklch(from var(--ot-intent-info)    l c h / 0.40);
+  --ot-intent-success-border: oklch(from var(--ot-intent-success) l c h / 0.40);
+  --ot-intent-warning-border: oklch(from var(--ot-intent-warning) l c h / 0.40);
+  --ot-intent-danger-border:  oklch(from var(--ot-intent-danger)  l c h / 0.40);
+  --ot-intent-brand-border:   oklch(from var(--ot-intent-brand)   l c h / 0.40);
+
+  --ot-intent-neutral-fg: oklch(from var(--ot-intent-neutral) calc(l + 0.14) c h);
+  --ot-intent-info-fg:    oklch(from var(--ot-intent-info)    calc(l + 0.16) c h);
+  --ot-intent-success-fg: var(--ot-accent);
+  --ot-intent-warning-fg: oklch(from var(--ot-intent-warning) l c h);
+  --ot-intent-danger-fg:  oklch(from var(--ot-intent-danger)  calc(l + 0.18) c h);
+  --ot-intent-brand-fg:   oklch(from var(--ot-intent-brand)   calc(l + 0.20) c h);
+
+  /* ── Display gradients — dark-mode stops ────────────────────────────────────
+   * Stops are derived from --ot-brand and --ot-accent via CSS Relative Color
+   * Syntax, so they follow the CMS theme override automatically.
+   * background-clip: text applied by .display-gradient-* in globals.css.
+   * Light-mode overrides are in [data-theme="light"] below.
+   * ──────────────────────────────────────────────────────────────────────────── */
+  /* brand: lighter stop (+17% L) → deeper stop (−17% L), same hue */
+  --ot-gradient-brand: linear-gradient(135deg,
+    oklch(from var(--ot-brand) calc(l + 0.17) c h)   0%,
+    oklch(from var(--ot-brand) calc(l - 0.17) c h) 100%
+  );
+  /* signal: accent hue → brand hue cross-spectrum blend */
+  --ot-gradient-signal: linear-gradient(135deg,
+    var(--ot-accent) 0%,
+    var(--ot-brand)  100%
+  );
+  /* luminous: near-fg (light on dark canvas) → brand */
+  --ot-gradient-luminous: linear-gradient(135deg,
+    var(--ot-fg)    0%,
+    var(--ot-brand) 100%
+  );
+  /* electric: brighter accent (+4% L, +3% C) → deeper accent (−27% L, −3% C) */
+  --ot-gradient-electric: linear-gradient(135deg,
+    oklch(from var(--ot-accent) calc(l + 0.04) calc(c + 0.03) h)  0%,
+    oklch(from var(--ot-accent) calc(l - 0.27) calc(c - 0.03) h) 100%
+  );
+}
+
+/* ── Dark override ───────────────────────────────────────────────────────────
+ * Re-asserts dark-mode tokens on any element with data-theme="dark".
+ * Necessary when a dark-mode container is nested inside a light-mode ancestor
+ * (brand sections, glass rows, hero panels, stat blocks inside a light-mode page).
+ * Without this rule, [data-theme="light"] set on an ancestor cascades its
+ * tokens into the nested dark element — causing dark text on dark backgrounds.
+ * fg-on-brand is included here as a defensive base; buildThemeCSS emits
+ * [data-theme="dark"] overrides too so ThemeManager values take precedence.
+ * ─────────────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --ot-canvas:      oklch(12% 0.012 195);
+  --ot-surface:     oklch(20% 0.022 195);
+  --ot-fg:          oklch(97% 0.005 195);
+  --ot-fg-muted:    oklch(68% 0.06  195);
+  --ot-fg-on-brand: oklch(97% 0.005 195); /* always light — defensive base for nested dark */
+
+  /* Intent -bg/-border: explicit dark values so nested [data-theme="dark"] elements
+   * inside a light-mode page recover the darker alphas. */
+  --ot-intent-neutral-bg: oklch(from var(--ot-intent-neutral) l c h / 0.18);
+  --ot-intent-info-bg:    oklch(from var(--ot-intent-info)    l c h / 0.18);
+  --ot-intent-success-bg: oklch(from var(--ot-intent-success) l c h / 0.18);
+  --ot-intent-warning-bg: oklch(from var(--ot-intent-warning) l c h / 0.18);
+  --ot-intent-danger-bg:  oklch(from var(--ot-intent-danger)  l c h / 0.18);
+  --ot-intent-brand-bg:   oklch(from var(--ot-intent-brand)   l c h / 0.18);
+
+  --ot-intent-neutral-border: oklch(from var(--ot-intent-neutral) l c h / 0.40);
+  --ot-intent-info-border:    oklch(from var(--ot-intent-info)    l c h / 0.40);
+  --ot-intent-success-border: oklch(from var(--ot-intent-success) l c h / 0.40);
+  --ot-intent-warning-border: oklch(from var(--ot-intent-warning) l c h / 0.40);
+  --ot-intent-danger-border:  oklch(from var(--ot-intent-danger)  l c h / 0.40);
+  --ot-intent-brand-border:   oklch(from var(--ot-intent-brand)   l c h / 0.40);
+
+  --ot-gradient-brand: linear-gradient(135deg,
+    oklch(from var(--ot-brand) calc(l + 0.17) c h)   0%,
+    oklch(from var(--ot-brand) calc(l - 0.17) c h) 100%
+  );
+  --ot-gradient-signal: linear-gradient(135deg,
+    var(--ot-accent) 0%,
+    var(--ot-brand)  100%
+  );
+  --ot-gradient-luminous: linear-gradient(135deg,
+    var(--ot-fg)    0%,
+    var(--ot-brand) 100%
+  );
+  --ot-gradient-electric: linear-gradient(135deg,
+    oklch(from var(--ot-accent) calc(l + 0.04) calc(c + 0.03) h)  0%,
+    oklch(from var(--ot-accent) calc(l - 0.27) calc(c - 0.03) h) 100%
+  );
+}
+
+/* ── Light override ──────────────────────────────────────────────────────────
+ * Using [data-theme="light"] (not :root[data-theme="light"]) so the selector
+ * can scope to any element — enabling the showcase to demonstrate both modes
+ * side by side. Source order beats :root at equal 0-1-0 specificity.
+ * ─────────────────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --ot-canvas:   oklch(97% 0.005 195); /* light mode page background — near-white, teal-tinted */
+  --ot-surface:  oklch(93% 0.008 195); /* light mode component panels — slightly off-canvas     */
+  --ot-fg:       oklch(12% 0.012 195); /* light mode primary text — dark on light bg            */
+  --ot-fg-muted: oklch(38% 0.05  195); /* light mode secondary text — dark muted teal           */
+  /* fg-on-brand stays light — brand teal needs light foreground in both modes */
+
+  /* Intent FG — darkened for contrast on near-white canvas */
+  --ot-intent-neutral-fg: oklch(from var(--ot-intent-neutral) calc(l - 0.20) c h);
+  --ot-intent-info-fg:    oklch(from var(--ot-intent-info)    calc(l - 0.20) c h);
+  --ot-intent-success-fg: oklch(from var(--ot-intent-success) calc(l - 0.28) c h);
+  --ot-intent-warning-fg: oklch(from var(--ot-intent-warning) calc(l - 0.28) c h);
+  --ot-intent-danger-fg:  oklch(from var(--ot-intent-danger)  calc(l - 0.02) c h);
+  --ot-intent-brand-fg:   oklch(from var(--ot-intent-brand)   l c h);
+
+  /* Intent -bg/-border: lighter alphas for legibility on near-white canvas */
+  --ot-intent-neutral-bg: oklch(from var(--ot-intent-neutral) l c h / 0.10);
+  --ot-intent-info-bg:    oklch(from var(--ot-intent-info)    l c h / 0.10);
+  --ot-intent-success-bg: oklch(from var(--ot-intent-success) l c h / 0.10);
+  --ot-intent-warning-bg: oklch(from var(--ot-intent-warning) l c h / 0.10);
+  --ot-intent-danger-bg:  oklch(from var(--ot-intent-danger)  l c h / 0.10);
+  --ot-intent-brand-bg:   oklch(from var(--ot-intent-brand)   l c h / 0.10);
+
+  --ot-intent-neutral-border: oklch(from var(--ot-intent-neutral) l c h / 0.22);
+  --ot-intent-info-border:    oklch(from var(--ot-intent-info)    l c h / 0.22);
+  --ot-intent-success-border: oklch(from var(--ot-intent-success) l c h / 0.22);
+  --ot-intent-warning-border: oklch(from var(--ot-intent-warning) l c h / 0.22);
+  --ot-intent-danger-border:  oklch(from var(--ot-intent-danger)  l c h / 0.22);
+  --ot-intent-brand-border:   oklch(from var(--ot-intent-brand)   l c h / 0.22);
+
+  /* Gradient stops — deeper relative offsets so text reads on near-white canvas */
+  /* brand: −13% L start, −33% L / −6% C end */
+  --ot-gradient-brand: linear-gradient(135deg,
+    oklch(from var(--ot-brand) calc(l - 0.13) c h)              0%,
+    oklch(from var(--ot-brand) calc(l - 0.33) calc(c - 0.06) h) 100%
+  );
+  /* signal: accent −34% L → brand −25% L */
+  --ot-gradient-signal: linear-gradient(135deg,
+    oklch(from var(--ot-accent) calc(l - 0.34) c h) 0%,
+    oklch(from var(--ot-brand)  calc(l - 0.25) c h) 100%
+  );
+  /* luminous: brand −27% L / −4% C → brand −3% L */
+  --ot-gradient-luminous: linear-gradient(135deg,
+    oklch(from var(--ot-brand) calc(l - 0.27) calc(c - 0.04) h) 0%,
+    oklch(from var(--ot-brand) calc(l - 0.03) c h)              100%
+  );
+  /* electric: accent −46% L → accent −26% L */
+  --ot-gradient-electric: linear-gradient(135deg,
+    oklch(from var(--ot-accent) calc(l - 0.46) c h) 0%,
+    oklch(from var(--ot-accent) calc(l - 0.26) c h) 100%
+  );
+}
+
+/* ── Footer brand surface ─────────────────────────────────────────────────────
+ * Opt-in drench context for the footer's "Brand" background. Paired with
+ * data-theme="dark" on the same element (see footerSurfaceAttrs), so the dark
+ * foreground semantics (light text, inverted logo) hold while the surface and
+ * muted text flip to brand-drench values. Authored AFTER the dark/light blocks
+ * so it wins --ot-canvas / --ot-fg-muted at equal specificity by source order.
+ *
+ * brand-hover (L≈38%) is the surface — not --ot-brand (L≈55%) — so light text
+ * keeps AA contrast. Muted text derives from fg-on-brand at 0.72 alpha rather
+ * than the teal-tinted dark muted, which would dim against the teal surface.
+ * ─────────────────────────────────────────────────────────────────────────── */
+[data-footer-surface="brand"] {
+  --ot-canvas:   var(--ot-brand-hover);
+  --ot-fg:       var(--ot-fg-on-brand);
+  --ot-fg-muted: oklch(from var(--ot-fg-on-brand) l c h / 0.72);
+}

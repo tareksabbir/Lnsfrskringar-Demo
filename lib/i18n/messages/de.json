@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "openMenu": "Navigation öffnen",
+    "closeMenu": "Navigation schließen",
+    "home": "Startseite",
+    "skipToMain": "Zum Hauptinhalt springen"
+  },
+  "locale": {
+    "selector": "Sprache wählen",
+    "current": "Aktuelle Sprache"
+  },
+  "theme": {
+    "toggleLight": "Zum hellen Modus wechseln",
+    "toggleDark": "Zum dunklen Modus wechseln"
+  },
+  "search": {
+    "trigger": "Suchen",
+    "placeholder": "Was suchen Sie?",
+    "placeholderCompact": "Website durchsuchen...",
+    "inputLabel": "Suchanfrage",
+    "close": "Suche schließen",
+    "noResults": "Keine Ergebnisse für \"{query}\"",
+    "noResultsHint": "Versuchen Sie ein anderes Stichwort oder löschen Sie die Filter",
+    "searching": "Suche läuft",
+    "resultsFor": "Ergebnisse für \"{query}\"",
+    "result": "1 Ergebnis",
+    "results": "{count} Ergebnisse",
+    "trySearching": "Suche starten",
+    "compact": "Kompakter Modus",
+    "expand": "Vollsuche",
+    "semanticOn": "Semantische Suche aktiv",
+    "semanticOff": "KI-Semantiksuche aktivieren",
+    "aiRanked": "KI-priorisiert",
+    "siteSearch": "Website-Suche",
+    "searchResults": "Suchergebnisse",
+    "contentTypeFilter": "Inhaltstyp-Filter",
+    "clearFilter": "Löschen"
+  },
+  "forms": {
+    "submit": "Absenden",
+    "submitting": "Wird gesendet...",
+    "required": "Erforderlich",
+    "fieldRequired": "{field} ist erforderlich",
+    "fieldInvalid": "{field} ist ungültig",
+    "successMessage": "Formular erfolgreich gesendet.",
+    "errorMessage": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "characters": "Noch {count} Zeichen"
+  },
+  "blog": {
+    "readMore": "Weiterlesen",
+    "readTime": "{time} Min. Lesezeit",
+    "publishedOn": "Veröffentlicht",
+    "by": "Von",
+    "relatedArticles": "Weitere Artikel",
+    "backToIndex": "Alle Artikel"
+  },
+  "a11y": {
+    "externalLink": "Öffnet in einem neuen Tab"
+  }
+}

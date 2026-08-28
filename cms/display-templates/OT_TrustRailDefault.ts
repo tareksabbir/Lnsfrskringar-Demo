@@ -1,0 +1,83 @@
+import { displayTemplate } from '@optimizely/cms-sdk'
+
+export const OT_TrustRailDefault = displayTemplate({
+  key:         'OT_TrustRailDefault',
+  displayName: 'Trust Rail',
+  contentType: 'OT_TrustRail',
+  isDefault:   true,
+  settings: {
+    // ── Motion ────────────────────────────────────────────────────────────
+
+    // ── Image treatment ────────────────────────────────────────────────────
+    treatment: {
+      displayName: 'Image Treatment',
+      editor:      'select',
+      sortOrder:   20,
+      choices: {
+        auto:  { displayName: 'Auto — white on dark, grey/black on light (Default)', sortOrder: 10 },
+        color: { displayName: 'Color — full colour (best on white/light backgrounds)', sortOrder: 20 },
+      },
+    },
+
+    // ── Background ─────────────────────────────────────────────────────────
+    background: {
+      displayName: 'Background',
+      editor:      'select',
+      sortOrder:   30,
+      choices: {
+        canvas:  { displayName: 'Canvas (Default)', sortOrder: 10 },
+        surface: { displayName: 'Surface',          sortOrder: 20 },
+        brand:   { displayName: 'Brand',            sortOrder: 30 },
+      },
+    },
+
+    // ── Density ────────────────────────────────────────────────────────────
+    density: {
+      displayName: 'Density',
+      editor:      'select',
+      sortOrder:   40,
+      choices: {
+        compact:     { displayName: 'Compact — tight strip (Default)', sortOrder: 10 },
+        comfortable: { displayName: 'Comfortable — standard spacing',  sortOrder: 20 },
+        spacious:    { displayName: 'Spacious — generous padding',     sortOrder: 30 },
+      },
+    },
+
+    // ── Logo size ──────────────────────────────────────────────────────────
+    size: {
+      displayName: 'Logo Size',
+      editor:      'select',
+      sortOrder:   50,
+      choices: {
+        xs: { displayName: 'Extra small — 20 px height',      sortOrder: 5 },
+        sm: { displayName: 'Small — 28 px height',             sortOrder: 10 },
+        md: { displayName: 'Medium — 40 px height (Default)',  sortOrder: 20 },
+        lg: { displayName: 'Large — 56 px height',             sortOrder: 30 },
+        xl: { displayName: 'Extra large — 72 px height',       sortOrder: 40 },
+      },
+    },
+
+    // ── Glass overlay ──────────────────────────────────────────────────────
+    glass: {
+      displayName: 'Glass overlay',
+      editor:      'select',
+      sortOrder:   60,
+      choices: {
+        false: { displayName: 'Off (Default)',                         sortOrder: 10 },
+        true:  { displayName: 'On — frosted panel over bg colour',    sortOrder: 20 },
+      },
+    },
+
+    entranceAnimation: {
+      displayName: 'Entrance animation',
+      editor:      'select',
+      sortOrder:   70,
+      choices: {
+        none:     { displayName: 'None (Default)', sortOrder: 10 },
+        fade:     { displayName: 'Fade in',        sortOrder: 20 },
+        slide:    { displayName: 'Slide up',       sortOrder: 30 },
+        parallax: { displayName: 'Parallax',       sortOrder: 40 },
+      },
+    },
+  },
+})

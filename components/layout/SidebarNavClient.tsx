@@ -1,0 +1,88 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { ChevronLeft } from 'lucide-react'
+
+const STORAGE_KEY = 'ot-sidebar-open'
+
+// Client shell for the sidebar nav. Wraps the server-rendered nav content
+// in an animated aside and provides a toggle tab that rides the panel edge.
+// Sets data-sidebar-open on <html> so CSS can adjust the content margin and
+// the compact search panel position without JS round-trips.
+
+export function SidebarNavShell({ children, defaultOpen = true }: { children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  // On the live site: hydrate from localStorage so the user's last preference
+  // is restored. In preview (defaultOpen=false) skip this — we always start
+  // collapsed and don't want stored live-site prefs leaking into the VB view.
+  useEffect(() => {
+    if (!defaultOpen) return
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored === 'false') setOpen(false)
+    } catch {}
+  }, [defaultOpen])
+
+  // Sync open state → HTML data attribute + localStorage (live site only).
+  useEffect(() => {
+    document.documentElement.dataset.sidebarOpen = open ? 'true' : 'false'
+    if (defaultOpen) {
+      try { localStorage.setItem(STORAGE_KEY, String(open)) } catch {}
+    }
+  }, [open, defaultOpen])
+
+  return (
+    <>
+      {/* Animated sidebar — children are server-rendered nav content */}
+      <aside
+        className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-50 border-r border-fg/8"
+        style={{
+          width:      'var(--ot-sidebar-width, 240px)',
+          background: 'var(--ot-surface)',
+          boxShadow:  '4px 0 32px var(--ot-bloom-brand-faint)',
+          transform:  open ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        aria-label="Site navigation"
+        aria-hidden={!open || undefined}
+      >
+        {children}
+      </aside>
+
+      {/* Toggle tab — rides the right edge of the sidebar, always accessible.
+          Flat left edge butts against the sidebar; the right corners follow
+          the Corner Style axis (rounded-ot-control) instead of a hardcoded
+          radius — sharp by default, like every other control in the system.
+          Brand fill keeps it visible on any surface or theme color; the
+          shadow is the same chromatic bloom used everywhere else, never grey. */}
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+        className={[
+          'fixed top-14 z-51 hidden lg:flex items-center justify-center',
+          'w-6 h-12',
+          'rounded-tr-[var(--ot-radius-control)] rounded-br-[var(--ot-radius-control)]',
+          'bg-brand text-fg-on-brand',
+          'shadow-[2px_0_16px_var(--ot-bloom-brand-faint)]',
+          'hover:bg-brand-hover',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+        ].join(' ')}
+        style={{
+          left:       open ? 'var(--ot-sidebar-width, 240px)' : '0px',
+          transition: 'left 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        <ChevronLeft
+          size={14}
+          strokeWidth={2.5}
+          style={{
+            transform:  open ? 'rotate(0deg)' : 'rotate(180deg)',
+            transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        />
+      </button>
+    </>
+  )
+}

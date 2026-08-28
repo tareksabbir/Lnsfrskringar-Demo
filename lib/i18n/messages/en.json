@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "openMenu": "Open navigation",
+    "closeMenu": "Close navigation",
+    "home": "Home",
+    "skipToMain": "Skip to main content"
+  },
+  "locale": {
+    "selector": "Select language",
+    "current": "Current language"
+  },
+  "theme": {
+    "toggleLight": "Switch to light mode",
+    "toggleDark": "Switch to dark mode"
+  },
+  "search": {
+    "trigger": "Search",
+    "placeholder": "What are you looking for?",
+    "placeholderCompact": "Search the site...",
+    "inputLabel": "Search query",
+    "close": "Close search",
+    "noResults": "No results for \"{query}\"",
+    "noResultsHint": "Try a different keyword or clear filters",
+    "searching": "Searching",
+    "resultsFor": "Results for \"{query}\"",
+    "result": "1 result",
+    "results": "{count} results",
+    "trySearching": "Try searching",
+    "compact": "Switch to compact mode",
+    "expand": "Switch to full search",
+    "semanticOn": "Semantic search active",
+    "semanticOff": "Enable AI semantic search",
+    "aiRanked": "AI ranked",
+    "siteSearch": "Site search",
+    "searchResults": "Search results",
+    "contentTypeFilter": "Content type filter",
+    "clearFilter": "Clear"
+  },
+  "forms": {
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "required": "Required",
+    "fieldRequired": "{field} is required",
+    "fieldInvalid": "{field} is invalid",
+    "successMessage": "Form submitted successfully.",
+    "errorMessage": "Something went wrong. Please try again.",
+    "characters": "{count} characters remaining"
+  },
+  "blog": {
+    "readMore": "Read more",
+    "readTime": "{time} min read",
+    "publishedOn": "Published",
+    "by": "By",
+    "relatedArticles": "More articles",
+    "backToIndex": "All articles"
+  },
+  "a11y": {
+    "externalLink": "Opens in a new tab"
+  }
+}

@@ -1,0 +1,62 @@
+import { contentType } from '@optimizely/cms-sdk'
+
+export const OT_CalloutBlock = contentType({
+  key:                  'OT_CalloutBlock',
+  displayName:          'Callout Block',
+  description:          'Compact inline notification. Six semantic intent types: neutral, info, success, warning, danger, brand.',
+  baseType:             '_component',
+  compositionBehaviors: ['elementEnabled', 'sectionEnabled'],
+  properties: {
+    intent: {
+      type: 'string',
+      format: 'selectOne',
+      displayName: 'Intent',
+      description: 'Semantic meaning and color of the callout.',
+      enum: [
+        { value: 'neutral', displayName: 'Neutral' },
+        { value: 'info', displayName: 'Info (Default)' },
+        { value: 'success', displayName: 'Success' },
+        { value: 'warning', displayName: 'Warning' },
+        { value: 'danger', displayName: 'Danger' },
+        { value: 'brand', displayName: 'Brand' },
+      ],
+      group: 'OT_Content',
+      sortOrder: 5,
+    },
+    heading: {
+      type:         'string',
+      displayName:  'Heading',
+      description:  'Short callout message.',
+      isLocalized:  true,
+      maxLength:    100,
+      group:        'OT_Content',
+      sortOrder:    10,
+      indexingType: 'searchable',
+    },
+    body: {
+      type:         'string',
+      displayName:  'Body',
+      description:  'Optional supporting text. Not shown in bar variant.',
+      isLocalized:  true,
+      maxLength:    200,
+      group:        'OT_Content',
+      sortOrder:    20,
+      indexingType: 'searchable',
+    },
+    ctaLabel: {
+      type:         'string',
+      displayName:  'CTA Label',
+      isLocalized:  true,
+      maxLength:    40,
+      group:        'OT_Content',
+      sortOrder:    30,
+    },
+    ctaUrl: {
+      type:         'url',
+      displayName:  'CTA URL',
+      isLocalized:  true,
+      group:        'OT_Content',
+      sortOrder:    40,
+    },
+  },
+})
