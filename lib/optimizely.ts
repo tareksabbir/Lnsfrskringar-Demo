@@ -492,21 +492,34 @@ const _fetchAllThemeManagers = cache(async function fetchAllThemeManagers(locale
 })
 
 /**
- * Returns the ThemeManager instance whose frontEndDomain matches `domain`,
- * or null if no match is found.
+ * Returns the ThemeManager instance whose frontEndDomain matches `domain`.
  *
- * Returning null on no match is intentional: an unrecognised domain (e.g. a
- * fresh Vercel deployment whose URL hasn't been registered in any ThemeManager
- * yet) should render with the default CSS token values ("generic default-theme
- * branding") rather than inheriting whatever theme was most recently published.
- * All callers (Header, Footer, layout) handle null gracefully via optional
- * chaining and hardcoded fallback values.
+ * Matching is exact when the CMS holds several ThemeManagers — that is the
+ * multi-site case, where serving the wrong brand is worse than serving none, so
+ * an unrecognised host gets null and the caller's default tokens.
+ *
+ * With exactly ONE ThemeManager there is no such ambiguity, and strict matching
+ * was actively harmful: frontEndDomain held "localhost:3000", so every deployed
+ * host — the Vercel production URL and every per-deployment preview URL, which
+ * carry a fresh hash each time and therefore can never be registered up front —
+ * fell through to null and rendered the hardcoded fallback header and footer.
+ * The site looked unbranded everywhere except a developer's laptop. When one
+ * ThemeManager exists it is unambiguously the site's theme, so use it.
+ *
+ * Callers (Header, Footer, layout) still handle null via optional chaining.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getSiteSettings(domain = '', locale = DEFAULT_LOCALE): Promise<any | null> {
   const items = await _fetchAllThemeManagers(locale)
   if (!items.length) return null
-  return items.find((i: any) => i.frontEndDomain === domain) ?? null
+
+  const exact = items.find((i: any) => i.frontEndDomain === domain)
+  if (exact) return exact
+
+  // Single-site instance: the only ThemeManager is the answer regardless of host.
+  if (items.length === 1) return items[0]
+
+  return null
 }
 
 /**
