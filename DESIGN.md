@@ -1,10 +1,10 @@
 ---
 name: Site Accelerator
-description: Configurable multi-vertical site framework. Token-driven, dark-first by default, depth-forward, choreographed motion. Full CMS theme override via ThemeManager. Impeccable-collaborative component expansion.
+description: Configurable multi-vertical site framework. Token-driven, depth-forward, choreographed motion. Full CMS theme override via ThemeManager. Impeccable-collaborative component expansion.
 colors:
-  brand: "var(--ot-brand)"          # default oklch(55% 0.18 195) — overrideable via ThemeManager
+  brand: "var(--ot-brand)"          # shipped default oklch(38% 0.11 252) — LF navy; overrideable via ThemeManager
   brand-hover: "var(--ot-brand-hover)"
-  accent: "var(--ot-accent)"        # default oklch(82% 0.19 145) — signal green
+  accent: "var(--ot-accent)"        # shipped default oklch(58% 0.234 28) — LF red
   canvas: "var(--ot-canvas)"
   surface: "var(--ot-surface)"
   fg: "var(--ot-fg)"
@@ -42,6 +42,8 @@ typography:
 rounded:
   none: "0px"
   input: "4px"
+  surface: "12px"
+  control: "8px"
 spacing:
   xs: "4px"
   sm: "8px"
@@ -55,11 +57,11 @@ spacing:
 
 ## 1. Overview and Evolution
 
-Site Accelerator is a **configurable, multi-vertical site framework** built on the Optimizely SaaS CMS: one shared component library and token system that can be re-themed into a credible site for any vertical (financial services, healthcare, retail, legal, and more) without code changes. Its first incarnation was a single teal brand site; that look now survives only as the **default theme** — one example skin among many, not the framework's identity.
+Site Accelerator is a **configurable, multi-vertical site framework** built on the Optimizely SaaS CMS: one shared component library and token system that can be re-themed into a credible site for any vertical (financial services, healthcare, retail, legal, and more) without code changes. Its first incarnation was a single teal brand site; that palette is gone. What `styles/tokens.css` ships today is the Länsförsäkringar re-skin — a navy anchor (`#00427a`) with a sparing red accent — and that too is just one example skin, not the framework's identity. The token system, not any one palette, is the design system.
 
 The design framework has two jobs:
 
-1. **Standalone quality** — the default theme (mineral teal palette, Poppins type system, dark-first grounds) must look like a considered, professional design in its own right. Not a template, not a generic demo. Something that earns attention. Every vertical theme built on the framework must clear that same bar.
+1. **Standalone quality** — the shipped default theme (LF navy/red palette, Poppins type system) must look like a considered, professional design in its own right. Not a template, not a generic demo. Something that earns attention. Every vertical theme built on the framework must clear that same bar.
 
 2. **Rebranding surface** — everything visually distinctive is expressed through semantic CSS tokens (`--ot-brand`, `--ot-accent`, `--ot-canvas`, etc.) that the ThemeManager overrides via a CMS-injected `<style>` block. Swap the brand color and watch the entire site — bloom halos, gradient fills, button fills, blockquote borders, chromatic shadows — recalibrate automatically. (The `--ot-` token prefix is a historical name; it is theme-neutral and carries no brand meaning.)
 
@@ -83,22 +85,23 @@ All visual identity flows through CSS custom properties defined in `styles/token
 
 | Token | Default | Role |
 |---|---|---|
-| `--ot-brand` | `oklch(55% 0.18 195)` | The committed color. Fills hero panels, CTAs, primary surfaces. 30–60% of primary views. |
-| `--ot-brand-hover` | `oklch(38% 0.16 195)` | Depth state on brand surfaces — hover, active, shadow reference. |
-| `--ot-accent` | `oklch(82% 0.19 145)` | Signal green. Badges, highlights, alternative CTAs, semantic callouts. |
-| `--ot-accent-hover` | `oklch(68% 0.17 145)` | Deeper accent for hover states. |
+| `--ot-brand` | `oklch(38% 0.11 252)` | The committed color. Fills hero panels, CTAs, primary surfaces. 30–60% of primary views. |
+| `--ot-brand-hover` | `oklch(27% 0.09 252)` | Depth state on brand surfaces — hover, active, shadow reference. |
+| `--ot-brand-tint` | `oklch(from var(--ot-brand) 94% 0.026 h)` | Pale wash of the anchor — calm full-width grounds that still read as branded. Derived from `--ot-brand`, so it follows any override. Exposed to editors as the Hero "Brand Tint" background (`cms/display-templates/OT_HeroDefault.ts`). |
+| `--ot-accent` | `oklch(58% 0.234 28)` | Punctuation colour. Badges, highlights, alerts, semantic callouts. Never a fill. |
+| `--ot-accent-hover` | `oklch(48% 0.20 28)` | Deeper accent for hover states. |
 | `--ot-canvas` | `oklch(12% 0.012 195)` | Outermost page background. Darkest in dark mode, lightest in light mode. |
 | `--ot-surface` | `oklch(20% 0.022 195)` | Component panels, one elevation above canvas. |
 | `--ot-fg` | `oklch(97% 0.005 195)` | Primary text. Adapts to mode. |
 | `--ot-fg-muted` | `oklch(68% 0.06 195)` | Secondary text, nav links at rest, metadata. |
 | `--ot-fg-on-brand` | `oklch(97% 0.005 195)` | Text on brand-colored fills. Always light for contrast. |
-| `--ot-fg-on-accent` | `oklch(12% 0.012 195)` | Text on accent-colored fills. Always dark. |
+| `--ot-fg-on-accent` | `oklch(99% 0 90)` | Text on accent-colored fills. White against the red accent. |
 
 ### CMS theme override
 
 The ThemeManager content type exposes color fields for each semantic token. When populated, `buildThemeCSS()` generates an inline `<style>` block injected before first paint in `app/layout.tsx`. The overrides land as `:root { --ot-brand: ...; }` and `[data-theme="light"] { ... }` rules, sitting above the defaults in source order.
 
-**Implication for component authors:** never hardcode a color value (`oklch(55% 0.18 195)`) in component CSS. Always reference a semantic token (`var(--ot-brand)`) or its Tailwind alias (`bg-brand`, `text-fg-muted`, etc.). The bloom and gradient tokens (below) use CSS Relative Color Syntax to derive alpha variants from the semantic tokens — they update automatically when the theme changes.
+**Implication for component authors:** never hardcode a color value (`oklch(38% 0.11 252)`) in component CSS. Always reference a semantic token (`var(--ot-brand)`) or its Tailwind alias (`bg-brand`, `text-fg-muted`, etc.). The bloom and gradient tokens (below) use CSS Relative Color Syntax to derive alpha variants from the semantic tokens — they update automatically when the theme changes.
 
 ### Bloom / halo tokens (auto-derived)
 
@@ -128,21 +131,40 @@ Available as global CSS classes. Use at display scale only, at most once per com
 
 All four adapt automatically to the active theme (dark/light) and to CMS color overrides.
 
+### Corner radius
+
+Radius is a theme axis, not a fixed identity. Four tokens:
+
+| Token | Shipped default | Role |
+|---|---|---|
+| `--ot-radius-none` | `0px` | Explicit zero. |
+| `--ot-radius-input` | `4px` | Form inputs. Never touched by the Corner Style axis. |
+| `--ot-radius-surface` | `12px` | Cards, panels, glass surfaces. |
+| `--ot-radius-control` | `8px` | Buttons and other controls. |
+
+`--ot-radius-surface` / `--ot-radius-control` are driven by the ThemeManager "Corner Style" axis, whose value sets live in `lib/theme-axes.ts`: Sharp (`0px` / `0px`), Soft (`8px` / `6px`), Rounded (`20px` / `14px`). Component authors reference `rounded-ot-surface` and `rounded-ot-control` so a theme swap carries the whole site; the SaaS-pill anti-pattern is out of reach because no option goes past Rounded.
+
+The shipped CSS defaults above are gently rounded, matching the LF re-skin. Earlier revisions of this document treated sharp corners as the system's identity; that is no longer what the code ships.
+
+> **Known discrepancy (code, not a decision).** `lib/theme-axes.ts` declares `DEFAULT_CORNER_STYLE = 'sharp'`, while `styles/tokens.css` ships `12px` / `8px` — which matches **no** axis value set (Soft is `8px` / `6px`). Because the resolver emits nothing when the stored key equals the declared default, an editor selecting "Sharp" gets no override and the page stays at the CSS values. Three sources disagree; the CSS defaults are what actually renders. Separately, the editor-facing labels on `OT_ThemeManager.cornerStyle` describe Soft as "subtle 4px" and Rounded as "8–10px", which do not match the `8px`/`6px` and `20px`/`14px` the axis implements.
+
 ---
 
 ## 3. Color Philosophy
 
 ### The committed rule
 
-The brand color fills large surface areas — it is a presence, not punctuation. In the default teal theme, Oxidized Teal fills hero panels, entire section backgrounds, CTA buttons. If a layout uses the brand color on less than 20% of its primary surface, it is drifting toward generic. Push it back.
+The brand color fills large surface areas — it is a presence, not punctuation. In the shipped default theme, the LF navy fills hero panels, entire section backgrounds, CTA buttons; the red accent stays punctuation. If a layout uses the brand color on less than 20% of its primary surface, it is drifting toward generic. Push it back.
 
 ### The tint rule
 
-No neutral is ever truly neutral. In the default theme, canvas (dark mode) and fg-on-brand (light text) both carry the brand hue at low chroma. The palette feels like one material. When implementing custom themes via the ThemeManager, apply the same principle: canvas and surface should carry a hint of the brand hue, even at very low chroma.
+No neutral is ever truly neutral — the dark-mode grounds carry a low-chroma tint so the palette feels like one material. The shipped default splits on this deliberately: dark mode keeps the tinted canvas/surface/fg, while light mode drops to chroma 0 (pure white/grey), because the LF site carries all of its colour in the navy and a tinted white read wrong. Treat the tint as the default principle for custom themes — canvas and surface should carry a hint of the brand hue at very low chroma — and drop to pure neutral only when the vertical genuinely calls for it.
 
-### Dark-first grounds
+### Mode resolution
 
-Dark mode is the default. `data-theme="dark"` on `<html>` is set before first paint via an inline script (avoiding flash). Light mode is a full inversion of canvas/surface/fg tokens, activated by `data-theme="light"`. The brand and accent tokens are constant across modes; only the grounds and text adapt. The ThemeManager can set separate canvas/surface/fg-muted values for each mode.
+The active mode is resolved **server-side** in `app/layout.tsx` and written as `data-theme` onto `<html>` in the SSR HTML — there is no inline script and no client-side init. The order is: the `site-theme-user` cookie (written by `ThemeProvider` only when a visitor explicitly toggles), then the CMS ThemeManager `defaultMode` field, then `dark` as the last-resort fallback. So a ThemeManager set to `light` wins on every first visit — which is what makes re-skinning a demo to a light vertical actually take effect.
+
+Light mode is a full inversion of canvas/surface/fg tokens, activated by `data-theme="light"`. The brand and accent tokens are constant across modes; only the grounds and text adapt. The ThemeManager can set separate canvas/surface/fg-muted values for each mode.
 
 ---
 
@@ -157,10 +179,12 @@ The **primary family** drives the entire hierarchy (display → body → label).
 | `--ot-font-sans` (default) | Poppins | Primary — the whole hierarchy: display, headline, title, body, label, buttons, nav. |
 | Primary axis → `--font-primary-a` | Source Serif 4 | Primary alternate — institutional / editorial pole (medical, financial, legal). The one sanctioned serif. |
 | Primary axis → `--font-primary-b` | Sora | Primary alternate — precise / engineered pole (technical brands). |
-| Primary axis → `--font-primary-c` | Bricolage Grotesque | Primary alternate — expressive / character pole. |
+| Primary axis → `--font-primary-c` | Plus Jakarta Sans | Primary alternate — geometric humanist; warm, modern alternative to Poppins. |
+| Primary axis → `--font-primary-d` | Manrope | Primary alternate — clean, minimal; strong at small sizes and at display scale. |
 | `--font-syne` | Syne (variable) | Fixed accent/display only. Section openers, pull quotes. Once per viewport max. Not themeable. |
 | `--font-mono` | Geist Mono | Code samples, technical labels, data readouts. |
 | `--ot-font-signature` | Caveat 400 | Signature only — the QuoteBlock LaserSignature. Never general copy. |
+| `--ot-font-neon` | Tilt Neon 400 | The PrimaryText "neon" header effect only (`.ot-fx-neon`). Single weight, display-only. Never general copy. |
 
 **Component authors:** reference `--ot-font-sans` (or `font-sans`) for the primary family — never a raw `--font-poppins`, which bypasses the theme axis. **Serif is permitted only** as the Source Serif primary selected through the axis; never introduce another serif or hardcode a family.
 
@@ -178,7 +202,7 @@ The **primary family** drives the entire hierarchy (display → body → label).
 
 ### Syne usage rules
 
-- Weight 400–525 only. `--ot-weight-syne` is set to 450. Above 525 the geometry bloats.
+- Weight 400–525 only. `--ot-weight-syne` is set to 400. Above 525 the geometry bloats.
 - Variants: Clean (`text-fg`), Brand (`text-brand`), Hollow (`.syne-hollow` — wire letterforms via `-webkit-text-stroke`).
 - Never use Syne on body copy or below headline scale.
 - Never on light backgrounds with Accent color — insufficient contrast.
@@ -235,7 +259,7 @@ The background MUST stay low-alpha — a high-alpha or opaque fill occludes the 
 
 ### Chromatic shadows (default) and neutral shadows (vertical-theme option)
 
-The **default system uses brand-hued shadows** — every shadow carries the brand hue via bloom tokens, reinforcing the mineral palette and making shadow a design element, not just elevation.
+The **default system uses brand-hued shadows** — every shadow carries the brand hue via bloom tokens, tying the palette together and making shadow a design element, not just elevation.
 
 **Resting elevation** (cards or panels above field):
 ```
@@ -246,6 +270,8 @@ box-shadow: 0 4px 24px var(--ot-bloom-brand-faint)
 ```
 box-shadow: 0 8px 32px var(--ot-bloom-brand-faint), 0 16px 48px var(--ot-bloom-accent-faint)
 ```
+
+Note that the shipped light-mode block in `tokens.css` collapses the bloom alphas to `transparent` (keeping only a hairline on the `-border` variants), so every consumer of these tokens flattens automatically in light mode. The bloom system stays intact for dark mode and for verticals that want it; a theme that wants coloured elevation in light mode has to restore those alphas.
 
 **Neutral / grey shadows are permitted for vertical themes** where the brand color makes a poor shadow tint — very light or desaturated brand colors, achromatic themes, or verticals (healthcare, legal, retail) where a chromatic shadow would look unintended. When using neutral shadows in a vertical theme, derive the alpha from the surface rather than hardcoding `rgba(0,0,0,...)`: `oklch(from var(--ot-fg) l c h / 0.12)` gives a neutral that adapts to dark/light mode automatically and follows any ThemeManager canvas override. Component authors building blocks for the default theme should still prefer chromatic shadows; grey shadows are a vertical-theme-level decision, not a component-level one.
 
@@ -296,6 +322,8 @@ The layout system is driven by Visual Builder composition settings rather than c
 
 **Section width**: full-bleed, container (default), wide (max-7xl), narrow (max-4xl).
 
+**Sidebar navbar**: the `sidebar` Navbar Style (`lib/theme-axes.ts`) is the one nav option that changes page-level layout math rather than just header styling — navigation moves to a fixed left rail and the content wrapper shifts right. It emits `--ot-sidebar-width` (`240px`) via `buildThemeCSS`, so full-bleed sections and the content wrapper can subtract the rail without knowing which nav style is active. The other two styles (`top-bar`, `split-bar`) emit nothing.
+
 **Implication for component authors:** block components should be designed to work at any width from ~280px (single column, narrow viewport) to ~1400px (full-bleed). Never assume a fixed container width inside a block.
 
 ---
@@ -306,7 +334,9 @@ The layout system is driven by Visual Builder composition settings rather than c
 
 Server component fed by ThemeManager. Dark glass sticky bar — `bg-canvas/80 backdrop-blur-md` with `border-b border-fg/5`. Logo area, primary nav links (desktop: inline; mobile: full-height overlay via `MobileMenu.tsx` client component), and CTA button. All content CMS-driven.
 
-**Desktop dropdown (mega menu).** A single flat `bg-surface` panel — no angled clip-path, no two-zone brand/canvas dissolve. Built entirely on semantic tokens (`bg-surface`, `text-fg`, `border-fg/*`), so the whole panel inverts automatically between dark and light mode and reads correctly on any ThemeManager theme. Structure is a single column of inset rows, each an optional icon tile + title + description, with a trailing `ArrowRight` that slides in on hover. Corners follow the Corner Style axis (`rounded-ot-surface` panel + tiles, `rounded-ot-control` rows) — sharp by default, rounded under a soft/rounded theme. Depth is a chromatic brand-hued bloom shadow (`--ot-bloom-brand-faint` / `--ot-bloom-brand-border`, never grey) plus the 1px brand→accent horizon along the top edge. Rows reveal with a 45ms-per-item kinetic stagger on open. The rest icon is `text-fg` ink (never the `brand` token) so it stays legible on `surface` in both modes and under any brand darkness — themeable colors are unsafe as foreground on a themeable ground; the brand color instead lives in the faint `bg-brand/10` tile tint and the solid `bg-brand` hover fill (icon → `fg-on-brand`), the one earned moment of color. Icons are optional per item, sourced from the shared `ICON_REGISTRY` via a `selectOne` field on `OT_NavigationSubItem` (same canonical library as the block icon pickers) and rendered on both desktop and mobile.
+**Utility bar.** A slim persona/segment strip above the main header row (e.g. "Private" / "Business & Agriculture"), driven by the `utilityNav` array on `OT_ThemeManager` — max 4 items, reusing `OT_NavigationItem` so each tab can itself carry a dropdown of sub-links. Leaving the array empty hides the bar entirely, so it costs nothing on themes that don't want it.
+
+**Desktop dropdown (mega menu).** A single flat `bg-surface` panel — no angled clip-path, no two-zone brand/canvas dissolve. Built entirely on semantic tokens (`bg-surface`, `text-fg`, `border-fg/*`), so the whole panel inverts automatically between dark and light mode and reads correctly on any ThemeManager theme. Structure is a single column of inset rows, each an optional icon tile + title + description, with a trailing `ArrowRight` that slides in on hover. Corners follow the Corner Style axis (`rounded-ot-surface` panel + tiles, `rounded-ot-control` rows) — gently rounded on the shipped defaults, sharp or fully rounded under the other Corner Style options. Depth is a chromatic brand-hued bloom shadow (`--ot-bloom-brand-faint` / `--ot-bloom-brand-border`, never grey) plus the 1px brand→accent horizon along the top edge. Rows reveal with a 45ms-per-item kinetic stagger on open. The rest icon is `text-fg` ink (never the `brand` token) so it stays legible on `surface` in both modes and under any brand darkness — themeable colors are unsafe as foreground on a themeable ground; the brand color instead lives in the faint `bg-brand/10` tile tint and the solid `bg-brand` hover fill (icon → `fg-on-brand`), the one earned moment of color. Icons are optional per item, sourced from the shared `ICON_REGISTRY` via a `selectOne` field on `OT_NavigationSubItem` (same canonical library as the block icon pickers) and rendered on both desktop and mobile.
 
 **Split Bar (`navbarStyle: 'split-bar'`, `SplitHeader.tsx` / `SplitHeaderShell.tsx`).** An editorial masthead, not a shrunk-down utility bar: the logo sits dead-center in a `grid-cols-[1fr_auto_1fr]` row, and the primary nav links split into two wings that flank it (`DesktopNav` called twice — `variant="split"` for the bolder tracked-caps voice, distinct `ariaLabel`s so screen readers get two clearly distinguished landmarks instead of duplicates). The right wing also carries the utility icons and CTA, so the left wing takes the extra item on an odd-length nav list to keep both sides visually balanced. No floating pill capsule — that read as the generic "modern SaaS nav" default; this is a full-width bar whose *material* transforms instead.
 
@@ -320,16 +350,24 @@ The style earns its name twice:
 
 | Block | Key display settings | Notable effects |
 |---|---|---|
-| **HeroBlock** | layout (image left/right), color (brand/canvas/surface), animation (none/fade/slide/parallax) | Split-panel layout, per-element stagger, CVA variant system |
-| **CardBlock** | fill, border, imageStyle (top/left/right), imageSide, hover (lift/glow/none), density, noise, accentLine, maxHeight | `.card-hover-lift` / `.card-hover-glow` global classes |
-| **PrimaryTextBlock** | color (brand/canvas/surface), align, size, eyebrow style, CTA style | Editorial typography moment; supports Syne accent heading |
+| **HeroBlock** | layout (image left/right), color (brand/**tint** — "Brand Tint — pale wash"/canvas/surface), animation (none/fade/slide/parallax) | Split-panel layout, per-element stagger, CVA variant system |
+| **CardBlock** | tile (none/stacked/inline), icon, fill (ghost/surface/brand/light/glass), border, imageSide, hover (lift/glow/tilt/none), density, noise, accentLine, maxHeight, minHeight, aspectRatio, imageAspectRatio | `.card-hover-lift` / `.card-hover-glow` / `.card-hover-tilt` global classes. The `tile` variants are flat link tiles — icon above a centred label, or icon + label + trailing arrow. |
+| **PrimaryTextBlock** | alignment, color (none/brand/canvas/surface), size, entranceAnimation | Editorial typography moment; supports Syne accent heading. The **Header effect** select is a property on the content type, not a display setting. |
 | **QuoteBlock** | color, size, attribution style | Pull quote with large typographic treatment |
 | **RichTextBlock** | color, size, treatment (standard/lead/dropcap/incipit), ruledHeadings, textScale, textWeight, **columns** (single/dual/triple), **ground** (flat/ruled/grain/framed), **dividers** (rule/ornament/asterism), **numberedHeadings**, **reveal** (none/cascade) | The **reading surface** (vs PrimaryText's statement). TinyMCE output styled via `[data-rich-text]` scoped CSS. Every setting targets long-form copy that a single headline can't carry: broadsheet multi-column flow, print grounds (ledger ruling / halftone grain / framed page), editorial section breaks (❧ / ⁂), CSS-counter chapter numbers, small-caps incipit, and a pure-CSS scroll-driven reading-cadence reveal (`animation-timeline: view()`, `@supports`-gated, motion-safe). |
-| **ImageBlock** | aspectRatio, objectFit, bloom (brand/accent/none), caption, rounded | Chromatic bloom glow ring from bloom tokens |
+| **ImageBlock** | bgColor, ratio, overlay, frame (none/offset/glow), animate, captionPosition, shadow, lightbox, entranceAnimation | Chromatic bloom glow ring from bloom tokens. **`ratio: natural`** is the one option that applies no aspect box at all — the image keeps its own proportions, uncropped (`components/blocks/ImageBlock.tsx` branches out of the `object-cover` path entirely). Needed for wide decorative graphics that every other ratio would clip. |
 | **VideoBlock** | aspectRatio, bloom, caption | Same bloom system as ImageBlock |
 | **StatBlock** | color (brand/canvas/surface), layout (row/grid), glass | Animated counters, staggered entrance, divider lines |
 | **FeatureGridBlock** | color, layout (grid/list), glass | Icon + heading + body feature tiles |
 | **TrustRail** | motion (scroll/fade/static), treatment (auto/color), background (canvas/surface/brand), size (xs/sm/md/lg/xl), density, glass | Seamless CSS marquee (doubled track + `paddingRight` seam fix), IntersectionObserver fade. `auto` (default) forces a theme-matched silhouette — white on dark grounds and any `brand` fill, grey-reading-to-black on a light-mode canvas/surface — via `.trust-rail-logo-auto`; `color` shows each logo's own hues, undimmed, for near-white backgrounds only (`brand` always overrides back to the silhouette). Hovering any logo grows it (`scale(1.12)`) and dims every other logo in the row via a `:has()`-driven spotlight (`.trust-rail-track` / `.trust-rail-logo` in globals.css) — degrades gracefully (no dimming) without `:has()` support. `brand` uses `.bg-brand-fill` (radial gradient, matching every other block) instead of a flat fill. |
+
+The table above documents the design-relevant settings of the founding set only. `cms/registry.ts` registers a considerably larger library — the rest, most with their own display template and settings vocabulary:
+
+**ButtonBlock**, **Author**, **FooterBlock** (see *Footer* below), **BlogFeedBlock**, **AccordionBlock**, **TabsBlock**, **ChartBlock**, **BannerBlock**, **ResourceLibraryBlock**, **CalloutBlock**, **DividerBlock**, **EventListingBlock**, **PractitionerListingBlock**, **LocationListingBlock**, **ContentRecommendationsBlock**, **ProductRecommendationsBlock**, **ComparisonTableBlock**, **DisclosureBlock**, **TokenManager**.
+
+`cms/registry.ts` also registers adapters that are not blocks: the page types (**OT_BlogPage**, **OT_EventPage**, **OT_FolderPage**, **OT_TopicHubPage**), **ImageMedia**, and the **OT_PractitionerProfile** / **OT_LocationProfile** records the listing blocks draw from.
+
+Every one of them obeys the same rules as the founding set: semantic tokens only, radius via the Corner Style tokens, `motion-safe:` on all animation, WCAG 2.1 AA in both modes. Consult the block's display template in `cms/display-templates/` for its authoritative settings list — with one exception: `OT_TokenManagerDefault.ts` exists on disk but is never imported into `initDisplayTemplateRegistry`, so TokenManager currently has no registered template.
 
 ### TrustRail logo image guidance
 
@@ -343,9 +381,17 @@ The style earns its name twice:
 
 **Transparency is required** for the `auto` treatment (and on any `brand` background) to work correctly — logos are forced to a silhouette via `brightness(0)` (optionally `invert(1)` for white); a transparent background is mandatory for this to produce the correct result.
 
+### Footer
+
+`OT_FooterBlock` is a singleton assigned via `ThemeManager.footerRef`, never placed in a Visual Builder canvas. Two independent axes combine freely: **`footerStyle`** — `spotlight` (default, bold asymmetric with a branded link panel), `centered`, `minimal`, `columns` — and **`footerLeftMode`** (the background tone: `dark` default, `light`, `brand`).
+
+**Columns style.** `footerStyle: 'columns'` is the multi-column link-group layout (e.g. About us / Customer service / Insurance / Bank / Contact). It ignores the flat `links` array and reads two dedicated arrays instead: **`columns`** — up to 8 `OT_FooterColumn` groups, each a heading plus its own links, flowing 4 per row on desktop — and **`bottomLinks`**, up to 6 compact legal/utility links in a bottom bar beneath them.
+
+**Brand surface.** `footerLeftMode: 'brand'` floods the footer with the brand color and switches it into the `[data-footer-surface="brand"]` token context defined in `styles/tokens.css`. That context re-points `--ot-canvas` at `--ot-brand-hover` (the deeper value, so light text keeps AA contrast), `--ot-fg` at `--ot-fg-on-brand`, and `--ot-fg-muted` at `fg-on-brand` at 0.72 alpha. It is paired with `data-theme="dark"` on the same element so the dark foreground semantics — light text, inverted logo — hold regardless of the site's active mode.
+
 ### Composition structure
 
-Section, Row, and Column adapters render the Visual Builder tree. See `Optimizely.md` for the full composition architecture.
+Section, Row, and Column adapters render the Visual Builder tree. Display templates: `OT_LandingSection`, `OT_LandingRow`, `OT_LandingRowSlider` (a slider/carousel variant on the same row type), and `OT_LandingColumn` — all registered in `cms/registry.ts`. See `Optimizely.md` for the full composition architecture.
 
 ---
 
@@ -415,7 +461,7 @@ When impeccable introduces a new effect, document it here under the relevant com
 - **Do** use `box-shadow` with bloom tokens for elevation — chromatic, not grey.
 - **Do** use dark glass (`bg-canvas/75 backdrop-blur-md`) for floating elements over visual content. Ask "what is beneath this?" before applying.
 - **Do** apply `motion-safe:` modifier to all animation utilities. Stagger and block animations must work at zero motion.
-- **Do** use sharp corners (`rounded-none`) on all interactive elements — buttons, cards, panels. The only permitted non-zero radius is `rounded-input` (4px) on form inputs.
+- **Do** route every corner through the radius tokens — `rounded-ot-surface` on cards, panels and glass; `rounded-ot-control` on buttons; `rounded-input` on form inputs. The shipped defaults are 12px / 8px / 4px, and the Corner Style axis moves the first two together.
 - **Do** use `text-wrap: balance` on headlines and `text-wrap: pretty` on body paragraphs.
 - **Do** use weight contrast of 200+ between adjacent type hierarchy levels.
 - **Do** tint every neutral toward the brand hue when implementing custom themes.
@@ -425,7 +471,7 @@ When impeccable introduces a new effect, document it here under the relevant com
 
 ### Don't
 
-- **Don't** hardcode `oklch(55% 0.18 195)` or any color literal in component code. That color lives in `tokens.css` as `--ot-brand`. Component code references the token.
+- **Don't** hardcode `oklch(38% 0.11 252)` or any color literal in component code. That color lives in `tokens.css` as `--ot-brand`. Component code references the token.
 - **Don't** use light frosted glass (white/near-white `backdrop-blur` on light backgrounds). The system's glass is dark-tinted. If it looks like an iOS popover, it's wrong.
 - **Don't** use neutral grey shadows in the default theme components (`rgba(0,0,0,0.2)` etc.) — the default system uses brand-hued bloom shadows. Neutral shadows are acceptable at the vertical-theme level when the brand color makes a poor shadow tint; derive them from `--ot-fg` rather than hardcoding `rgba(0,0,0,...)` so they adapt to dark/light mode.
 - **Don't** use the SaaS cream aesthetic: off-white cards, pastel gradient blobs, rounded pill buttons, floating feature icon grids.
@@ -436,4 +482,4 @@ When impeccable introduces a new effect, document it here under the relevant com
 - **Don't** use gradient text fills (`.ot-fx-gradient`, `.ot-depth-liquid`, `.display-gradient-*`) below headline scale, or more than once per composition. Gradient text is a sanctioned display-moment effect — not body copy, not label text, not repeated through a page.
 - **Don't** assume a fixed container width inside block components. Blocks render at any width from a full-bleed section to a narrow column.
 - **Don't** introduce new layout-shifting animation properties without a `prefers-reduced-motion: reduce` fallback.
-- **Don't** add `rounded-lg`, `rounded-xl`, or `rounded-full` to buttons or cards. Sharp corners are the system's identity.
+- **Don't** add `rounded-lg`, `rounded-xl`, or `rounded-full` to buttons or cards. A hardcoded Tailwind radius bypasses the Corner Style axis, so the element stops following the theme — use `rounded-ot-surface` / `rounded-ot-control` instead.

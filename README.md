@@ -155,9 +155,13 @@ The sequence LF asked for, and where it actually stands:
 
 Each of these cost real time, so they are written down rather than rediscovered.
 
-- **Locale prefix.** Two locales are enabled and neither is marked default, so
-  Graph indexes content at `/en/` and every request for `/` returned 404.
-  `getLocalizedContentByPath` tries the bare path, then the prefixed one.
+- **Locale prefix.** The front end declares four locales (`en`, `es`, `fr`, `de`
+  in `i18n/routing.ts`), but what matters here is the **CMS instance**: several
+  locales are enabled on it and none is marked default, so Graph indexes English
+  at `/en/` rather than `/`, and every request for `/` returned 404 while the
+  header and footer still rendered — they read ThemeManager directly, so it
+  looked like a routing bug. `getLocalizedContentByPath` tries the bare path,
+  then the prefixed one.
 - **`frontEndDomain` must match the deployed host.** ThemeManager is matched by
   host; when it held `localhost:3000` the header and footer fell back to their
   hardcoded defaults on Vercel while the page body rendered normally. A single

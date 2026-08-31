@@ -10,6 +10,14 @@ brand
 
 Its primary job is pre-sales enablement: Optimizely solution engineers configure it to show a prospect, in that prospect's own vertical, what the SaaS CMS can do (Visual Builder composition, theme management, display templates, headless delivery). A demo that looks like a real, well-designed site in the prospect's industry is far more persuasive than a generic template.
 
+### Current instance: Länsförsäkringar Stockholm
+
+This repo is not the framework in the abstract — it is a working **Länsförsäkringar Stockholm (LF)** demo built on it, and the LF re-skin occupies the default token slot in `styles/tokens.css`. That is the framework working as intended: a real customer's brand reached through configuration.
+
+The LF demo carries its own brief on top of the framework's, because it exists to answer specific architecture questions with something running rather than with slides — headless content delivery through Graph, DAM as the single source of truth for assets, and editors composing pages themselves in Visual Builder. [README.md](README.md) tracks what is built and what is not.
+
+The framework requirements below still govern. Where the two conflict, the conflict is noted rather than resolved silently — see the navy note under **Anti-references**.
+
 ## Users
 
 **Solution engineers / pre-sales (primary)**: Re-skin and re-compose the framework to present it to prospects across verticals. They need to land quickly on a site that looks native to the prospect's industry and tell a credible "you could build this" story.
@@ -37,6 +45,8 @@ Adaptable, precise, quietly confident. The character is its range: the confidenc
 - **Corporate enterprise blue**: navy/grey palettes, stock-photo heroes, "solutions for the modern enterprise" tone.
 - **Generic CMS demo**: lorem ipsum, neutral placeholder content, flat card grids that telegraph "template."
 - **Vertical cliché-by-reflex**: the first-guess look for each industry (healthcare teal-on-white, financial services navy-and-gold, legal mahogany-and-serif, retail loud-discount-banners). Each vertical theme must be credible without being its category's obvious training-data default.
+
+> **On navy.** The LF theme's brand colour is navy, which reads against both anti-references above. The distinction that matters: these prohibit navy as a *reflex* — the palette you reach for when you have not decided anything. LF's navy is a real brand's real colour, and it is applied as a committed anchor filling 30–60% of the surface rather than as enterprise chrome around white cards. Both prohibitions stand for any theme where the palette is being invented. Neither applies when a customer supplies one.
 
 ## Design Principles
 
