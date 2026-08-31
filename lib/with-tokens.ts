@@ -2,7 +2,7 @@ import 'server-only'
 import { getRequestLocale, getRequestDomain } from '@/lib/optimizely'
 import { getTokenMap, applyTokensToContent } from '@/lib/tokens'
 
-type AnyAdapter = (props: any) => any
+export type AnyAdapter = (props: any) => any
 
 function wrapWithTokens(Adapter: AnyAdapter): AnyAdapter {
   return async function TokenAwareAdapter(props: any) {

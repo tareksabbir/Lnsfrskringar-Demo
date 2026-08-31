@@ -169,9 +169,70 @@ import BlankSectionAdapter    from '@/cms/compositions/Section'
 import RowAdapter             from '@/cms/compositions/Row'
 import ColumnAdapter          from '@/cms/compositions/Column'
 
-import { createTokenAwareResolver } from '@/lib/with-tokens'
+import { createTokenAwareResolver, type AnyAdapter } from '@/lib/with-tokens'
+
+
+/**
+ * Optimizely Forms is a separate hosted product. Its OptiForms* types live in
+ * this registry only so the SDK can build composition fragments for forms that
+ * editors place in Visual Builder — they are deliberately never pushed
+ * (optimizely.config.mjs excludes the globs).
+ *
+ * That works only on an instance where Forms is actually enabled, because Graph
+ * exposes the OptiForms* types there. On an instance WITHOUT Forms the types are
+ * absent from the Graph schema, yet the SDK still emits a fragment for each of
+ * the nine element types — and every CMS page query then dies with:
+ *
+ *     HTTP 400: 9 errors in the GraphQL query
+ *
+ * The nine are Choice, Number, Range, Reset, Selection, Submit, Textarea,
+ * Textbox and Url — the elementEnabled ones that reach composition fragments.
+ *
+ * So registration is gated. Turn it on only for instances that have Forms:
+ *     NEXT_PUBLIC_OPTIFORMS_ENABLED=true
+ */
+const OPTIFORMS_ENABLED = process.env.NEXT_PUBLIC_OPTIFORMS_ENABLED === 'true'
+
+const OPTIFORMS_CONTENT_TYPES = OPTIFORMS_ENABLED
+  ? [
+      OptiFormsContainerData,
+      OptiFormsDependencyRule,
+      OptiFormsCondition,
+      OptiFormsChoiceElement,
+      OptiFormsNumberElement,
+      OptiFormsRangeElement,
+      OptiFormsResetElement,
+      OptiFormsSelectionElement,
+      OptiFormsSubmitElement,
+      OptiFormsTextareaElement,
+      OptiFormsTextboxElement,
+      OptiFormsUrlElement,
+    ]
+  : []
+
+const OPTIFORMS_DISPLAY_TEMPLATES = OPTIFORMS_ENABLED ? [OptiFormsContainerDefault] : []
+
+// Annotated, not inferred. Without the annotation the conditional gives this
+// the union type `{ ...ten adapters } | {}`, and spreading a union into the
+// resolver object literal below makes the literal itself a union, which is not
+// assignable to Record<string, AnyAdapter>.
+const OPTIFORMS_ADAPTERS: Record<string, AnyAdapter> = OPTIFORMS_ENABLED
+  ? {
+      OptiFormsContainerData:    OptiFormsContainerDataAdapter,
+      OptiFormsChoiceElement:    OptiFormsChoiceElementAdapter,
+      OptiFormsNumberElement:    OptiFormsNumberElementAdapter,
+      OptiFormsRangeElement:     OptiFormsRangeElementAdapter,
+      OptiFormsResetElement:     OptiFormsResetElementAdapter,
+      OptiFormsSelectionElement: OptiFormsSelectionElementAdapter,
+      OptiFormsSubmitElement:    OptiFormsSubmitElementAdapter,
+      OptiFormsTextareaElement:  OptiFormsTextareaElementAdapter,
+      OptiFormsTextboxElement:   OptiFormsTextboxElementAdapter,
+      OptiFormsUrlElement:       OptiFormsUrlElementAdapter,
+    }
+  : {}
 
 initDisplayTemplateRegistry([
+  ...OPTIFORMS_DISPLAY_TEMPLATES,
   OT_HeroDefault,
   OT_ButtonDefault,
   OT_CardDefault,
@@ -189,7 +250,6 @@ initDisplayTemplateRegistry([
   OT_LandingRow,
   OT_LandingRowSlider,
   OT_LandingColumn,
-  OptiFormsContainerDefault,
   OT_BlogFeedDefault,
   OT_AccordionDefault,
   OT_TabsDefault,
@@ -268,19 +328,7 @@ initContentTypeRegistry([
   OT_TopicHubRecommendation,
   OT_TopicHubBucket,
   OT_TopicHubPage,
-  // OptiForm types
-  OptiFormsContainerData,
-  OptiFormsDependencyRule,
-  OptiFormsCondition,
-  OptiFormsChoiceElement,
-  OptiFormsNumberElement,
-  OptiFormsRangeElement,
-  OptiFormsResetElement,
-  OptiFormsSelectionElement,
-  OptiFormsSubmitElement,
-  OptiFormsTextareaElement,
-  OptiFormsTextboxElement,
-  OptiFormsUrlElement,
+  ...OPTIFORMS_CONTENT_TYPES,
 ])
 
 initReactComponentRegistry({
@@ -329,16 +377,7 @@ initReactComponentRegistry({
     BlankSection:       BlankSectionAdapter,
     _Row:               RowAdapter,
     _Column:            ColumnAdapter,
-    // OptiForm elements — resolved by content type key when encountered in compositions
-    OptiFormsContainerData:    OptiFormsContainerDataAdapter,
-    OptiFormsChoiceElement:    OptiFormsChoiceElementAdapter,
-    OptiFormsNumberElement:    OptiFormsNumberElementAdapter,
-    OptiFormsRangeElement:     OptiFormsRangeElementAdapter,
-    OptiFormsResetElement:     OptiFormsResetElementAdapter,
-    OptiFormsSelectionElement: OptiFormsSelectionElementAdapter,
-    OptiFormsSubmitElement:    OptiFormsSubmitElementAdapter,
-    OptiFormsTextareaElement:  OptiFormsTextareaElementAdapter,
-    OptiFormsTextboxElement:   OptiFormsTextboxElementAdapter,
-    OptiFormsUrlElement:       OptiFormsUrlElementAdapter,
+    // OptiForm elements — only when Forms is enabled (see OPTIFORMS_ENABLED)
+    ...OPTIFORMS_ADAPTERS,
   }),
 })

@@ -110,6 +110,17 @@ export default async function Header() {
       }))
     : FALLBACK_NAV
 
+  // Slim persona/segment tabs above the main header (e.g. "Private" /
+  // "Business & Agriculture"). Renders only when the editor has set at least
+  // one item on OT_ThemeManager.utilityNav — otherwise the bar is entirely
+  // absent, so this stays opt-in per site/theme.
+  const utilityNavItems: NavItem[] = settings?.utilityNav?.length
+    ? settings.utilityNav.map((item: any) => ({
+        label: item.menuLink?.text ?? '',
+        href:  normalizeNavHref(item.menuLink?.url?.default, locale, domain),
+      }))
+    : []
+
   return (
     <>
       {/* Skip to main content — accessibility */}
@@ -123,7 +134,27 @@ export default async function Header() {
       </a>
 
       <header className="sticky top-0 z-50 bg-canvas/80 backdrop-blur-md shadow-[0_1px_0_0_var(--ot-bloom-brand-border),0_8px_32px_0_var(--ot-bloom-brand-faint)]">
-        <div className="flex items-center justify-between px-md py-md lg:px-lg">
+
+        {utilityNavItems.length > 0 && (
+          <div data-theme="dark" className="bg-brand-hover">
+            <nav
+              aria-label="Utility navigation"
+              className="ot-container hidden lg:flex items-center gap-x-md px-md lg:px-lg h-9"
+            >
+              {utilityNavItems.map(item => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-[0.8125rem] font-medium text-fg-on-brand/75 hover:text-fg-on-brand transition-colors duration-150"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        )}
+
+        <div className="ot-container flex items-center justify-between px-md py-md lg:px-lg">
 
           <a href={localizedHref('/', locale)} aria-label={`${logoAlt} — ${t(locale, 'nav.home')}`} className="flex items-center h-12">
             {logoSrc ? (

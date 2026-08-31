@@ -20,7 +20,10 @@ function BlockWrapper({ children, node }: { children: ReactNode; node: any }) {
 }
 
 const widthClasses: Record<string, string> = {
-  full:    'w-full px-1',
+  // Truly edge-to-edge: no horizontal padding at all. Blocks that need their
+  // content inset (hero, the illustration strip) apply .ot-container inside
+  // themselves, so the coloured band bleeds while the content still lines up.
+  full:    'w-full',
   narrow:  'max-w-4xl w-full mx-auto px-lg',
   default: 'max-w-[90rem] w-full mx-auto px-lg',
   wide:    'max-w-[98rem] w-full mx-auto px-lg',

@@ -198,6 +198,21 @@ async function CmsPage({ params, searchParams }: Props) {
     return typeof v === 'string' ? v : ''
   }
 
+  // ── Preview detection ─────────────────────────────────────────────────────
+  //
+  // Do NOT gate preview on draftMode(). Next's draft cookie (__prerender_bypass)
+  // is SameSite=Lax, and Visual Builder renders this page inside an iframe on the
+  // CMS origin — so the cookie is third-party there and the browser withholds it.
+  // inPreview comes back false even though /api/draft/... enabled it, the route
+  // falls through to the published path, and the SDK never attaches __context.
+  // The result is a page that renders correctly and is completely inert in VB.
+  //
+  // The signed preview_token from the CMS is the actual authorization, so treat
+  // its presence as "this is a preview request". draftMode is kept as an OR so
+  // non-CMS draft links (ext_preview) keep working.
+  const hasPreviewToken = !!sp_str('preview_token')
+  const inPreview       = dm.isEnabled || hasPreviewToken
+
   // Site settings needed for buildJsonLd (Organization node) on every path.
   // getSiteSettings is React cache()-wrapped — no extra round-trip.
   const settings = await getSiteSettings(domain, locale)
@@ -208,7 +223,7 @@ async function CmsPage({ params, searchParams }: Props) {
   const fullPageUrl = `${siteOrigin}${path}`
 
   let exp: any
-  if (dm.isEnabled && sp_str('preview_token')) {
+  if (inPreview && hasPreviewToken) {
     // Preview: locale comes from the CMS editor (sp loc param)
     const previewLocale = sp_str('loc') || locale
     await setRequestContext(previewLocale as any)
@@ -290,7 +305,7 @@ async function CmsPage({ params, searchParams }: Props) {
       // For preview, getPreviewContent already returns all fields.
       // For public, make a targeted query to ensure all fields are present
       // (including the new SEO fields added to BLOG_PAGE_QUERY).
-      let blogContent = dm.isEnabled
+      let blogContent = inPreview
         ? exp
         : (contentKey ? await getBlogPage(contentKey, locale) : null)
 
@@ -299,7 +314,7 @@ async function CmsPage({ params, searchParams }: Props) {
       // authorRef.name/role/photo and finds nothing. Resolve it here so the
       // byline renders in the editor/external preview, matching the public path
       // (getBlogPage already resolves it for published pages).
-      if (dm.isEnabled && blogContent) {
+      if (inPreview && blogContent) {
         const authorKey = (blogContent.authorRef as any)?.key as string | undefined
         const resolvedAuthor = authorKey ? await fetchAuthorByKey(authorKey) : null
         blogContent = { ...blogContent, authorRef: resolvedAuthor } as typeof blogContent
@@ -311,9 +326,9 @@ async function CmsPage({ params, searchParams }: Props) {
         // ── Draft mode context ──────────────────────────────────────────────────
         // ext_preview=1 means this was reached via an External Preview Link
         // (the reviewer followed the shareable URL, not the CMS editor's own
-        // preview frame). Without this flag, dm.isEnabled means CMS edit mode.
-        const isExternalPreview = dm.isEnabled && sp_str('ext_preview') === '1'
-        const isCmsEdit         = dm.isEnabled && !!sp_str('preview_token') && !isExternalPreview
+        // preview frame). Without this flag, inPreview means CMS edit mode.
+        const isExternalPreview = inPreview && sp_str('ext_preview') === '1'
+        const isCmsEdit         = inPreview && !!sp_str('preview_token') && !isExternalPreview
 
         // ── Author name for the draft banner ────────────────────────────────────
         // In preview mode blogContent comes from getPreviewContent which returns
@@ -363,10 +378,10 @@ async function CmsPage({ params, searchParams }: Props) {
         return (
           <>
             <JsonLd data={blogJsonLd} />
-            {dm.isEnabled && cmsUrl && (
+            {inPreview && cmsUrl && (
               <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
             )}
-            {dm.isEnabled && <NextPreviewComponent />}
+            {inPreview && <NextPreviewComponent />}
 
             {/* External reviewer's draft-state banner */}
             {isExternalPreview && (
@@ -405,7 +420,7 @@ async function CmsPage({ params, searchParams }: Props) {
       // is non-null — a brand-new unsaved page has no published record yet and
       // getCampaignPage returns null. In that case we keep the (empty) preview
       // content so the editor sees the page shell rather than a 404.
-      let campaignContent = dm.isEnabled ? mapCampaignPageRaw(exp) : null
+      let campaignContent = inPreview ? mapCampaignPageRaw(exp) : null
       const previewHasContent = !!(
         campaignContent?.heroSection ||
         (campaignContent?.bodySection?.length ?? 0) > 0 ||
@@ -419,8 +434,8 @@ async function CmsPage({ params, searchParams }: Props) {
 
       // Require an actual preview_token so a stale draft-mode cookie on the
       // public site never triggers editor-only UI (ExternalPreviewLinkPanel).
-      const isExternalPreview = dm.isEnabled && sp_str('ext_preview') === '1'
-      const isCmsEdit         = dm.isEnabled && !!sp_str('preview_token') && !isExternalPreview
+      const isExternalPreview = inPreview && sp_str('ext_preview') === '1'
+      const isCmsEdit         = inPreview && !!sp_str('preview_token') && !isExternalPreview
 
       let externalPreviewUrl: string | null = null
       if (isCmsEdit && campaignContent.enableExternalPreview === true) {
@@ -450,10 +465,10 @@ async function CmsPage({ params, searchParams }: Props) {
       return (
         <>
           <JsonLd data={campaignJsonLd} />
-          {dm.isEnabled && cmsUrl && (
+          {inPreview && cmsUrl && (
             <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
           )}
-          {dm.isEnabled && <NextPreviewComponent />}
+          {inPreview && <NextPreviewComponent />}
 
           {isExternalPreview && (
             <DraftStateBanner
@@ -480,7 +495,7 @@ async function CmsPage({ params, searchParams }: Props) {
     if (exp?.__typename === 'OT_EventPage') {
       const contentKey = exp._metadata?.key as string | undefined
       // Preview: getPreviewContent returns all fields. Public: targeted query.
-      const eventContent = dm.isEnabled
+      const eventContent = inPreview
         ? exp
         : (contentKey ? await getEventPage(contentKey, locale) : null)
 
@@ -494,10 +509,10 @@ async function CmsPage({ params, searchParams }: Props) {
         return (
           <>
             <JsonLd data={eventJsonLd} />
-            {dm.isEnabled && cmsUrl && (
+            {inPreview && cmsUrl && (
               <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
             )}
-            {dm.isEnabled && <NextPreviewComponent />}
+            {inPreview && <NextPreviewComponent />}
             <EventPage content={eventContent as any} />
           </>
         )
@@ -507,17 +522,17 @@ async function CmsPage({ params, searchParams }: Props) {
     // Topic Hub page — configurable AI-powered content discovery page
     if (exp?.__typename === 'OT_TopicHubPage') {
       const contentKey = exp._metadata?.key as string | undefined
-      const hubContent = dm.isEnabled
+      const hubContent = inPreview
         ? exp
         : (contentKey ? await getTopicHubPage(contentKey, locale) : null)
 
       if (hubContent) {
         return (
           <>
-            {dm.isEnabled && cmsUrl && (
+            {inPreview && cmsUrl && (
               <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
             )}
-            {dm.isEnabled && <NextPreviewComponent />}
+            {inPreview && <NextPreviewComponent />}
             <TopicHubPage config={hubContent as any} />
           </>
         )
@@ -526,7 +541,7 @@ async function CmsPage({ params, searchParams }: Props) {
 
     // Standalone block content (not an experience) — send to the isolated preview route
     // so it renders without site chrome and with proper communicationinjector.js setup.
-    if (dm.isEnabled && exp?.__typename) {
+    if (inPreview && exp?.__typename) {
       const qs = new URLSearchParams({
         preview_token: sp_str('preview_token'),
         key:           sp_str('key'),
@@ -566,10 +581,10 @@ async function CmsPage({ params, searchParams }: Props) {
     return (
       <>
         <JsonLd data={practitionerJsonLd} />
-        {dm.isEnabled && cmsUrl && (
+        {inPreview && cmsUrl && (
           <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
         )}
-        {dm.isEnabled && <NextPreviewComponent />}
+        {inPreview && <NextPreviewComponent />}
         {practitioner && (
           <PractitionerHeader
             practitioner={practitioner}
@@ -596,10 +611,10 @@ async function CmsPage({ params, searchParams }: Props) {
   return (
     <>
       <JsonLd data={expJsonLd} />
-      {dm.isEnabled && cmsUrl && (
+      {inPreview && cmsUrl && (
         <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
       )}
-      {dm.isEnabled && <NextPreviewComponent />}
+      {inPreview && <NextPreviewComponent />}
       <CompositionRenderer nodes={exp.composition.nodes} />
     </>
   )

@@ -111,10 +111,13 @@ const headlineCva = cva("text-balance", {
       label:    "text-label tracking-label uppercase font-semibold",
     },
     color: {
-      none:    "text-fg",
+      // Headings take the brand colour, not the near-black foreground. LF sets
+      // every section heading in the navy; text-fg here read as plain black and
+      // was the main thing making the page look generic.
+      none:    "text-brand",
       brand:   "text-fg-on-brand",
-      canvas:  "text-fg",
-      surface: "text-fg",
+      canvas:  "text-brand",
+      surface: "text-brand",
     },
   },
   defaultVariants: { size: "headline", color: "canvas" },
@@ -165,6 +168,7 @@ export default function PrimaryTextBlock({
 
   return (
     <section className={sectionCva({ color, size })}>
+      <div className="ot-container">
       <div className={innerCva({ alignment })}>
         <div className={`flex flex-col gap-sm${alignment === 'center' ? ' items-center' : ''}`}>
           {eyebrow && (
@@ -192,6 +196,7 @@ export default function PrimaryTextBlock({
             </div>
           )}
         </div>
+      </div>
       </div>
     </section>
   );

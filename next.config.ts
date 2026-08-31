@@ -41,6 +41,13 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.optimizely.com",
       },
+      {
+        // DAM (CMP) image CDN — images3.cmp.optimizely.com and siblings. Needs
+        // its own entry: Next's `*` matches a SINGLE label, so
+        // `*.optimizely.com` above does not cover a two-label subdomain.
+        protocol: "https",
+        hostname: "*.cmp.optimizely.com",
+      },
       // Explicitly allow the exact CMS app hostname when available
       ...(cms ? [{ protocol: "https" as const, hostname: cms }] : []),
     ],

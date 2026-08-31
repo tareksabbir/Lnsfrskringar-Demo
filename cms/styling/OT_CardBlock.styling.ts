@@ -2,6 +2,8 @@ import type { CardStyleOptions } from '@/components/blocks/CardBlock'
 
 export function getCardStyles(s: Record<string, string | boolean>): CardStyleOptions {
   return {
+    tile:       (s.tile       ?? 'none')    as CardStyleOptions['tile'],
+    icon:       (s.icon       ?? 'none')    as string,
     fill:       (s.fill       ?? 'ghost')   as CardStyleOptions['fill'],
     border:     (s.border     ?? 'none')    as CardStyleOptions['border'],
     imageStyle: (s.imageStyle ?? 'top')     as CardStyleOptions['imageStyle'],

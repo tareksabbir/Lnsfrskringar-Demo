@@ -8,6 +8,19 @@ import { OT_VideoBlock }       from './OT_VideoBlock'
 import { OT_ImageBlock }       from './OT_ImageBlock'
 import { OT_BannerBlock }      from './OT_BannerBlock'
 
+/* Image references stay narrowed to ['_image'] on purpose.
+ *
+ * Untyped (allowedTypes: []) looks tempting because it is the only shape the CMS
+ * API accepts a DAM asset in — but it breaks the front end. The SDK's
+ * resolveAllowedTypes does:
+ *     const baseline = allowed?.length ? allowed : cached
+ * so an empty list falls back to EVERY registered content type, and the
+ * generated Graph query spreads a fragment for all ~70 of them. That returns
+ * "HTTP 400: 9 errors in the GraphQL query" and the page fails to render.
+ *
+ * DAM assets reach the site through OT_ResourceLibraryBlock instead, which
+ * queries cmp_Asset directly via Graph (see lib/resourceLibrary.ts). */
+
 export const OT_CampaignPage = contentType({
   key:             'OT_CampaignPage',
   displayName:     'Campaign Page',

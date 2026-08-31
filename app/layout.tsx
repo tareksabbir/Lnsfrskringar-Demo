@@ -138,11 +138,13 @@ export default async function RootLayout({
   const themeCSS    = buildThemeCSS(settings)
   const defaultMode = (settings?.defaultMode as string | undefined) === 'light' ? 'light' : 'dark'
 
-  // Cookie-based theme: ThemeProvider writes 'site-theme' on every toggle so
-  // the server renders the correct theme without any client-side init script.
-  // Falls back to the CMS default on first visit (no cookie yet).
+  // Cookie-based theme: ThemeProvider writes 'site-theme-user' ONLY when a
+  // visitor explicitly toggles, so the server renders the right theme with no
+  // client-side init script and no FOUC. With no explicit choice recorded, the
+  // CMS "Default Theme Mode" governs — which is what makes re-skinning a demo
+  // to a light or dark vertical actually take effect.
   const cookieStore = await cookies()
-  const themeCookie = cookieStore.get('site-theme')?.value
+  const themeCookie = cookieStore.get('site-theme-user')?.value
   const resolvedTheme = (themeCookie === 'light' || themeCookie === 'dark') ? themeCookie : defaultMode
 
   // Optimizely Web Experimentation — only inject when the project ID is a

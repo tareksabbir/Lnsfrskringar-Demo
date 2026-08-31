@@ -1,4 +1,4 @@
-export type FooterStyle      = 'spotlight' | 'centered' | 'minimal'
+export type FooterStyle      = 'spotlight' | 'centered' | 'minimal' | 'columns'
 export type FooterBackground = 'dark' | 'light' | 'brand'
 
 export type FooterStyleOptions = {
@@ -6,7 +6,7 @@ export type FooterStyleOptions = {
   background: FooterBackground
 }
 
-const KNOWN_STYLES = new Set<FooterStyle>(['spotlight', 'centered', 'minimal'])
+const KNOWN_STYLES = new Set<FooterStyle>(['spotlight', 'centered', 'minimal', 'columns'])
 const KNOWN_BG     = new Set<FooterBackground>(['dark', 'light', 'brand'])
 
 /**

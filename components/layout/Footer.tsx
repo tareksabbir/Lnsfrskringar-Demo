@@ -13,6 +13,7 @@ import {
 // Normalized, layout-agnostic footer data. Resolved once, then handed to the
 // chosen layout sub-component below.
 type FooterLink = { label: string; href: string }
+type FooterColumn = { heading: string; links: FooterLink[] }
 type FooterView = {
   siteName: string
   logoSrc?: string
@@ -21,6 +22,8 @@ type FooterView = {
   logoSizeClass: string
   descriptionHtml: string | null
   links: FooterLink[]
+  columns: FooterColumn[]
+  bottomLinks: FooterLink[]
   year: number
   background: FooterBackground
   surfaceAttrs: ReturnType<typeof footerSurfaceAttrs>
@@ -299,6 +302,84 @@ function MinimalFooter({ view }: { view: FooterView }) {
   )
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+ * Columns — dense multi-column footer (e.g. Länsförsäkringar-style): logo +
+ * description row, up to 6 heading+links column groups, then a bottom bar with
+ * copyright and compact utility/legal links. Background tints the whole footer.
+ * ════════════════════════════════════════════════════════════════════════════ */
+function ColumnsFooter({ view }: { view: FooterView }) {
+  const { surfaceAttrs, background, columns, bottomLinks, descriptionHtml, year, siteName } = view
+
+  return (
+    <footer {...surfaceAttrs} className="relative overflow-hidden isolate bg-canvas">
+
+      {/* No top hairline: the reference footer starts flush against the section
+          above it. topBarBg() is still used by the other footer styles. */}
+
+      <div className="relative z-10 ot-container px-md py-lg lg:px-lg lg:py-xl">
+
+        <div className="flex flex-col gap-y-md pb-lg mb-lg border-b border-fg/10">
+          <FooterLogo view={view} />
+          {descriptionHtml && (
+            <div
+              className={cn(PROSE, 'max-w-(--ot-measure-tight) text-body leading-body text-fg-muted [&_p+p]:mt-[0.5em]')}
+              dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(descriptionHtml) }}
+            />
+          )}
+        </div>
+
+        {columns.length > 0 && (
+          <nav aria-label="Footer navigation" className="grid grid-cols-2 gap-x-md gap-y-lg sm:grid-cols-3 lg:grid-cols-4">
+            {columns.map(col => (
+              <div key={col.heading}>
+                <h3 className="text-label tracking-label uppercase font-semibold text-fg mb-sm">
+                  {col.heading}
+                </h3>
+                <ul className="flex flex-col gap-y-2">
+                  {col.links.map(link => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="text-[0.875rem] text-fg-muted underline-offset-2 hover:text-fg hover:underline transition-colors duration-200 ease-quick"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        )}
+
+      </div>
+
+      <div className="relative z-10 bg-brand-hover border-t border-fg-on-brand/10">
+        <div className="ot-container px-md py-sm lg:px-lg flex flex-col gap-y-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-label tracking-label uppercase text-fg-on-brand/85">
+            © {year} {siteName}
+          </p>
+          {bottomLinks.length > 0 && (
+            <ul className="flex flex-wrap items-center gap-x-md gap-y-1">
+              {bottomLinks.map(link => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="text-[0.8125rem] text-fg-on-brand/80 underline-offset-2 hover:text-fg-on-brand hover:underline transition-colors duration-200 ease-quick"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+    </footer>
+  )
+}
+
 export default async function Footer() {
   const settings = await getSiteSettings(await getRequestDomain(), await getRequestLocale())
 
@@ -338,6 +419,26 @@ export default async function Footer() {
         .slice(0, 5)
     : []
 
+  const toFooterLinks = (raw: unknown, max: number): FooterLink[] =>
+    Array.isArray(raw)
+      ? (raw as any[])
+          .map(l => ({ label: (l.label as string) ?? '', href: (l.url?.default as string) ?? '#' }))
+          .filter(l => l.label)
+          .slice(0, max)
+      : []
+
+  const columns: FooterColumn[] = Array.isArray(footerRef?.columns)
+    ? (footerRef.columns as any[])
+        .map(c => ({
+          heading: (c.heading as string) ?? '',
+          links:   toFooterLinks(c.links, 8),
+        }))
+        .filter(c => c.heading)
+        .slice(0, 8)
+    : []
+
+  const bottomLinks: FooterLink[] = toFooterLinks(footerRef?.bottomLinks, 6)
+
   const view: FooterView = {
     siteName,
     logoSrc: footerLogoSrc,
@@ -346,6 +447,8 @@ export default async function Footer() {
     logoSizeClass,
     descriptionHtml,
     links,
+    columns,
+    bottomLinks,
     year: new Date().getFullYear(),
     background,
     surfaceAttrs,
@@ -354,6 +457,7 @@ export default async function Footer() {
   switch (style) {
     case 'centered': return <CenteredFooter view={view} />
     case 'minimal':  return <MinimalFooter view={view} />
+    case 'columns':  return <ColumnsFooter view={view} />
     default:         return <SpotlightFooter view={view} />
   }
 }

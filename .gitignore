@@ -42,3 +42,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .playwright-mcp/
+
+# Python bytecode from the CMS build scripts in scripts/
+__pycache__/
+*.pyc
+
+# claude-flow local session state (absolute paths, machine-specific)
+.claude-flow/

@@ -247,6 +247,7 @@ export default function FeatureGridBlock({
       className={sectionCva({ color })}
       aria-label={heading ?? 'Features'}
     >
+      <div className="ot-container">
       {/* ── Section header ──────────────────────────────────────────────── */}
       {hasHeader && (
         <div className="mb-xl">
@@ -362,6 +363,7 @@ export default function FeatureGridBlock({
           </a>
         </div>
       )}
+      </div>
     </section>
   )
 }

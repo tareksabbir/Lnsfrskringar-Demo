@@ -1,6 +1,9 @@
 import type { ImageStyleOptions } from '@/components/blocks/ImageBlock'
 
 const RATIO_MAP: Record<string, ImageStyleOptions['ratio']> = {
+  // 'natural' renders at the image's own aspect with no crop — for wide
+  // decorative graphics. Everything else forces an aspect box + object-cover.
+  natural: 'natural',
   r16_9: '16:9',
   r4_3:  '4:3',
   r3_2:  '3:2',

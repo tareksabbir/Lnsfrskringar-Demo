@@ -10,7 +10,7 @@ import { Maximize2, X } from "lucide-react";
 
 export type ImageStyleOptions = {
   /** Lock to a specific aspect ratio — only used for standalone sections where height should be constrained */
-  ratio?: "16:9" | "4:3" | "3:2" | "1:1";
+  ratio?: "16:9" | "4:3" | "3:2" | "1:1" | "natural";
   /** Teal brand wash via mix-blend-mode: multiply — works best on light-toned imagery */
   overlay?: boolean;
   /**
@@ -65,6 +65,11 @@ const RATIO_CLASS: Record<NonNullable<ImageStyleOptions["ratio"]>, string> = {
   "4:3":  "aspect-4/3",
   "3:2":  "aspect-3/2",
   "1:1":  "aspect-square",
+  // "natural" means "no aspect box at all" — the image keeps its own
+  // proportions. It is handled by a dedicated branch further down and never
+  // looked up here; the empty string keeps the map exhaustive so a future
+  // ratio addition still fails the type check.
+  natural: "",
 };
 
 
@@ -131,7 +136,8 @@ export default function ImageBlock({
     };
   }, [lightboxOpen]);
 
-  const aspectClass = ratio ? RATIO_CLASS[ratio] : "aspect-video";
+  const isNatural   = ratio === "natural";
+  const aspectClass = ratio && ratio !== "natural" ? RATIO_CLASS[ratio] : "aspect-video";
 
   /* clip-path wipe: image reveals left-to-right as the right inset shrinks */
   const imageRevealStyle: React.CSSProperties = animate
@@ -192,6 +198,26 @@ export default function ImageBlock({
   // ── Core image markup (shared between normal and lightbox-trigger modes) ────
 
   const imageContainerEl = (
+    // ratio="natural": no forced aspect, no min-height, no crop. Needed for wide
+    // decorative graphics (the Stockholm skyline strip is ~7:1) — every other
+    // branch here forces an aspect box with object-cover and clips them.
+    isNatural ? (
+    <div className="relative w-full" {...(previewAttrs?.image ?? {})}>
+      <Image
+        src={src}
+        alt={alt}
+        width={1370}
+        height={190}
+        sizes="100vw"
+        className="h-auto w-full object-contain"
+      />
+      {caption && captionPosition === "below" && (
+        <figcaption className="mt-xs">
+          <p className="text-label text-fg-muted leading-snug" {...(previewAttrs?.caption ?? {})}>{caption}</p>
+        </figcaption>
+      )}
+    </div>
+    ) : (
     <div
       ref={containerRef}
       className={fillHeight
@@ -239,11 +265,12 @@ export default function ImageBlock({
         </div>
       )}
     </div>
+    )
   );
 
   return (
     <>
-      <figure className={`relative${frame === "glow" ? " mx-4" : " w-full"}${fillHeight ? " flex-1 min-h-100 flex flex-col" : ""}${shadow ? " isolate pb-7" : ""}`}>
+      <figure className={`relative${frame === "glow" ? " mx-4" : " w-full"}${fillHeight && !isNatural ? " flex-1 min-h-100 flex flex-col" : ""}${shadow ? " isolate pb-7" : ""}`}>
 
         {shadow && <div aria-hidden="true" style={shadowStyle} />}
 

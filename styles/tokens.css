@@ -18,14 +18,27 @@
 
 /* ── Dark (default) ────────────────────────────────────────────────────────── */
 :root {
-  /* Brand — constant across modes. Replace both to rebrand. */
-  --ot-brand:       oklch(55% 0.18  195); /* primary fill: hero panels, CTAs          */
-  --ot-brand-hover: oklch(38% 0.16  195); /* brand depth: hover on brand surfaces      */
+  /* Brand — constant across modes. Replace both to rebrand.
+   * LF (Länsförsäkringar) re-skin: exact primary CTA color from
+   * lansforsakringar.se, confirmed via DevTools — hex #00427a,
+   * converted to oklch(37.6% 0.112 252). */
+  --ot-brand:       oklch(38% 0.11  252); /* LF navy #00427a — primary fill: hero panels, CTAs */
+  --ot-brand-hover: oklch(27% 0.09  252); /* deeper navy — hover / depth states                */
 
-  /* Accent — signal green (#68E371). Constant across modes. */
-  --ot-accent:          oklch(82% 0.19 145);  /* signal green — badges, highlights, alt CTAs    */
-  --ot-accent-hover:    oklch(68% 0.17 145);  /* deeper green for hover states                  */
-  --ot-fg-on-accent:    oklch(12% 0.012 195); /* dark text/icons on accent surfaces              */
+  /* Brand tint — a pale wash of the anchor colour, for calm full-width grounds
+   * that still read as branded (LF's hero band is exactly this: #dceefb, the
+   * navy at very high lightness and low chroma). Derived from --ot-brand via
+   * Relative Color Syntax, so every vertical gets its own correct tint for free
+   * and a ThemeManager brand override propagates automatically. */
+  --ot-brand-tint:  oklch(from var(--ot-brand) 94% 0.026 h);
+
+  /* Accent — LF red #E30613, the second colour in the Länsförsäkringar mark.
+   * Deliberately sparing: LF's own site keeps it to the logo square and a few
+   * alert/highlight moments, so this is a punctuation colour, never a fill.
+   * (Replaced the stock signal green, which appears nowhere in LF's palette.) */
+  --ot-accent:          oklch(58% 0.234 28);  /* LF red — badges, highlights, alerts            */
+  --ot-accent-hover:    oklch(48% 0.20  28);  /* deeper red for hover states                    */
+  --ot-fg-on-accent:    oklch(99% 0     90);  /* white text/icons on the red                    */
 
   /* Grounds — flip between modes */
   --ot-canvas:  oklch(12% 0.012 195); /* dark mode page background                 */
@@ -103,9 +116,12 @@
   /* Corner Style axis — themeable via ThemeManager "Corner Style".
    * Default Sharp (0px) → pixel-identical to today. buildThemeCSS() raises these
    * to the Soft / Rounded value sets in lib/theme-axes.ts. surface = cards /
-   * panels / glass; control = buttons. Inputs keep --ot-radius-input untouched. */
-  --ot-radius-surface: 0px;
-  --ot-radius-control: 0px;
+   * panels / glass; control = buttons. Inputs keep --ot-radius-input untouched.
+   *
+   * LF re-skin: base default raised to the "Soft" value set — LF's own site
+   * uses gently rounded cards and buttons, not sharp corners. */
+  --ot-radius-surface: 12px;
+  --ot-radius-control: 8px;
 
   /* ── Elevation ───────────────────────────────────────────────────────────── */
   --ot-shadow-hover-lift: 0 8px 32px var(--ot-bloom-brand-faint);
@@ -284,11 +300,34 @@
  * side by side. Source order beats :root at equal 0-1-0 specificity.
  * ─────────────────────────────────────────────────────────────────────────── */
 [data-theme="light"] {
-  --ot-canvas:   oklch(97% 0.005 195); /* light mode page background — near-white, teal-tinted */
-  --ot-surface:  oklch(93% 0.008 195); /* light mode component panels — slightly off-canvas     */
-  --ot-fg:       oklch(12% 0.012 195); /* light mode primary text — dark on light bg            */
-  --ot-fg-muted: oklch(38% 0.05  195); /* light mode secondary text — dark muted teal           */
-  /* fg-on-brand stays light — brand teal needs light foreground in both modes */
+  /* LF light palette, sampled from lansforsakringar.se. The stock values were
+   * teal-tinted; LF's grounds are pure neutral white/grey with the colour
+   * carried entirely by the navy, so the tint is removed here (chroma 0). */
+  --ot-canvas:   oklch(100% 0 90);     /* page background — pure white                          */
+  --ot-surface:  oklch(96.7% 0 90);    /* alternating section bands, cards — #f4f4f4            */
+  --ot-fg:       oklch(22% 0 90);      /* primary text — near-black #1a1a1a                     */
+  --ot-fg-muted: oklch(47% 0 90);      /* secondary text — neutral grey #5a5a5a                 */
+  /* fg-on-brand stays light — the navy needs a light foreground in both modes */
+
+  /* ── Flat light surface ───────────────────────────────────────────────────
+   * LF's site is flat: white cards, one hairline border, no elevation and no
+   * coloured glow anywhere. The stock bloom tokens paint a navy halo behind
+   * cards and images, which reads as a smudge on white and is the single
+   * biggest giveaway that this is not the real site.
+   *
+   * Rather than strip the bloom system out (dark mode and other verticals
+   * still want it), the alphas are collapsed here so every consumer of these
+   * tokens flattens automatically in light mode. -border keeps a small alpha
+   * because it is the hairline that separates card from canvas.
+   * ─────────────────────────────────────────────────────────────────────── */
+  --ot-bloom-brand:        transparent;
+  --ot-bloom-brand-ring:   transparent;
+  --ot-bloom-brand-faint:  transparent;
+  --ot-bloom-brand-border: oklch(from var(--ot-fg) l c h / 0.14);
+  --ot-bloom-accent:        transparent;
+  --ot-bloom-accent-ring:   transparent;
+  --ot-bloom-accent-faint:  transparent;
+  --ot-bloom-accent-border: oklch(from var(--ot-fg) l c h / 0.14);
 
   /* Intent FG — darkened for contrast on near-white canvas */
   --ot-intent-neutral-fg: oklch(from var(--ot-intent-neutral) calc(l - 0.20) c h);

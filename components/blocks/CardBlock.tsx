@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
+import { ICON_REGISTRY } from "@/components/icons/iconRegistry";
 import { RichText } from '@optimizely/cms-sdk/react/richText'
 
 // ─── Style option types ───────────────────────────────────────────────────────
@@ -16,7 +17,19 @@ export type CardAspectRatio      = "auto" | "square" | "portrait" | "landscape" 
 export type CardImageAspectRatio = "auto" | "square" | "portrait" | "landscape" | "wide";
 export type CardMinHeight        = "none" | "xs" | "sm" | "md" | "lg";
 
+/**
+ * Tile variants, added to reproduce LF's two flat tile shapes without touching
+ * the content model (a display-template setting lives in the composition, so it
+ * needs no content-type push and no Graph re-index):
+ *   stacked — icon centred above a centred label. LF's 8 product tiles.
+ *   inline  — icon left, label, arrow far right. Popularly / Quick links / Contact.
+ * "none" keeps the normal card (image, body copy, CTA button).
+ */
+export type CardTile = "none" | "stacked" | "inline";
+
 export type CardStyleOptions = {
+  tile?:             CardTile;
+  icon?:             string;
   fill?:             CardFill;
   border?:           CardBorder;
   imageStyle?:       CardImageStyle;
@@ -70,7 +83,9 @@ const T = {
   heading: {
     dark:  "text-title font-semibold leading-title tracking-title text-fg",
     brand: "text-title font-semibold leading-title tracking-title text-fg-on-brand",
-    light: "text-title font-semibold leading-title tracking-title text-[oklch(from_var(--ot-brand)_0.12_0.012_h)]",
+    // Was a near-black derived from the brand hue; LF sets card titles in the
+    // brand navy itself.
+    light: "text-title font-semibold leading-title tracking-title text-brand",
   },
   description: {
     dark:  "text-body leading-body text-fg-muted",
@@ -168,6 +183,14 @@ const NOISE_BG =
 
 const IMG_SIZES = "(min-width: 1024px) 400px, (min-width: 768px) 50vw, 100vw";
 
+/** The thin navy arrow LF puts at the right edge of every link tile. */
+function ArrowRightIcon() {
+  const Arrow = ICON_REGISTRY["arrowRight"];
+  return Arrow
+    ? <Arrow className="h-5 w-5 shrink-0 text-brand transition-transform duration-150 ease-quick group-hover:translate-x-0.5" strokeWidth={1.5} aria-hidden />
+    : null;
+}
+
 export default function CardBlock({
   heading,
   headingLevel   = "h3",
@@ -182,6 +205,8 @@ export default function CardBlock({
   const {
     fill             = "surface",
     border           = "none",
+    tile             = "none",
+    icon             = "none",
     imageStyle       = "top",
     imageSide        = "left",
     hover            = "none",
@@ -241,6 +266,49 @@ export default function CardBlock({
     "object-cover",
     isHover && !isBg && "motion-safe:transition-transform motion-safe:duration-500 motion-safe:ease-[var(--ease-kinetic)] motion-safe:group-hover:scale-105"
   );
+
+  const tileRoot = cn(
+    "relative w-full rounded-ot-surface no-underline",
+    FILL_CLASS[fill],
+    resolveBorder(fill, border),
+    className,
+  );
+
+  // ── Tile variants ─────────────────────────────────────────────────────────
+  // Short-circuit the full card. A tile is a bordered box with an icon and a
+  // label — no image, no body copy, no CTA button. The whole box is the link.
+  if (tile !== "none") {
+    const Icon = icon && icon !== "none" ? ICON_REGISTRY[icon] : undefined;
+    const href = cta?.href ?? "#";
+
+    if (tile === "stacked") {
+      return (
+        <a
+          href={href}
+          className={cn(tileRoot, "group flex flex-col items-center justify-center gap-sm px-md py-lg text-center min-h-[7.5rem]")}
+        >
+          {Icon && <Icon className="h-8 w-8 shrink-0 text-brand" strokeWidth={1.5} aria-hidden />}
+          <span className="text-[0.9375rem] font-semibold leading-snug text-brand" {...pa('Heading')}>
+            {heading}
+          </span>
+        </a>
+      );
+    }
+
+    // inline
+    return (
+      <a
+        href={href}
+        className={cn(tileRoot, "group flex flex-row items-center gap-sm px-md py-md")}
+      >
+        {Icon && <Icon className="h-5 w-5 shrink-0 text-brand" strokeWidth={1.5} aria-hidden />}
+        <span className="flex-1 text-[0.9375rem] font-semibold leading-snug text-brand" {...pa('Heading')}>
+          {heading}
+        </span>
+        <ArrowRightIcon />
+      </a>
+    );
+  }
 
   return (
     // data-theme="dark" on background-image cards: the dark scrim is always dark,

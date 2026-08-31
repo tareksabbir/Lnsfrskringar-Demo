@@ -2,6 +2,19 @@ import { contentType } from '@optimizely/cms-sdk'
 import { OT_NavigationItem } from './OT_NavigationItem'
 import { OT_FooterBlock } from './OT_FooterBlock'
 
+/* Image references stay narrowed to ['_image'] on purpose.
+ *
+ * Untyped (allowedTypes: []) looks tempting because it is the only shape the CMS
+ * API accepts a DAM asset in — but it breaks the front end. The SDK's
+ * resolveAllowedTypes does:
+ *     const baseline = allowed?.length ? allowed : cached
+ * so an empty list falls back to EVERY registered content type, and the
+ * generated Graph query spreads a fragment for all ~70 of them. That returns
+ * "HTTP 400: 9 errors in the GraphQL query" and the page fails to render.
+ *
+ * DAM assets reach the site through OT_ResourceLibraryBlock instead, which
+ * queries cmp_Asset directly via Graph (see lib/resourceLibrary.ts). */
+
 export const OT_ThemeManager = contentType({
   key: 'OT_ThemeManager',
   displayName: 'Theme Manager',
@@ -72,6 +85,20 @@ export const OT_ThemeManager = contentType({
       description: 'Top-level nav links. Each item uses a native Link picker (supports internal pages, external URLs, and DAM files). Add Sub-Navigation Items inside each entry to create a dropdown.',
       group: 'OT_Content',
       sortOrder: 40,
+      items: { type: 'component', contentType: OT_NavigationItem },
+    },
+
+    // Utility Bar — a slim persona/segment switcher rendered above the main
+    // header (e.g. "Private" / "Business & Agriculture" tabs). Optional: the
+    // bar only renders when at least one item is set. Reuses OT_NavigationItem
+    // so each tab can itself carry a dropdown of sub-links.
+    utilityNav: {
+      type: 'array',
+      displayName: 'Utility Bar Navigation',
+      description: 'Slim persona/segment tabs shown above the main header (e.g. "Private" / "Business & Agriculture"). Leave empty to hide the utility bar entirely.',
+      group: 'OT_Content',
+      sortOrder: 41,
+      maxItems: 4,
       items: { type: 'component', contentType: OT_NavigationItem },
     },
 

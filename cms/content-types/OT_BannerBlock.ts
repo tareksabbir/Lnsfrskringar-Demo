@@ -1,5 +1,18 @@
 import { contentType } from '@optimizely/cms-sdk'
 
+/* Image references stay narrowed to ['_image'] on purpose.
+ *
+ * Untyped (allowedTypes: []) looks tempting because it is the only shape the CMS
+ * API accepts a DAM asset in — but it breaks the front end. The SDK's
+ * resolveAllowedTypes does:
+ *     const baseline = allowed?.length ? allowed : cached
+ * so an empty list falls back to EVERY registered content type, and the
+ * generated Graph query spreads a fragment for all ~70 of them. That returns
+ * "HTTP 400: 9 errors in the GraphQL query" and the page fails to render.
+ *
+ * DAM assets reach the site through OT_ResourceLibraryBlock instead, which
+ * queries cmp_Asset directly via Graph (see lib/resourceLibrary.ts). */
+
 export const OT_BannerBlock = contentType({
   key:         'OT_BannerBlock',
   displayName: 'Banner Block',
@@ -26,7 +39,7 @@ export const OT_BannerBlock = contentType({
     ] },
     eyebrow:           { type: 'string',           displayName: 'Eyebrow Label',       group: 'OT_Content', sortOrder: 20, isLocalized: true, maxLength: 60,  indexingType: 'searchable' },
     body:              { type: 'richText',          displayName: 'Body Text',           group: 'OT_Content', sortOrder: 30, isLocalized: true,                 indexingType: 'searchable' },
-    backgroundImage:   { type: 'contentReference', displayName: 'Background Image',    group: 'OT_Content', sortOrder: 40, allowedTypes: ['_image']           },
+    backgroundImage:   { type: 'contentReference', displayName: 'Background Image',    group: 'OT_Content', sortOrder: 40, allowedTypes: ['_image'] },
     primaryCtaLabel:   { type: 'string',           displayName: 'Primary CTA Label',   group: 'OT_Content', sortOrder: 50, isLocalized: true, maxLength: 60  },
     primaryCtaUrl:     { type: 'url',              displayName: 'Primary CTA URL',     group: 'OT_Content', sortOrder: 60                                    },
     secondaryCtaLabel: { type: 'string',           displayName: 'Secondary CTA Label', group: 'OT_Content', sortOrder: 70, isLocalized: true, maxLength: 60  },

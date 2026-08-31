@@ -1,4 +1,5 @@
 import { displayTemplate } from '@optimizely/cms-sdk'
+import { ICON_CHOICES_WITH_NONE } from './_shared/iconChoices'
 
 export const OT_CardDefault = displayTemplate({
   key: 'OT_CardDefault',
@@ -6,6 +7,20 @@ export const OT_CardDefault = displayTemplate({
   contentType: 'OT_CardBlock',
   isDefault: true,
   settings: {
+    // Tile variants reproduce LF's flat link tiles. A display-template setting
+    // lives in the composition, so adding these needs no content-type push and
+    // no Graph re-index — unlike adding a property to OT_CardBlock.
+    tile: {
+      displayName: 'Tile variant',
+      editor: 'select',
+      sortOrder: 5,
+      choices: {
+        none:    { displayName: 'None — full card (Default)',        sortOrder: 10 },
+        stacked: { displayName: 'Tile — icon above centred label',   sortOrder: 20 },
+        inline:  { displayName: 'Tile — icon, label, arrow right',   sortOrder: 30 },
+      },
+    },
+    icon: { displayName: 'Tile icon', editor: 'select', sortOrder: 6, choices: ICON_CHOICES_WITH_NONE },
     fill: {
       displayName: 'Card fill',
       editor: 'select',

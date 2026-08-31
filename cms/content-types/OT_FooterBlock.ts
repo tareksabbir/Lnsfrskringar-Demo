@@ -1,5 +1,19 @@
 import { contentType } from '@optimizely/cms-sdk'
 import { OT_FooterLink } from './OT_FooterLink'
+import { OT_FooterColumn } from './OT_FooterColumn'
+
+/* Image references stay narrowed to ['_image'] on purpose.
+ *
+ * Untyped (allowedTypes: []) looks tempting because it is the only shape the CMS
+ * API accepts a DAM asset in — but it breaks the front end. The SDK's
+ * resolveAllowedTypes does:
+ *     const baseline = allowed?.length ? allowed : cached
+ * so an empty list falls back to EVERY registered content type, and the
+ * generated Graph query spreads a fragment for all ~70 of them. That returns
+ * "HTTP 400: 9 errors in the GraphQL query" and the page fails to render.
+ *
+ * DAM assets reach the site through OT_ResourceLibraryBlock instead, which
+ * queries cmp_Asset directly via Graph (see lib/resourceLibrary.ts). */
 
 /**
  * OT_FooterBlock — site footer content block.
@@ -37,6 +51,7 @@ export const OT_FooterBlock = contentType({
         { value: 'spotlight', displayName: 'Spotlight — bold, branded (default)' },
         { value: 'centered',  displayName: 'Centered — calm, symmetrical' },
         { value: 'minimal',   displayName: 'Minimal — compact single row' },
+        { value: 'columns',   displayName: 'Columns — multi-column link groups' },
       ],
     },
     // ── Logo override ─────────────────────────────────────────────────────────
@@ -103,10 +118,33 @@ export const OT_FooterBlock = contentType({
       type: 'array',
       isLocalized: true,
       displayName: 'Footer Links',
-      description: 'Navigation links — up to 10 items. Automatically flows into two columns when more than 5 links are added.',
+      description: 'Navigation links — up to 10 items. Automatically flows into two columns when more than 5 links are added. Used by Spotlight, Centered and Minimal; ignored by Columns.',
       group: 'OT_Content',
       sortOrder: 20,
       maxItems: 10,
+      items: { type: 'component', contentType: OT_FooterLink },
+    },
+    // ── Columns layout only ────────────────────────────────────────────────────
+    // Multi-column link groups (e.g. "About us", "Customer service", "Insurance",
+    // "Bank", "Sustainability", "Contact"). Only rendered when footerStyle === 'columns'.
+    columns: {
+      type: 'array',
+      isLocalized: true,
+      displayName: 'Footer Columns',
+      description: 'Column groups for the Columns footer style — up to 8 columns, each with a heading and its own links. Flows 4 per row on desktop.',
+      group: 'OT_Content',
+      sortOrder: 30,
+      maxItems: 8,
+      items: { type: 'component', contentType: OT_FooterColumn },
+    },
+    bottomLinks: {
+      type: 'array',
+      isLocalized: true,
+      displayName: 'Bottom Bar Links',
+      description: 'Compact legal/utility links shown in the bottom bar under Columns (e.g. Privacy, Cookies, Terms).',
+      group: 'OT_Content',
+      sortOrder: 40,
+      maxItems: 6,
       items: { type: 'component', contentType: OT_FooterLink },
     },
   },

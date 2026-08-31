@@ -24,7 +24,7 @@ export type HeroStyleOptions = {
   /** Which side the text panel appears on at desktop widths */
   layout?: "imageRight" | "imageLeft";
   /** Background color of the text panel */
-  color?: "brand" | "canvas" | "surface";
+  color?: "brand" | "tint" | "canvas" | "surface";
   /**
    * Entrance animation for the section.
    * "parallax": the frame fades in while the visual pushes in (scale settle)
@@ -51,6 +51,7 @@ const textPanelCva = cva(
     variants: {
       color: {
         brand:   "bg-brand-fill",
+        tint:    "bg-brand-tint",
         canvas:  "bg-canvas",
         surface: "bg-surface",
       },
@@ -68,6 +69,7 @@ const eyebrowCva = cva("text-label tracking-label uppercase font-semibold", {
   variants: {
     color: {
       brand:   "text-fg-on-brand/60",
+      tint:    "text-brand/70",
       canvas:  "text-fg-muted",
       surface: "text-fg-muted",
     },
@@ -81,6 +83,7 @@ const headlineCva = cva(
     variants: {
       color: {
         brand:   "text-fg-on-brand",
+        tint:    "text-brand",
         canvas:  "text-fg",
         surface: "text-fg",
       },
@@ -93,6 +96,7 @@ const bodyCva = cva("text-body leading-body max-w-(--ot-measure-tight)", {
   variants: {
     color: {
       brand:   "text-fg-on-brand/80",
+      tint:    "text-fg-muted",
       canvas:  "text-fg-muted",
       surface: "text-fg-muted",
     },
@@ -109,6 +113,8 @@ const primaryCtaCva = cva(
         // the panel); hover inverts to a light chip rather than jumping to canvas.
         brand:
           "bg-brand-hover hover:bg-fg-on-brand text-fg-on-brand hover:text-brand focus-visible:outline-fg-on-brand",
+        tint:
+          "bg-brand hover:bg-brand-hover text-fg-on-brand focus-visible:outline-brand",
         canvas:
           "bg-brand hover:bg-brand-hover text-fg-on-brand focus-visible:outline-brand",
         surface:
@@ -126,6 +132,8 @@ const secondaryCtaCva = cva(
       color: {
         brand:
           "border-fg-on-brand/40 hover:border-fg-on-brand/70 hover:bg-fg-on-brand/8 text-fg-on-brand focus-visible:outline-fg-on-brand",
+        tint:
+          "border-brand/40 hover:border-brand/70 hover:bg-brand/8 text-brand focus-visible:outline-brand",
         canvas:
           "border-fg/40 hover:border-fg/70 hover:bg-fg/8 text-fg focus-visible:outline-fg",
         surface:
@@ -142,6 +150,7 @@ const visualPanelCva = cva(
     variants: {
       color: {
         brand:   "bg-canvas",
+        tint:    "bg-brand-tint",
         canvas:  "bg-surface",
         surface: "bg-canvas",
       },
@@ -213,14 +222,23 @@ export default function HeroBlock({
   const atmosLayout = hasVisual ? layout : "full"
 
   return (
-    <section className={sectionCva({ layout })} aria-label="Hero">
+    /* The coloured band spans the viewport (the ground sits on the section), while
+       ot-container insets the two panels so the headline lines up with every
+       section below it. Without this the hero ran edge-to-edge and nothing
+       aligned vertically down the page. */
+    <section
+      className={`${groundCva({ color })} w-full`}
+      data-theme={color === 'brand' ? 'dark' : undefined}
+      aria-label="Hero"
+    >
+      <div className={`${sectionCva({ layout })} ot-container`}>
 
       {/* ── Text panel ── */}
       {/* data-theme="dark" on brand panels ensures tokens like bg-canvas, text-fg,
           and button hover states always resolve to dark-mode values regardless of
           the site's page-level theme (light or dark). */}
       <div
-        className={`${textPanelCva({ color, mode: hasVisual ? "split" : "full" })} relative overflow-hidden`}
+        className={`${textPanelCva({ color, mode: hasVisual ? "split" : "full" })} relative overflow-hidden bg-transparent`}
         data-theme={color === 'brand' ? 'dark' : undefined}
       >
         {/* Atmospheric depth layer — edge-lit gradient + micro-grain texture.
@@ -284,6 +302,7 @@ export default function HeroBlock({
         </div>
       )}
 
+      </div>
     </section>
   );
 }
@@ -308,7 +327,7 @@ type HeroDirectionProps = {
 /** Section ground fill by color — the palette modifier shared across directions. */
 const groundCva = cva("", {
   variants: {
-    color: { brand: "bg-brand-fill", canvas: "bg-canvas", surface: "bg-surface" },
+    color: { brand: "bg-brand-fill", tint: "bg-brand-tint", canvas: "bg-canvas", surface: "bg-surface" },
   },
   defaultVariants: { color: "brand" },
 });

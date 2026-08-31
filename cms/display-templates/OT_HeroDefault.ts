@@ -20,9 +20,10 @@ export const OT_HeroDefault = displayTemplate({
       editor: 'select',
       sortOrder: 20,
       choices: {
-        brand:   { displayName: 'Brand (Default)', sortOrder: 10 },
-        canvas:  { displayName: 'Canvas',          sortOrder: 20 },
-        surface: { displayName: 'Surface',                sortOrder: 30 },
+        brand:   { displayName: 'Brand (Default)',            sortOrder: 10 },
+        tint:    { displayName: 'Brand Tint — pale wash',     sortOrder: 15 },
+        canvas:  { displayName: 'Canvas',                     sortOrder: 20 },
+        surface: { displayName: 'Surface',                    sortOrder: 30 },
       },
     },
     animation: {

@@ -27,6 +27,28 @@ export function getClient() {
 }
 
 /**
+ * Runs a Graph call with a timeout and one retry so a network stall (e.g. a
+ * dropped VPN connection) fails fast instead of hanging the page for minutes
+ * waiting on `fetch` — see UND_ERR_HEADERS_TIMEOUT in undici.
+ */
+async function withGraphResilience<T>(fn: () => Promise<T>, timeoutMs = 12000): Promise<T> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await Promise.race([
+        fn(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Optimizely Graph request timed out after ${timeoutMs}ms`)), timeoutMs),
+        ),
+      ])
+    } catch (err) {
+      lastErr = err
+    }
+  }
+  throw lastErr
+}
+
+/**
  * Sets the Optimizely SDK context for the current request.
  * Must be called before any SDK rendering so preview attributes and
  * composition rendering have access to the active locale.
@@ -150,6 +172,9 @@ const THEME_QUERY = `
             icon
           }
         }
+        utilityNav {
+          menuLink { text title target url { default } }
+        }
       }
     }
     OT_FooterBlock(limit: 20, locale: $locale) {
@@ -162,6 +187,17 @@ const THEME_QUERY = `
         footerLeftMode
         description { html }
         links {
+          label
+          url { default }
+        }
+        columns {
+          heading
+          links {
+            label
+            url { default }
+          }
+        }
+        bottomLinks {
           label
           url { default }
         }
@@ -227,14 +263,30 @@ export async function getLocalizedContentByPath(
     : undefined
 
   // ── Default locale ────────────────────────────────────────────────────────
+  //
+  // The front end serves the default locale without a URL prefix ('/about'),
+  // but Content Graph only indexes content at an unprefixed path when the CMS
+  // instance treats that locale as its default. On an instance with several
+  // enabled locales and none marked default, EVERY locale gets a prefix and
+  // English content is indexed at '/en/about' instead — the unprefixed lookup
+  // then returns nothing and the page 404s while the layout (header/footer,
+  // which read ThemeManager directly) still renders. Falling back to the
+  // prefixed path keeps the front end working against either arrangement.
   if (locale === DEFAULT_LOCALE) {
-    const results = await getClient().getContentByPath(path, { host, variation })
-    return results?.length ? pickByLocale(results, locale) : null
+    const results = await withGraphResilience(() => getClient().getContentByPath(path, { host, variation }))
+    if (results?.length) return pickByLocale(results, locale)
+
+    const prefixed = await withGraphResilience(() =>
+      getClient().getContentByPath(`/${locale}${path}`, { host, variation }),
+    )
+    return prefixed?.length ? pickByLocale(prefixed, locale) : null
   }
 
   // ── Non-default locale: step 1 — locale-prefixed path ─────────────────────
   // Content Graph stores translated pages at /<locale><path>.
-  const prefixedResults = await getClient().getContentByPath(`/${locale}${path}`, { host, variation })
+  const prefixedResults = await withGraphResilience(() =>
+    getClient().getContentByPath(`/${locale}${path}`, { host, variation }),
+  )
   if (prefixedResults?.length) {
     return pickByLocale(prefixedResults, locale)
   }
@@ -246,7 +298,7 @@ export async function getLocalizedContentByPath(
   //       (e.g. /ui-testing2/ in English → /fr/polished-landing/ in French).
   // Fetch the English version first to get the content key, then ask for
   // that key's translation in the requested locale.
-  const defaultResults = await getClient().getContentByPath(path, { host })
+  const defaultResults = await withGraphResilience(() => getClient().getContentByPath(path, { host }))
   if (!defaultResults?.length) return null
 
   const defaultContent = pickByLocale(defaultResults, DEFAULT_LOCALE) ?? defaultResults[0]
@@ -255,7 +307,7 @@ export async function getLocalizedContentByPath(
   if (contentKey) {
     try {
       // getItems with a locale-bearing GraphReference fetches that locale's version.
-      const localizedItems = await getClient().getItems({ key: contentKey, locale })
+      const localizedItems = await withGraphResilience(() => getClient().getItems({ key: contentKey, locale }))
       const localized = (localizedItems ?? []).find(
         (r: any) => (r._metadata?.locale ?? '').toLowerCase() === locale.toLowerCase(),
       )
@@ -293,7 +345,7 @@ async function resolveCmsLinks(keys: string[]): Promise<Map<string, string>> {
   const unique = [...new Set(keys)].filter(Boolean)
   if (!unique.length) return new Map()
   try {
-    const data = await getClient().request(
+    const data = await withGraphResilience(() => getClient().request(
       `query ResolveCmsLinks($keys: [String]) {
          _Content(
            where: { _metadata: { key: { in: $keys } status: { eq: "Published" } locale: { eq: "en" } } }
@@ -303,7 +355,7 @@ async function resolveCmsLinks(keys: string[]): Promise<Map<string, string>> {
          }
        }`,
       { keys: unique },
-    )
+    ))
     const map = new Map<string, string>()
     for (const item of (data?._Content?.items ?? []) as any[]) {
       const key  = item._metadata?.key as string | undefined
@@ -339,7 +391,7 @@ function applyLinkResolution(
 // guaranteed by orderBy published DESC in the query).
 const _fetchAllThemeManagers = cache(async function fetchAllThemeManagers(locale: string) {
   try {
-    const data  = await getClient().request(THEME_QUERY, { locale: [locale] })
+    const data  = await withGraphResilience(() => getClient().request(THEME_QUERY, { locale: [locale] }))
     const items = (data?.OT_ThemeManager?.items ?? []) as any[]
 
     // Build a key → data map for footer blocks so we can attach them below.
@@ -386,6 +438,10 @@ const _fetchAllThemeManagers = cache(async function fetchAllThemeManagers(locale
           if (sk) cmsKeys.push(sk)
         }
       }
+      for (const util of (item.utilityNav ?? []) as any[]) {
+        const uk = parseCmsContentKey(util.menuLink?.url?.default)
+        if (uk) cmsKeys.push(uk)
+      }
     }
     const linkMap = await resolveCmsLinks(cmsKeys)
 
@@ -417,6 +473,17 @@ const _fetchAllThemeManagers = cache(async function fetchAllThemeManagers(locale
               }
             : sub.menuLink,
         })),
+      })),
+      utilityNav: ((item.utilityNav ?? []) as any[]).map((util: any) => ({
+        ...util,
+        menuLink: util.menuLink
+          ? {
+              ...util.menuLink,
+              url: util.menuLink.url
+                ? { ...util.menuLink.url, default: applyLinkResolution(util.menuLink.url.default, linkMap) }
+                : util.menuLink.url,
+            }
+          : util.menuLink,
       })),
     }))
   } catch {

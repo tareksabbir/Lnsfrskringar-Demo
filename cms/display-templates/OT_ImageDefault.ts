@@ -21,7 +21,8 @@ export const OT_ImageDefault = displayTemplate({
       editor: 'select',
       sortOrder: 10,
       choices: {
-        auto:  { displayName: 'Natural (Default)', sortOrder: 10 },
+        auto:    { displayName: 'Auto — 16:9 box (Default)', sortOrder: 10 },
+        natural: { displayName: 'Natural — no crop, own aspect', sortOrder: 15 },
         r16_9: { displayName: '16:9 Widescreen',   sortOrder: 20 },
         r4_3:  { displayName: '4:3',               sortOrder: 30 },
         r3_2:  { displayName: '3:2',               sortOrder: 40 },
