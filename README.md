@@ -1,328 +1,197 @@
-# Site Accelerator
+# Länsförsäkringar Stockholm — Optimizely SaaS CMS Demo
 
-**Site Accelerator** is a configurable, vertical-agnostic site framework built on the **Next.js App Router** and the **Optimizely SaaS CMS**. It is not a single brand site; it is a system for standing up credible, editorially confident marketing sites in any vertical (financial services, healthcare, retail, legal, and more) by re-theming and composing one shared component library through **ThemeManager**, **Visual Builder**, and **display templates**.
+A working demo site for **Länsförsäkringar Stockholm (LF)**, built on the
+**Site Accelerator** framework: Next.js App Router front end, all content served
+headlessly from the **Optimizely SaaS CMS** through **Optimizely Graph**, all
+assets from **Optimizely DAM**.
 
-Its primary job is **pre-sales enablement**: solution engineers re-skin and re-compose it to show a prospect, in that prospect's own industry, what the SaaS CMS can do — Visual Builder composition, theme management, display templates, and headless delivery.
+The point of the demo is to answer LF's architecture questions with something
+running rather than with slides — channel-agnostic content delivery, a single
+source of truth for assets, and editors composing pages themselves in Visual
+Builder.
 
-> The `OT_` content-type prefix and `--ot-` token prefix are **historical and theme-neutral** — they carry no brand meaning and are intentionally not renamed (renaming content-type keys is a breaking CMS migration).
+**Live:** https://lnsfrskringar-demo.vercel.app
+**CMS instance:** `lans01saas` (Production1)
+
+---
 
 ## Stack
 
-- **Next.js 16.2.6** — App Router, TypeScript (no Pages Router)
-- **React 19.2.4**
-- **Tailwind CSS v4** — configured via `@import "tailwindcss"` in `app/globals.css`; design tokens live in `styles/tokens.css` (there is no `tailwind.config.*`)
-- **@optimizely/cms-sdk ^2.1.0** — headless content client (Optimizely Graph)
-- **@optimizely/cms-cli ^2.0.0** — syncs TypeScript content-type definitions to the CMS (`yarn cms:push` / `cms:pull`)
-- **Recharts** — powers the ChartBlock data visualizations
+| | |
+|---|---|
+| **Next.js 16.2.6** | App Router, TypeScript, no Pages Router |
+| **React 19.2.4** | |
+| **Tailwind CSS v4** | `@import "tailwindcss"` in `app/globals.css`; tokens in `styles/tokens.css` — there is no `tailwind.config.*` |
+| **@optimizely/cms-sdk** | headless content client (Graph) |
+| **@optimizely/cms-cli** | pushes TypeScript content-type definitions to the CMS |
 
-## Getting started
+The front end holds **no content** — only rendering. A published experience
+reaches the browser purely as a Graph query result.
+
+---
+
+## Quick start
 
 ```bash
 yarn install
-yarn dev        # dev server on http://localhost:3000
+yarn dev          # http://localhost:3000
 ```
 
-Set the environment variables under **Optimizely CMS Setup** below first — the CMS-driven routes need at least `OPTIMIZELY_GRAPH_SINGLE_KEY` and `OPTIMIZELY_CMS_URL` to render content.
+You need `.env.local` first (see below). Without `OPTIMIZELY_GRAPH_SINGLE_KEY`
+every CMS-driven route 404s.
 
 ### Commands
 
 | Command | What it does |
 |---|---|
-| `yarn dev` | Start the dev server |
+| `yarn dev` | Dev server |
 | `yarn build` | Production build |
-| `yarn start` | Run the production build |
-| `yarn lint` | ESLint (next core-web-vitals + TypeScript rules) |
-| `yarn lint:tokens` | Flag hard-coded color literals that should be design tokens |
-| `yarn cms:push` | Push TypeScript content types / display templates to the CMS |
+| `yarn lint` | ESLint |
+| `yarn lint:tokens` | Flag hard-coded colors that should be design tokens |
+| `yarn cms:push` | Push content types / display templates to the CMS |
 | `yarn cms:pull` | Pull the CMS content-type config back down |
 
-> `cms:push` / `cms:pull` load `.env` then `.env.local` via the wrapper scripts — the CLI does not read env files itself.
+The CLI does not read `.env` files itself, so these are wrapped: `cms:push` goes
+through `scripts/cms-push.mjs`, while `cms:pull` passes
+`--env-file=.env.<current-git-branch>` — on `main` that means a `.env.main` file,
+not `.env.local`.
 
-## Architecture
+### Environment variables
 
-The App Router lives under `app/`, with the public marketing site grouped in `app/(site)/`.
+```bash
+# .env.local (dev) — and the same set in Vercel project settings (production)
 
-- **Design tokens** (`styles/tokens.css`) are the brand. Every color / spacing / type / motion value is a `--ot-*` custom property and components reference tokens, never raw values. Dark mode is the default; `data-theme="light"` flips the grounds.
-- **ThemeManager axes** re-skin the whole system from the CMS with no code changes: **Primary Font** (Poppins by default, swappable to Source Serif 4 / Sora / Bricolage Grotesque), **Corner Style** (Sharp / Soft / Rounded), and **Motion Intensity** (Calm / Default / Energetic). `buildThemeCSS()` in [`lib/optimizely.ts`](lib/optimizely.ts) emits the overrides from the ThemeManager content type. Fixed-purpose fonts sit alongside the themeable primary: Syne (accent moments), Geist Mono (code / data), Caveat (the QuoteBlock signature), and Tilt Neon (the PrimaryText "neon" effect).
-- **Block library** ([`components/blocks/`](components/blocks/)) — the composable Visual Builder blocks (Hero, Card, PrimaryText, Quote, Stat, Feature Grid, Accordion, Tabs, Chart, Blog Feed, and more). Each block follows a fixed four-layer CMS pattern (content type → display template → adapter → React component) and ships a showcase demo in the same task.
-- **Showcase** (**`/showcase`**) — a live gallery of every block and layout plus a theme playground, grouped into Blocks / Pages / Layout / Theme. The fastest way to see what exists and how each variant renders under the current theme.
-- **CMS-driven pages** render through the catch-all at [`app/(site)/[...slug]/page.tsx`](app/(site)/[...slug]/page.tsx), which fetches by slug via Optimizely Graph and renders the SDK composition tree.
+OPTIMIZELY_GRAPH_SINGLE_KEY=    # public content queries — the app needs this
+OPTIMIZELY_GRAPH_APP_KEY=       # not read by the app; app key + secret as Basic
+OPTIMIZELY_GRAPH_SECRET=        #   auth is how you query DRAFTS by hand, which
+                                #   the single key cannot see
 
-### Project docs
+OPTIMIZELY_CMS_URL=             # https://app-xxx.cms.optimizely.com/
+OPTIMIZELY_CMS_CLIENT_ID=       # OAuth client for content-type sync + REST writes
+OPTIMIZELY_CMS_CLIENT_SECRET=
+
+CMP_CLIENT_ID=                  # Optimizely CMP / DAM — asset lookups
+CMP_CLIENT_SECRET=
+
+NEXT_PUBLIC_SITE_URL=           # canonical origin, no trailing slash
+NEXT_PUBLIC_OPTIFORMS_ENABLED=  # 'true' only on instances that have Forms
+```
+
+> `.env*` is gitignored. The build scripts read credentials from `.env.local` —
+> never hardcode them, the scripts live in the repo.
+
+---
+
+## How the CMS side is built
+
+The CMS content is **scripted, not hand-authored**, so the whole site can be
+torn down and rebuilt. Graph is read-only, so writes go through the Content
+Management REST API.
+
+| Script | Builds |
+|---|---|
+| `scripts/rebuild_lf_home_vb.py` | The home experience — 9 named sections, 35 blocks. `--dry-run` prints the tree without writing. |
+| `scripts/build_lf_chrome.py` | Header, footer and ThemeManager |
+
+```bash
+python3 scripts/rebuild_lf_home_vb.py --dry-run   # inspect
+python3 scripts/rebuild_lf_home_vb.py             # publish a new version
+```
+
+### Composition shape
+
+Visual Builder's Outline lists **sections**, so every block must be nested.
+Flat component nodes directly under the experience render fine but are invisible
+to the editor:
+
+```
+experience  (layoutType: outline)
+  section   (layoutType: grid, component: BlankSection, displayName: "Hero")
+    row
+      column
+        component   ← the block
+```
+
+Two constraints worth knowing before adding blocks:
+
+- Only `elementEnabled` blocks may sit in a column. `sectionEnabled`-only types
+  (e.g. `OT_FeatureGridBlock`) are rejected in **both** positions.
+- Sections need `displayName`, or every row of the Outline reads
+  *"Blank Section"*.
+
+### Assets
+
+Every asset comes from **DAM**, referenced from the CMS exactly like CMS media —
+`cms://content/{assetKey}`. The `graph://cmp/...` form is rejected. The CMS
+stores the reference back as `cms://content/DamImageSource/{key}`, and Graph
+hands the front end an `images3.cmp.optimizely.com` URL.
+
+Image delivery goes through a custom loader (`lib/imageLoader.ts`), not Vercel's
+optimizer. The DAM CDN resizes via a **`width`** query param — and only that one;
+`w`, `fm`, `format`, `quality` and friends are silently ignored.
+
+---
+
+## Integration status
+
+The sequence LF asked for, and where it actually stands:
+
+| | Status |
+|---|---|
+| **CMS ↔ Graph** — headless delivery | ✅ Done |
+| **CMS ↔ DAM** — single source of truth for assets | ✅ Done |
+| **Visual Builder** — section + block editing | ✅ Done |
+| **CMP ↔ CMS/DAM** | 🟡 Asset half live; campaign planning not wired |
+| **Forms ↔ CMS** | ⬜ Content types registered behind `NEXT_PUBLIC_OPTIFORMS_ENABLED` |
+| **CMS ↔ Experimentation** | ⬜ Not started |
+| **Opal** in an editorial workflow | ⬜ Not started |
+| **Micro frontend** proof point | ⬜ Not started |
+| **Databricks-native analytics** | ⬜ Not started |
+| **Azure Front Door** answer | ⬜ Not started |
+
+---
+
+## Gotchas hit while building this
+
+Each of these cost real time, so they are written down rather than rediscovered.
+
+- **Locale prefix.** Two locales are enabled and neither is marked default, so
+  Graph indexes content at `/en/` and every request for `/` returned 404.
+  `getLocalizedContentByPath` tries the bare path, then the prefixed one.
+- **`frontEndDomain` must match the deployed host.** ThemeManager is matched by
+  host; when it held `localhost:3000` the header and footer fell back to their
+  hardcoded defaults on Vercel while the page body rendered normally. A single
+  ThemeManager now resolves on any host, which also covers preview URLs.
+- **`POST /versions` creates a version from the payload alone.** Send a partial
+  property set and everything you omitted is blanked. Always re-post all
+  properties. `displayName` is required, and the response body is empty — the
+  new version number arrives in the `Location` header.
+- **The versions list is not sorted.** `items[-1]` is not the latest; filter on
+  `status`.
+- **API access is two layers.** `api:admin` scope only opens the API. Read/write
+  on a content item is granted separately per item under Settings → Set Access
+  Rights. Symptom: `/contenttypes` returns 200 while `POST /v1/content` returns
+  403.
+- **Empty `allowedTypes` is not "any type".** The SDK's `resolveAllowedTypes`
+  falls back to *every* cached content type, generating a query across ~70 types
+  that Graph rejects. Image references stay narrowed to `['_image']`.
+- **Graph indexing lags** a few minutes behind a publish. Visual Builder 404s
+  until it catches up.
+
+---
+
+## Project docs
 
 | Doc | Covers |
 |---|---|
-| [`PRODUCT.md`](PRODUCT.md) | Product purpose, users, brand voice, strategic principles |
-| [`DESIGN.md`](DESIGN.md) | Color strategy, typography, elevation, motion, component specs |
-| [`Optimizely.md`](Optimizely.md) | CMS integration patterns, page / experience types, Graph queries |
-| [`CLAUDE.md`](CLAUDE.md) | Repo conventions and the CMS block-authoring workflow |
-
-For adding or editing CMS blocks, the **optimizely-block** skill (`.claude/skills/optimizely-block/`) encodes the exact four-layer + showcase + push workflow and the seven artifacts each block needs to be complete.
-
-## Claude Code skills
-
-This repo ships a project-scoped [Claude Code](https://claude.com/claude-code) skill for Optimizely CMS work, under [`.claude/skills/`](.claude/skills/). It is picked up automatically when a request matches — you don't have to name it.
-
-### `optimizely-block`
-
-Encodes this repo's exact workflow for **any** work on a CMS block or section — creating, extending, restyling, or wiring one up. It triggers on requests like *"add a Testimonial block"*, *"add a field to the Card block"*, or *"new hero variant"*, and supersedes the generic `optimizely-model` / `optimizely-model-react` plugin skills for anything touching `cms/` or `components/blocks/`. It captures the **four-layer + showcase + push** workflow and the **seven artifacts** a block needs to be complete: content type, display template, CMS adapter, UI component, three `cms/registry.ts` entries, the showcase demo, and the showcase nav item.
-
-Reference files (`.claude/skills/optimizely-block/references/`):
-
-| Reference | Covers |
-|---|---|
-| `four-layer-pattern.md` | Content type, block + section display templates, adapters, the UI component, and rich-text / image / link / array rendering |
-| `sdk-property-rules.md` | SDK property gotchas: enum `value` not `key`, top-level `maxLength`, `isLocalized`, `richText` not `xhtml`, the CTA-must-be-`url`+`string` rule, property groups, and the atomic property-group rollback |
-| `registration.md` | The three `cms/registry.ts` edits, each failure mode, and the catch-all route note |
-| `showcase-sync.md` | The four showcase-page edits plus the one nav edit every new block needs |
-| `push-checklist.md` | Preflight, push-before-build, instance-decided-by-creds, Graph re-index lag, and the atomic-rollback symptom decoder |
-
-## Optimizely CMS Setup
-
-### Required environment variables
-
-```bash
-# .env.local (development) or Vercel environment settings (production)
-OPTIMIZELY_GRAPH_SINGLE_KEY=   # Graph single-key for public content queries
-OPTIMIZELY_CMS_URL=            # Full CMS instance URL (e.g. https://app-xxx.cms.optimizely.com/)
-OPTIMIZELY_CMS_CLIENT_ID=      # OAuth client ID for content type sync (cms-cli)
-OPTIMIZELY_CMS_CLIENT_SECRET=  # OAuth client secret for content type sync (cms-cli)
-
-# SEO / metadata
-NEXT_PUBLIC_SITE_URL=          # Canonical site origin — no trailing slash
-                               # (e.g. https://your-site.vercel.app)
-                               # Used to build <link rel="canonical"> hrefs and
-                               # JSON-LD pageUrl values. Falls back to the
-                               # request Host header when not set (useful in dev).
-
-# Maps
-NEXT_PUBLIC_MAPBOX_TOKEN=      # Mapbox public token (pk....) for map rendering
-                               # and address geocoding. Required for
-                               # OT_LocationListingBlock — the map view renders an
-                               # unconfigured-state notice without it, and
-                               # addresses are not geocoded. The grid and list
-                               # views work without it. Create a token at
-                               # https://account.mapbox.com/access-tokens/
-
-# OptiAdmin dashboard (see "OptiAdmin Dashboard" below)
-OPTI_ADMIN_USER=               # Username for the /opti-admin sign-in
-OPTI_ADMIN_PASSWORD=           # Password for the /opti-admin sign-in
-                               # If either is unset, /opti-admin login is disabled
-                               # (the auth endpoint returns 503 "not configured").
-```
-
-### Syncing content types to the CMS
-
-Content type and display template definitions live in [`cms/content-types/`](cms/content-types/) and [`cms/display-templates/`](cms/display-templates/) and are pushed to your CMS instance with the `@optimizely/cms-cli`, wrapped by [`scripts/cms-push.mjs`](scripts/cms-push.mjs):
-
-```bash
-yarn cms:push            # push content types / templates to the CMS
-yarn cms:push:dry        # build & validate the manifest without pushing
-yarn cms:pull            # pull the current schema from the CMS
-```
-
-**Which instance gets pushed** is determined entirely by the `OPTIMIZELY_CMS_CLIENT_ID` / `OPTIMIZELY_CMS_CLIENT_SECRET` credentials. The push script resolves them from an env file in this order:
-
-1. `.env.<branch>` — the per-branch-instance convention (slashes in the branch name are sanitized, e.g. `feature/x` → `.env.feature-x`).
-2. `.env.local` — fallback so a fresh clone works without a per-branch file.
-
-Override with `CMS_ENV_FILE=path yarn cms:push`. The credentials must be in that file — the dev server auto-loads `.env.local`, but the CLI does not.
-
-#### First push to a fresh instance — the `mayContainTypes` cycle
-
-The page types reference each other through `mayContainTypes` (a Folder may contain an Experience, which may contain a Blog page, …). Those declared references form a cycle. This is **fine on an instance where the types already exist** (the push is an update), but on a **fresh instance** the importer has to *create* all the types in one atomic manifest, and a cyclic set of references has no valid creation order. The server rejects it:
-
-```
-Content type 'BlankExperience' has a circular dependency through 'OT_BlogPage,OT_CampaignPage,OT_FolderPage'.
-```
-
-…which then cascades into misleading `Unable to find a content type 'OT_…'` errors as the whole import rolls back. Nothing is created (the import is atomic), so it is safe to retry.
-
-To resolve it, run the **opt-in bootstrap**, which pushes in two phases — first with every `mayContainTypes` stripped (so all types create with no declared references), then the full manifest (the references now resolve against types that already exist):
-
-```bash
-yarn cms:push:bootstrap          # or: yarn cms:push --ignore-circular-dependency  (alias: --bootstrap)
-```
-
-> **Why it's opt-in (off by default):** the bootstrap forces `ignore-data-loss-warnings` to create/restore the cyclic types. That's always safe on an empty instance, but could mask real data loss on a populated one — so a plain `yarn cms:push` never forces it. A bare push that hits the cycle simply surfaces the error and points you here. Established instances never hit this path; the first push just succeeds.
-
-### Shared block preview — set a default application in the CMS
-
-If your CMS instance has more than one application (site) defined, you **must** designate one of them as the default. Without a default application, the Visual Builder does not know which front-end URL to use when opening a shared block in the preview panel, and editors will see the "Preview is not configured" message.
-
-To set the default:
-
-1. Log in to the Optimizely CMS admin.
-2. Go to **Settings → Applications**.
-3. Select the application that corresponds to this Vercel deployment.
-4. Enable the **Default application** toggle.
-
-Once set, shared block previews will load in the Visual Builder iframe using this site's preview URL.
-
-## CMP Content Preview
-
-This app can render a live preview of a blog authored in **Optimizely Content Marketing Platform (CMP)**, so a marketer editing in CMP sees it laid out in this site's blog UI before it's ever published to the CMS. When an editor clicks **Preview** in CMP, CMP fires a `content_preview_requested` webhook at this app; the app renders the payload through the same [`BlogPage`](components/pages/BlogPage.tsx) component the CMS uses and hands the URL back to CMP, which embeds it in its preview pane.
-
-> This is **separate** from the CMS Visual Builder "Shared block preview" above. That previews CMS content; this previews CMP content. They share no configuration.
-
-### How it works
-
-1. CMP POSTs `content_preview_requested` to **`/api/cmp-preview`** with the full content and a `callback-secret` header.
-2. The handler verifies the secret, then persists the delivery to the durable store (keyed by `preview_id`).
-3. It POSTs `acknowledge` (we can render it), then `complete` with the render URL `…/cmp-preview?id=<preview_id>`.
-4. CMP caches that URL and embeds **`/cmp-preview`** in an iframe. That page loads the stored payload, resolves the featured image to a public CDN URL, and renders `BlogPage`.
-
-The acknowledge/complete calls and image resolution authenticate to CMP via the OAuth2 **client-credentials** flow (no user login / redirect involved).
-
-### Required environment variables
-
-```bash
-# .env.local (development) or Vercel environment settings (production)
-
-# CMP API app — Settings → Apps in CMP (OAuth2 client credentials).
-# The app registration asks for a redirect/Authorization Callback URL; it is
-# only used by the authorization-code flow and is unused here — any valid URL is fine.
-CMP_CLIENT_ID=                 # client_id of the CMP App
-CMP_CLIENT_SECRET=             # client_secret of the CMP App
-CMP_CALLBACK_SECRET=           # must match the "callback secret" set on the CMP webhook;
-                               # CMP sends it as the `callback-secret` request header so
-                               # inbound webhooks can be verified
-
-# Durable preview store — Vercel Marketplace → Upstash → Redis (NOT "Vercel KV",
-# which is retired). Connect it to the project and Vercel injects these. Without
-# them the store falls back to in-memory (fine for `yarn dev`, NOT reliable on
-# Vercel, since CMP fetches the completed URL later on a possibly-different instance).
-KV_REST_API_URL=               # also accepts UPSTASH_REDIS_REST_URL
-KV_REST_API_TOKEN=             # also accepts UPSTASH_REDIS_REST_TOKEN
-
-# Publish-to-CMS (phase 4) — target container for new blog pages.
-# Set this to the CMS content key of the folder/container where CMP-published
-# blog posts should be created (e.g. the key of your "Blog" content folder).
-# Find it in the CMS Visual Builder URL or via the Management API.
-# Without this var the publish webhook is captured but the CMS write is skipped.
-CMP_BLOG_CONTAINER_KEY=        # CMS content key of the target blog container
-```
-
-If `CMP_*` are unset the webhook still captures and the renderer still works locally — it just skips verification and the acknowledge/complete round-trip.
-
-### Publish to CMS (phase 4)
-
-When a CMP workflow completes, CMP fires an `asset_published` event. This app listens on **`/api/cmp-publish`** and automatically creates or updates a draft `OT_BlogPage` in the CMS — so content moves from CMP to the CMS without any manual copy-paste.
-
-**How it works:**
-
-1. CMP POSTs `asset_published` to `/api/cmp-publish` with the finalized content.
-2. The handler verifies `CMP_CALLBACK_SECRET`, maps the payload (reusing the same `lib/cmpBlog.ts` mapper as the preview flow), and calls the CMS Management API to create a new `OT_BlogPage` inside the container specified by `CMP_BLOG_CONTAINER_KEY`.
-3. On re-publish, the handler looks up the CMS key it assigned on first create (stored in the durable KV store under the CMP `content_guid`) and **updates** the existing page instead of creating a duplicate.
-4. The featured image is referenced directly from the CMP/shared DAM via a `cms://content/<guid>` federated reference — no asset copy needed.
-
-The write is best-effort: if the CMS write fails the webhook still returns `200` so CMP does not retry. The outcome (`created`, `updated`, `skipped`, or `error`) is logged to Vercel Functions and included in the webhook response body.
-
-### Setup steps
-
-1. **Create a CMP App** (CMP → **Settings → Apps**) with App Role *Other*. Save and copy its `client_id` / `client_secret` → `CMP_CLIENT_ID` / `CMP_CLIENT_SECRET`. The redirect URL field is required by the form but unused by this integration.
-2. **Provision the durable store**: Vercel project → **Storage → Upstash → Redis**, then **connect it to the project**. Vercel injects `KV_REST_API_URL` / `KV_REST_API_TOKEN`.
-3. **Recreate the blog content type in CMP** (`cmp_opti_blog`) with field keys matching the mapping in [`lib/cmpBlog.ts`](lib/cmpBlog.ts): `headline`, `subHeadline`, `topic` (choice), `featuredImage` (library-asset), `body` (rich-text), `readTime`.
-4. **Create the preview webhook** (CMP → **Settings → Webhooks**): event `content_preview_requested`, target URL `https://<your-deployment>/api/cmp-preview`, and set a **callback secret** — use the same value as `CMP_CALLBACK_SECRET`.
-5. **Create the publish webhook** (CMP → **Settings → Webhooks**): event `asset_published`, target URL `https://<your-deployment>/api/cmp-publish`, same callback secret as above.
-6. **Find your blog container key**: in the CMS Visual Builder, open the folder where blog pages should live and copy its content key from the URL or item metadata. Set it as `CMP_BLOG_CONTAINER_KEY`.
-7. **Set all env vars in Vercel** (Production) and **redeploy**, then click **Preview** on a CMP blog to test the preview flow, and complete a CMP workflow to test the publish flow.
-
-### Inspecting & troubleshooting
-
-- **GET `/api/cmp-preview`** returns the most recently captured preview webhook delivery as JSON — handy for confirming payload shape.
-- **GET `/api/cmp-publish`** returns the most recently captured publish webhook delivery as JSON, including the `cmsWrite` outcome (`created`, `updated`, `skipped`, or `error` with detail).
-- The handlers log each step to the Vercel **Functions** logs, prefixed `[cmp-preview]` and `[cmp-publish]` respectively.
-- If the publish write is `skipped` with reason `CMP_BLOG_CONTAINER_KEY not set`, add that env var and redeploy.
-- The render page accepts `?id=<preview_id>` (a specific delivery) and `?style=impact|atmospheric|editorial` (header treatment; defaults to `editorial`).
-- Framing inside CMP is already permitted by the global `frame-ancestors … *.cms.optimizely.com` policy in [`next.config.mjs`](next.config.mjs).
-
-### Where things live
-
-| Concern | Location |
-|---|---|
-| Preview webhook handler (verify → store → acknowledge/complete) | [`app/api/cmp-preview/route.ts`](app/api/cmp-preview/route.ts) |
-| Publish webhook handler (verify → create/update `OT_BlogPage`) | [`app/api/cmp-publish/route.ts`](app/api/cmp-publish/route.ts) |
-| Render page | [`app/cmp-preview/page.tsx`](app/cmp-preview/page.tsx) |
-| CMP API client (token, callbacks, asset resolve) | [`lib/cmpApi.ts`](lib/cmpApi.ts) |
-| Payload → `BlogPageContent` mapping | [`lib/cmpBlog.ts`](lib/cmpBlog.ts) |
-| Durable delivery store + `content_guid` → CMS key map | [`lib/cmpPreviewStore.ts`](lib/cmpPreviewStore.ts) |
-| CMS Management API client (`upsertBlogPage`) | [`lib/cmsApi.ts`](lib/cmsApi.ts) |
-
-## OptiAdmin Dashboard
-
-OptiAdmin is a lightweight, self-contained admin area for inspecting the content in your Optimizely CMS instance. It lives under [`app/opti-admin/`](app/opti-admin/) and reads live data through Optimizely Graph — it is read-only and does not write back to the CMS.
-
-Visit **`/opti-admin`** on any deployment (e.g. [http://localhost:3000/opti-admin](http://localhost:3000/opti-admin)) to reach it.
-
-### Access & authentication
-
-- Sign-in lives at **`/opti-admin/login`** and uses a single set of credentials from `OPTI_ADMIN_USER` / `OPTI_ADMIN_PASSWORD` (see the env block above). This is intentionally simple env-var auth — not a multi-user system.
-- A successful login sets an `httpOnly` session cookie holding a SHA-256 token derived from the credentials. The session lasts **8 hours**.
-- If the credentials are not configured on the server, the auth endpoint returns **503** and login is disabled. The data endpoints under [`app/api/opti-admin/`](app/api/opti-admin/) reject any request without a valid session cookie with **401**.
-- The admin area runs under its own neutral token scope (`.opti-admin`), decoupled from the marketing site's brand theme, so its appearance is independent of the CMS theme.
-
-### What's included
-
-- **Dashboard** (`/opti-admin`) — a block-type inventory of the registered content types (grouped by content / media / data / layout category) plus a list of the most recently published/scheduled content.
-- **Component Usage** (`/opti-admin/component-usage`) — pick a block type and see which pages use it. Block types are counted by recursively scanning Visual Builder compositions (Section → Row → Column → Component); page types (`BlankExperience`, `OT_BlogPage`) are queried directly. Only content type keys in [`lib/admin/contentTypes.ts`](lib/admin/contentTypes.ts) may be queried.
-- **Content Calendar** (`/opti-admin/calendar`) — browse published and scheduled content by date across the CMS.
-
-The **Analytics** and **Settings** sections in the sidebar are placeholders and are marked "Soon" — they are not yet wired up.
-
-### Where things live
-
-| Concern | Location |
-|---|---|
-| Routes & pages | [`app/opti-admin/`](app/opti-admin/) |
-| Data / auth API routes | [`app/api/opti-admin/`](app/api/opti-admin/) |
-| UI components (shell, nav, clients) | [`components/admin/`](components/admin/) |
-| Auth helpers, Graph queries, content-type list | [`lib/admin/`](lib/admin/) |
-
-## Topic Hub
-
-`OT_TopicHubPage` is a search-driven content hub — a single page that fans out into configurable "buckets" of results (blog posts, events, practitioners, locations, documents, and more), each backed by an Optimizely Graph query. Editors configure it through the Visual Builder; the page renders results client-side as visitors search or filter.
-
-### Required environment variables
-
-The Topic Hub queries documents (PDFs, slide decks, etc.) from the Optimizely Content Marketing Platform (CMP) DAM. That query authenticates with the CMP API, so the same CMP credentials used by the CMP Content Preview feature are required:
-
-```bash
-CMP_CLIENT_ID=      # CMP App client_id (Settings → Apps in CMP)
-CMP_CLIENT_SECRET=  # CMP App client_secret
-```
-
-Without these, the document/asset bucket returns no results. All other bucket types (blogs, events, practitioners, locations) query Optimizely Graph and do not require CMP credentials.
-
-### DAM folder setup
-
-To scope asset search to the content belonging to a specific site, create a dedicated folder in the CMP DAM and place all site-related assets inside it. Then copy the folder's **Content Graph GUID** and paste it into the **DAM Folder ID** field on the `OT_TopicHubPage` content item in the Visual Builder. Without this, the asset bucket searches all accessible assets across your CMP instance.
-
-To find the folder GUID: navigate to the folder in the CMP DAM, open its detail panel, and copy the ID from the URL or the item metadata.
-
-### Scoping practitioners and locations to a site
-
-`OT_PractitionerProfile` and `OT_LocationProfile` content items each have a **Site Key** field. The Topic Hub filters these records by matching the `siteKey` field against the **Front-end Domain** value configured on your ThemeManager content item — this is how one shared CMS instance can host profiles for multiple sites without them bleeding across.
-
-For practitioners and locations to appear in Topic Hub results:
-
-1. Open **ThemeManager** in the Visual Builder and confirm the **Front-end Domain** field is set to the site's hostname (e.g. `your-site.vercel.app`).
-2. On each `OT_PractitionerProfile` or `OT_LocationProfile` item, set **Site Key** to the same value.
-
-If the Site Key on a profile does not match the ThemeManager Front-end Domain, that record is excluded from results — this is the most common reason practitioners or locations appear empty on a working hub.
-
-### Where things live
-
-| Concern | Location |
-|---|---|
-| CMS content type | [`cms/content-types/OT_TopicHubPage.ts`](cms/content-types/OT_TopicHubPage.ts) |
-| Graph data fetcher | [`lib/topicHub.ts`](lib/topicHub.ts) |
-| Page renderer (client component) | [`components/pages/TopicHubPage.tsx`](components/pages/TopicHubPage.tsx) |
-| Search query + result types | [`lib/search.ts`](lib/search.ts) |
-| Site key resolver | [`lib/optimizely.ts`](lib/optimizely.ts) (`getSiteKey`) |
-
-## Deployment
-
-Deployed on **Vercel**. Set every environment variable from the sections above in the Vercel project (Production scope), then deploy.
-
-Content-type and display-template changes are a **separate** step from the app deploy: run `yarn cms:push` to sync them to the CMS. The target instance is decided by the `OPTIMIZELY_CMS_CLIENT_ID` / `OPTIMIZELY_CMS_CLIENT_SECRET` credentials in your environment, so double-check those point at the intended instance before pushing.
+| [`PRODUCT.md`](PRODUCT.md) | Product purpose, users, brand voice |
+| [`DESIGN.md`](DESIGN.md) | Color strategy, typography, elevation, motion |
+| [`Optimizely.md`](Optimizely.md) | CMS integration patterns, page types, Graph queries |
+| [`CLAUDE.md`](CLAUDE.md) | Repo conventions and the block-authoring workflow |
+
+For any work under `cms/` or `components/blocks/`, the **optimizely-block**
+skill (`.claude/skills/optimizely-block/`) encodes the four-layer + showcase +
+push workflow and the seven artifacts each block needs to be complete.
+
+`/showcase` is a live gallery of every block and layout plus a theme playground —
+the fastest way to see what exists.
