@@ -172,11 +172,14 @@ Light mode is a full inversion of canvas/surface/fg tokens, activated by `data-t
 
 **One themeable primary family + fixed-role companions.**
 
-The **primary family** drives the entire hierarchy (display → body → label). It is **Poppins by default and swappable per vertical** through the ThemeManager "Primary Font" axis, which overrides the `--ot-font-sans` token (Tailwind `font-sans`). Every primary ships the same 300–800 weight ladder, so all type levels hold across a swap with no FOUT (`display: swap` + build-time `next/font`).
+The **primary family** drives the entire hierarchy (display → body → label). It is **IBM Plex Sans by default and swappable per vertical** through the ThemeManager "Primary Font" axis, which overrides the `--ot-font-sans` token (Tailwind `font-sans`). Every primary ships at least a 300–700 ladder, so all type levels hold across a swap with no FOUT (`display: swap` + build-time `next/font`).
+
+> **IBM Plex Sans has no 800.** The family stops at 700, so `--ot-weight-display: 800` and the `font-extrabold` blocks resolve to the 700 face — there is no 800 file to load and nothing is synthesised. Under the default family, display and headline therefore share a weight, and the distinction between them rests on size and tracking. The other five primaries do carry 800 and keep the weight step.
 
 | Token / axis value | Font | Role |
 |---|---|---|
-| `--ot-font-sans` (default) | Poppins | Primary — the whole hierarchy: display, headline, title, body, label, buttons, nav. |
+| `--ot-font-sans` (default) | IBM Plex Sans | Primary — the whole hierarchy: display, headline, title, body, label, buttons, nav. Neutral, engineered, wide language coverage. |
+| Primary axis → `--font-poppins` | Poppins | Primary alternate — geometric, friendly; the former default. |
 | Primary axis → `--font-primary-a` | Source Serif 4 | Primary alternate — institutional / editorial pole (medical, financial, legal). The one sanctioned serif. |
 | Primary axis → `--font-primary-b` | Sora | Primary alternate — precise / engineered pole (technical brands). |
 | Primary axis → `--font-primary-c` | Plus Jakarta Sans | Primary alternate — geometric humanist; warm, modern alternative to Poppins. |
@@ -186,7 +189,7 @@ The **primary family** drives the entire hierarchy (display → body → label).
 | `--ot-font-signature` | Caveat 400 | Signature only — the QuoteBlock LaserSignature. Never general copy. |
 | `--ot-font-neon` | Tilt Neon 400 | The PrimaryText "neon" header effect only (`.ot-fx-neon`). Single weight, display-only. Never general copy. |
 
-**Component authors:** reference `--ot-font-sans` (or `font-sans`) for the primary family — never a raw `--font-poppins`, which bypasses the theme axis. **Serif is permitted only** as the Source Serif primary selected through the axis; never introduce another serif or hardcode a family.
+**Component authors:** reference `--ot-font-sans` (or `font-sans`) for the primary family — never a raw `--font-ibm-plex`, which bypasses the theme axis. **Serif is permitted only** as the Source Serif primary selected through the axis; never introduce another serif or hardcode a family.
 
 ### Scale and hierarchy
 

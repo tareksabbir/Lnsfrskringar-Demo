@@ -1,7 +1,7 @@
 import '@/lib/optimizely'
 import '@/cms/registry'
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Caveat, Geist_Mono, Manrope, Poppins, Sora, Source_Serif_4, Syne, Tilt_Neon } from "next/font/google";
+import { IBM_Plex_Sans, Plus_Jakarta_Sans, Caveat, Geist_Mono, Manrope, Poppins, Sora, Source_Serif_4, Syne, Tilt_Neon } from "next/font/google";
 import "./globals.css";
 import { cookies, draftMode } from "next/headers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -18,6 +18,22 @@ const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+// IBM Plex Sans — the shipped default primary family.
+//
+// Weight ladder note: IBM Plex Sans has no 800 weight — the family tops out at
+// 700. The type scale asks for 800 at display level (--ot-weight-display, and
+// `font-extrabold` in several blocks), so those resolve to the 700 face by the
+// CSS font-matching algorithm. That is the intended fallback, not a bug: no 800
+// file exists to load. The practical effect is that display and headline share a
+// weight in this family, so the display/headline distinction rests on size and
+// tracking rather than weight.
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-ibm-plex",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 // Syne — fixed accent/display font for very select areas (e.g. the Impact blog).
@@ -202,7 +218,7 @@ export default async function RootLayout({
       // toggle). No client-side init script needed — the correct theme is baked into
       // the SSR HTML so there is no FOUC even on first paint.
       data-theme={resolvedTheme}
-      className={`${poppins.variable} ${geistMono.variable} ${syne.variable} ${sourceSerif.variable} ${sora.variable} ${plusJakarta.variable} ${manrope.variable} ${caveat.variable} ${tiltNeon.variable} h-full antialiased`}
+      className={`${ibmPlexSans.variable} ${poppins.variable} ${geistMono.variable} ${syne.variable} ${sourceSerif.variable} ${sora.variable} ${plusJakarta.variable} ${manrope.variable} ${caveat.variable} ${tiltNeon.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

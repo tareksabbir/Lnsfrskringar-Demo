@@ -29,10 +29,12 @@ export const DEFAULT_CORNER_STYLE: CornerStyleKey = 'sharp'
 // Each option maps to the CSS var that next/font assigned. This is the WHOLE
 // hierarchy (display headers → body → labels) — it overrides --ot-font-sans, so
 // every type level, gradient fill, and bloom header follows the selected family.
-// Every option ships the 300–800 weight ladder Poppins uses. (Syne stays a fixed,
-// non-themeable accent font for select areas — see app/layout.tsx.)
+// Every option ships a 300–700 ladder at minimum; all but IBM Plex Sans also
+// carry 800. (Syne stays a fixed, non-themeable accent font for select areas —
+// see app/layout.tsx.)
 export const PRIMARY_FONTS = {
-  poppins:        { var: 'var(--font-poppins)',   label: 'Poppins (default)' },
+  ibmPlex:        { var: 'var(--font-ibm-plex)',  label: 'IBM Plex Sans (default)' },
+  poppins:        { var: 'var(--font-poppins)',   label: 'Poppins'           },
   sourceSerif:    { var: 'var(--font-primary-a)', label: 'Source Serif'      },
   sora:           { var: 'var(--font-primary-b)', label: 'Sora'              },
   plusJakarta:    { var: 'var(--font-primary-c)', label: 'Plus Jakarta Sans' },
@@ -40,7 +42,12 @@ export const PRIMARY_FONTS = {
 } as const
 
 export type PrimaryFontKey = keyof typeof PRIMARY_FONTS
-export const DEFAULT_PRIMARY_FONT: PrimaryFontKey = 'poppins'
+
+// Must stay in step with --ot-font-sans in styles/tokens.css. resolvePrimaryFont
+// returns null when the stored key equals this default, so the CSS token is what
+// renders in that case — point the two at different families and the axis
+// silently lies about what the site is using.
+export const DEFAULT_PRIMARY_FONT: PrimaryFontKey = 'ibmPlex'
 
 // ── Motion Intensity ────────────────────────────────────────────────────────
 // A single unitless multiplier on the --ot-dur-* scale (incl. ambient loops).
