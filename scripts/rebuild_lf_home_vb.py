@@ -307,7 +307,7 @@ def build(photos):
              "to come, a damage prevention inspection worth up to SEK 10,000 is included "
              "when you take out our villa or detached home insurance with us.",
         cta="More about inspection", image=p(1), image_style="side",
-        density="spacious", image_side="left")], span="col12")])],
+        density="spacious", image_side="left", border="none", hover="none")], span="col12")])],
         "Inspection", bg="surface"))
 
     # Right now — heading + 6 cards, 3 per row
