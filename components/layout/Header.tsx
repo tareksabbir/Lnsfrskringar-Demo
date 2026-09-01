@@ -201,9 +201,13 @@ export default async function Header() {
                 </a>
               )
             })}
-            <SearchTrigger />
+            {/* Labelled to sit as a peer of the CMS-driven actions rather than
+                as loose chrome beside them. No ThemeToggle here: the reference
+                header carries no mode switch, and the mode is the theme's
+                decision via ThemeManager.defaultMode. The mobile row below keeps
+                one, since that is the only place a visitor can reach it. */}
+            <SearchTrigger showLabel />
             <LocaleSelector enabledLocales={enabledLocales} />
-            <ThemeToggle />
             <MenuDrawer navItems={navItems} shortcuts={menuShortcuts} />
           </div>
 
