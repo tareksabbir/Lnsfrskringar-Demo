@@ -909,7 +909,7 @@ export default function SiteSearch() {
             being deleted — "here is the actual Graph query behind this result
             set" is a genuinely good moment in a pre-sales demo, it just should
             not be sitting in the chrome by default. */}
-        <div className="flex items-center justify-end px-md lg:px-2xl py-2.5 shrink-0 gap-sm">
+        <div className="ot-container flex items-center justify-end px-md lg:px-lg py-2.5 shrink-0 gap-sm">
           {DEV_PANEL_ENABLED && (
             <button
               type="button"
@@ -947,7 +947,14 @@ export default function SiteSearch() {
           aria-live="polite"
           className="flex-1 overflow-y-auto"
         >
-          <div className="px-md lg:px-2xl xl:px-[8vw] pt-lg pb-2xl">
+          {/* Same container rhythm as the header, footer and every section:
+              capped at 90rem and centred, with the shared gutters. It used to be
+              `px-md lg:px-2xl xl:px-[8vw]`, which drifted from the page behind it
+              in two ways — the top bar stopped at 2xl so the close button and the
+              search field sat on different left/right edges above xl, and the 8vw
+              gutter kept growing on wide screens, squeezing the field narrower the
+              bigger the display got. */}
+          <div className="ot-container px-md lg:px-lg pt-lg pb-2xl">
 
             {/* /SEARCH wordmark */}
             <div className="mb-lg select-none" aria-hidden>
