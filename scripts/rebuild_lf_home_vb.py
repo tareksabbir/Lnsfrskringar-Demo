@@ -197,7 +197,7 @@ def heading(text, color="none"):
 
 def card(heading_txt, desc=None, cta=None, image=None, image_style=None,
          density="default", image_side="left", tile="none", icon="none",
-         border="subtle"):
+         border="subtle", hover="border"):
     """
     Flat LF treatment: white fill, hairline border, no lift, no glow.
 
@@ -205,11 +205,14 @@ def card(heading_txt, desc=None, cta=None, image=None, image_style=None,
     tile="inline"  -> icon, label, arrow right (Popularly / Quick links / Contact)
     Both are display-template settings, so they cost no content-type change.
 
-    border="none" for the editorial cards that carry their own image — the photo
-    already gives them an edge, so a hairline on top of it reads as a box drawn
-    round a picture. The hover treatment stays: with no resting border there is
-    nothing to recolour, but the ring is a box-shadow, so it still appears on
-    hover and still costs no layout.
+    border="none" + hover="none" for the editorial cards that carry their own
+    image — the photo already gives them an edge, so a hairline on top of it
+    reads as a box drawn round a picture.
+
+    Both are needed to get rid of the edge completely. border="none" only clears
+    the RESTING border; the hover treatment draws its ring with a box-shadow, not
+    a border, so it kept appearing on hover with nothing left to recolour. The
+    tile grids keep both, since a tile is only a bordered box with a label in it.
     """
     props = {"Heading": {"value": heading_txt}}
     if desc: props["Description"] = {"value": {"html": f"<p>{desc}</p>"}}
@@ -225,7 +228,7 @@ def card(heading_txt, desc=None, cta=None, image=None, image_style=None,
     return component("OT_CardBlock", "OT_CardDefault",
                      {"tile": tile, "icon": icon,
                       "fill": "light", "border": border, "imageSide": image_side,
-                      "hover": "border", "density": density,
+                      "hover": hover, "density": density,
                       "noise": "false", "accentLine": "none"}, props)
 
 
@@ -329,7 +332,7 @@ def build(photos):
     for i in range(0, 6, 3):
         rn_rows.append(row([
             column([card(h, desc=d, cta="Read more", image=p(2 + i + j), image_style="top",
-                         border="none")],
+                         border="none", hover="none")],
                    span="col4")
             for j, (h, d) in enumerate(right_now[i:i + 3])
         ]))
@@ -350,7 +353,7 @@ def build(photos):
              "its entire mission in the Stockholm region. This means that we know the city, "
              "the suburbs and the archipelago - and can support you with local knowledge.",
         cta="Benefits of being our customer", image=p(3), image_style="side",
-        density="spacious", image_side="right", border="none")], span="col12")])],
+        density="spacious", image_side="right", border="none", hover="none")], span="col12")])],
         "Banking and insurance", bg="surface"))
 
     # Quick links — heading + 3 tiles
