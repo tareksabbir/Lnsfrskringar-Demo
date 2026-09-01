@@ -2,6 +2,8 @@
   "nav": {
     "openMenu": "Ouvrir la navigation",
     "closeMenu": "Fermer la navigation",
+    "menu": "Menu",
+    "shortcuts": "Raccourcis",
     "home": "Accueil",
     "skipToMain": "Aller au contenu principal"
   },

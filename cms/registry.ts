@@ -57,6 +57,7 @@ import { BlankExperience }  from '@/cms/content-types/BlankExperience'
 import { OT_ThemeManager } from '@/cms/content-types/OT_ThemeManager'
 import { OT_NavigationItem }    from '@/cms/content-types/OT_NavigationItem'
 import { OT_NavigationSubItem } from '@/cms/content-types/OT_NavigationSubItem'
+import { OT_HeaderAction }      from '@/cms/content-types/OT_HeaderAction'
 import { OT_FooterLink }        from '@/cms/content-types/OT_FooterLink'
 import { OT_FooterColumn }      from '@/cms/content-types/OT_FooterColumn'
 import { OT_Author }            from '@/cms/content-types/OT_Author'
@@ -287,6 +288,7 @@ initContentTypeRegistry([
   OT_ThemeManager,
   OT_NavigationItem,
   OT_NavigationSubItem,
+  OT_HeaderAction,
   OT_FooterLink,
   OT_FooterColumn,
   OT_Author,

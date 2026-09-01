@@ -175,6 +175,13 @@ const THEME_QUERY = `
         utilityNav {
           menuLink { text title target url { default } }
         }
+        headerActions {
+          menuLink { text title target url { default } }
+          icon
+        }
+        menuShortcuts {
+          menuLink { text title target url { default } }
+        }
       }
     }
     OT_FooterBlock(limit: 20, locale: $locale) {
@@ -442,8 +449,30 @@ const _fetchAllThemeManagers = cache(async function fetchAllThemeManagers(locale
         const uk = parseCmsContentKey(util.menuLink?.url?.default)
         if (uk) cmsKeys.push(uk)
       }
+      // Same treatment for the two header/drawer link arrays — miss these and an
+      // editor picking an internal page gets a raw cms:// href that resolves to '#'.
+      for (const group of [item.headerActions, item.menuShortcuts]) {
+        for (const entry of (group ?? []) as any[]) {
+          const ek = parseCmsContentKey(entry.menuLink?.url?.default)
+          if (ek) cmsKeys.push(ek)
+        }
+      }
     }
     const linkMap = await resolveCmsLinks(cmsKeys)
+
+    /** Rewrites menuLink.url.default on every entry of a `{ menuLink }[]` array. */
+    const resolveLinkArray = (arr: any[] | null | undefined) =>
+      ((arr ?? []) as any[]).map((entry: any) => ({
+        ...entry,
+        menuLink: entry.menuLink
+          ? {
+              ...entry.menuLink,
+              url: entry.menuLink.url
+                ? { ...entry.menuLink.url, default: applyLinkResolution(entry.menuLink.url.default, linkMap) }
+                : entry.menuLink.url,
+            }
+          : entry.menuLink,
+      }))
 
     // Rewrite cms:// values in-place so downstream consumers (Header, Footer)
     // always receive plain web paths — no cms:// handling needed elsewhere.
@@ -474,17 +503,9 @@ const _fetchAllThemeManagers = cache(async function fetchAllThemeManagers(locale
             : sub.menuLink,
         })),
       })),
-      utilityNav: ((item.utilityNav ?? []) as any[]).map((util: any) => ({
-        ...util,
-        menuLink: util.menuLink
-          ? {
-              ...util.menuLink,
-              url: util.menuLink.url
-                ? { ...util.menuLink.url, default: applyLinkResolution(util.menuLink.url.default, linkMap) }
-                : util.menuLink.url,
-            }
-          : util.menuLink,
-      })),
+      utilityNav:    resolveLinkArray(item.utilityNav),
+      headerActions: resolveLinkArray(item.headerActions),
+      menuShortcuts: resolveLinkArray(item.menuShortcuts),
     }))
   } catch {
     return []

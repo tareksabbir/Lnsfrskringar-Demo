@@ -2,6 +2,8 @@
   "nav": {
     "openMenu": "Open navigation",
     "closeMenu": "Close navigation",
+    "menu": "Menu",
+    "shortcuts": "Shortcuts",
     "home": "Home",
     "skipToMain": "Skip to main content"
   },

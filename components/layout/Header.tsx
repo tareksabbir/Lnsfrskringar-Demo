@@ -1,11 +1,20 @@
 import ThemeToggle from '@/components/ui/ThemeToggle'
-import Button from '@/components/ui/Button'
 import MobileMenu from '@/components/layout/MobileMenu'
-import DesktopNav from '@/components/layout/DesktopNav'
+import MenuDrawer from '@/components/layout/MenuDrawer'
+import UtilityNav from '@/components/layout/UtilityNav'
+import { ICON_REGISTRY } from '@/components/icons/iconRegistry'
 import { BrandMark } from '@/components/layout/BrandMark'
 import { LogoImage } from '@/components/layout/LogoImage'
 import { LocaleSelector } from '@/components/layout/LocaleSelector'
 import type { NavItem } from '@/components/layout/DesktopNav'
+import type { IconKey } from '@/components/icons/iconRegistry'
+
+/** An icon + label action in the header's right-hand cluster. */
+type HeaderAction = {
+  label: string
+  href:  string
+  icon?: IconKey
+}
 import SearchTrigger from '@/components/search/SearchTrigger'
 import { getSiteSettings, getRequestDomain, getRequestLocale } from '@/lib/optimizely'
 import { getEnabledLanguages } from '@/lib/i18n/getEnabledLanguages'
@@ -121,6 +130,26 @@ export default async function Header() {
       }))
     : []
 
+  // Icon + label actions in the header's right-hand cluster (e.g. "County",
+  // "Log in"). Search and Menu are structural and sit after these.
+  const headerActions: HeaderAction[] = settings?.headerActions?.length
+    ? settings.headerActions.map((item: any) => ({
+        label: item.menuLink?.text ?? '',
+        href:  normalizeNavHref(item.menuLink?.url?.default, locale, domain),
+        icon:  item.icon && item.icon !== 'none' ? item.icon : undefined,
+      }))
+    : []
+
+  // Second group inside the Menu drawer. Flat links only — any sub-items an
+  // editor sets are ignored, which the field description says.
+  const menuShortcuts: NavItem[] = settings?.menuShortcuts?.length
+    ? settings.menuShortcuts.map((item: any) => ({
+        label: item.menuLink?.text ?? '',
+        href:  normalizeNavHref(item.menuLink?.url?.default, locale, domain),
+      }))
+    : []
+
+
   return (
     <>
       {/* Skip to main content — accessibility */}
@@ -135,24 +164,7 @@ export default async function Header() {
 
       <header className="sticky top-0 z-50 bg-canvas/80 backdrop-blur-md shadow-[0_1px_0_0_var(--ot-bloom-brand-border),0_8px_32px_0_var(--ot-bloom-brand-faint)]">
 
-        {utilityNavItems.length > 0 && (
-          <div data-theme="dark" className="bg-brand-hover">
-            <nav
-              aria-label="Utility navigation"
-              className="ot-container hidden lg:flex items-center gap-x-md px-md lg:px-lg h-9"
-            >
-              {utilityNavItems.map(item => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="text-[0.8125rem] font-medium text-fg-on-brand/75 hover:text-fg-on-brand transition-colors duration-150"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
-          </div>
-        )}
+        {utilityNavItems.length > 0 && <UtilityNav items={utilityNavItems} />}
 
         <div className="ot-container flex items-center justify-between px-md py-md lg:px-lg">
 
@@ -169,13 +181,30 @@ export default async function Header() {
             )}
           </a>
 
-          <DesktopNav navItems={navItems} />
-
-          <div className="hidden lg:flex items-center gap-sm">
+          {/* No inline nav on desktop — the primary navigation lives in the Menu
+              drawer, matching the reference. DesktopNav is still used by other
+              header shells (split-bar, sidebar), so it is not removed from the
+              codebase, only from this one. */}
+          <div className="hidden lg:flex items-center gap-x-7">
+            {headerActions.map((action, i) => {
+              const Icon = action.icon ? ICON_REGISTRY[action.icon] : undefined
+              return (
+                <a
+                  key={`${action.label}-${i}`}
+                  href={action.href}
+                  className="flex items-center gap-2 text-sm font-semibold text-brand
+                             hover:text-brand-hover transition-colors duration-150
+                             focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
+                >
+                  {Icon && <Icon aria-hidden="true" className="h-5 w-5" />}
+                  {action.label}
+                </a>
+              )
+            })}
             <SearchTrigger />
             <LocaleSelector enabledLocales={enabledLocales} />
             <ThemeToggle />
-            <Button href={ctaHref} size="sm">{ctaLabel}</Button>
+            <MenuDrawer navItems={navItems} shortcuts={menuShortcuts} />
           </div>
 
           <div className="lg:hidden flex items-center gap-sm">

@@ -1,5 +1,6 @@
 import { contentType } from '@optimizely/cms-sdk'
 import { OT_NavigationItem } from './OT_NavigationItem'
+import { OT_HeaderAction } from './OT_HeaderAction'
 import { OT_FooterBlock } from './OT_FooterBlock'
 
 /* Image references stay narrowed to ['_image'] on purpose.
@@ -99,6 +100,29 @@ export const OT_ThemeManager = contentType({
       group: 'OT_Content',
       sortOrder: 41,
       maxItems: 4,
+      items: { type: 'component', contentType: OT_NavigationItem },
+    },
+
+    // Header right-hand cluster. Search and Menu are structural and always
+    // present; these are the editor-controlled actions that sit before them.
+    headerActions: {
+      type: 'array',
+      displayName: 'Header Actions',
+      description: 'Icon + label actions in the header, to the left of Search and Menu (e.g. "County", "Log in"). Leave empty to show only Search and Menu.',
+      group: 'OT_Content',
+      sortOrder: 42,
+      maxItems: 4,
+      items: { type: 'component', contentType: OT_HeaderAction },
+    },
+
+    // Second group in the Menu drawer, below the primary navigation.
+    menuShortcuts: {
+      type: 'array',
+      displayName: 'Menu Drawer — Shortcuts',
+      description: 'Flat links shown under a "Shortcuts" heading at the bottom of the Menu drawer (e.g. "Report damage", "Customer service"). Sub-items are ignored here. Leave empty to hide the Shortcuts group.',
+      group: 'OT_Content',
+      sortOrder: 43,
+      maxItems: 8,
       items: { type: 'component', contentType: OT_NavigationItem },
     },
 

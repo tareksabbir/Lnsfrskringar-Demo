@@ -2,6 +2,8 @@
   "nav": {
     "openMenu": "Navigation öffnen",
     "closeMenu": "Navigation schließen",
+    "menu": "Menü",
+    "shortcuts": "Verknüpfungen",
     "home": "Startseite",
     "skipToMain": "Zum Hauptinhalt springen"
   },
