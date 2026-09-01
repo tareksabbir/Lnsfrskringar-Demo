@@ -279,23 +279,43 @@ export async function getLocalizedContentByPath(
   // then returns nothing and the page 404s while the layout (header/footer,
   // which read ThemeManager directly) still renders. Falling back to the
   // prefixed path keeps the front end working against either arrangement.
+  //
+  // Each attempt is also retried WITHOUT the host filter. Graph gives a content
+  // item one canonical url.base, chosen from the application's hosts, so on an
+  // application with more than one host every request from the other hosts finds
+  // nothing and 404s — with the header and footer still rendering, because they
+  // read ThemeManager directly. That is exactly what happened here: the
+  // application lists both the production domain and localhost:3000 as primary
+  // hosts, the locale binding sits on localhost, so English resolved to
+  // "https://localhost:3000/" and the deployed site 404'd on every page.
+  //
+  // On a single-application instance the host filter buys nothing anyway — there
+  // is no second site whose content could be confused for this one — so dropping
+  // it is a fallback rather than a compromise.
   if (locale === DEFAULT_LOCALE) {
-    const results = await withGraphResilience(() => getClient().getContentByPath(path, { host, variation }))
-    if (results?.length) return pickByLocale(results, locale)
-
-    const prefixed = await withGraphResilience(() =>
-      getClient().getContentByPath(`/${locale}${path}`, { host, variation }),
-    )
-    return prefixed?.length ? pickByLocale(prefixed, locale) : null
+    const attempts = [
+      { p: path,                  h: host      },
+      { p: path,                  h: undefined },
+      { p: `/${locale}${path}`,   h: host      },
+      { p: `/${locale}${path}`,   h: undefined },
+    ]
+    for (const { p, h } of attempts) {
+      const results = await withGraphResilience(() =>
+        getClient().getContentByPath(p, { host: h, variation }),
+      )
+      if (results?.length) return pickByLocale(results, locale)
+    }
+    return null
   }
 
   // ── Non-default locale: step 1 — locale-prefixed path ─────────────────────
-  // Content Graph stores translated pages at /<locale><path>.
-  const prefixedResults = await withGraphResilience(() =>
-    getClient().getContentByPath(`/${locale}${path}`, { host, variation }),
-  )
-  if (prefixedResults?.length) {
-    return pickByLocale(prefixedResults, locale)
+  // Content Graph stores translated pages at /<locale><path>. Host-filtered
+  // first, then unfiltered, for the multi-host reason described above.
+  for (const h of [host, undefined]) {
+    const prefixedResults = await withGraphResilience(() =>
+      getClient().getContentByPath(`/${locale}${path}`, { host: h, variation }),
+    )
+    if (prefixedResults?.length) return pickByLocale(prefixedResults, locale)
   }
 
   // ── Non-default locale: step 2 — key-based locale lookup ──────────────────
@@ -305,7 +325,11 @@ export async function getLocalizedContentByPath(
   //       (e.g. /ui-testing2/ in English → /fr/polished-landing/ in French).
   // Fetch the English version first to get the content key, then ask for
   // that key's translation in the requested locale.
-  const defaultResults = await withGraphResilience(() => getClient().getContentByPath(path, { host }))
+  // `??` would not do here: a miss comes back as an empty array, not null.
+  const hostScoped = await withGraphResilience(() => getClient().getContentByPath(path, { host }))
+  const defaultResults = hostScoped?.length
+    ? hostScoped
+    : await withGraphResilience(() => getClient().getContentByPath(path, {}))
   if (!defaultResults?.length) return null
 
   const defaultContent = pickByLocale(defaultResults, DEFAULT_LOCALE) ?? defaultResults[0]
