@@ -10,7 +10,7 @@ export type CardFill       = "ghost" | "surface" | "brand" | "light" | "glass";
 export type CardBorder     = "none" | "subtle" | "brand";
 export type CardImageStyle = "top" | "background" | "side" | "float";
 export type CardImageSide  = "left" | "right";
-export type CardHover      = "none" | "lift" | "glow" | "tilt";
+export type CardHover      = "none" | "lift" | "glow" | "tilt" | "border";
 export type CardDensity    = "compact" | "default" | "spacious";
 
 export type CardAspectRatio      = "auto" | "square" | "portrait" | "landscape" | "wide" | "cinema";
@@ -133,10 +133,14 @@ function resolveBorder(fill: CardFill, border: CardBorder): string {
 // Lift/glow classes reference .card-hover-lift and .card-hover-glow in globals.css
 // which use --ot-bloom-brand and --ot-bloom-accent so they follow the CMS theme override.
 const HOVER_CLASS: Record<CardHover, string> = {
-  none: "",
-  lift: "card-hover-lift",
-  glow: "card-hover-glow",
-  tilt: "card-hover-tilt",
+  none:   "",
+  lift:   "card-hover-lift",
+  glow:   "card-hover-glow",
+  tilt:   "card-hover-tilt",
+  // Colours the existing hairline to brand and lifts the ground a touch. It
+  // recolours a border that is already there rather than adding one, so nothing
+  // reflows on hover — adding a border on hover would shift every card by 1px.
+  border: "card-hover-border",
 };
 
 // ─── Density ─────────────────────────────────────────────────────────────────
@@ -267,10 +271,14 @@ export default function CardBlock({
     isHover && !isBg && "motion-safe:transition-transform motion-safe:duration-500 motion-safe:ease-[var(--ease-kinetic)] motion-safe:group-hover:scale-105"
   );
 
+  // HOVER_CLASS belongs here too. The tile variants short-circuit the full card
+  // and build their own root, so they silently ignored the Hover effect setting —
+  // an editor could pick one and nothing at all would happen.
   const tileRoot = cn(
     "relative w-full rounded-ot-surface no-underline",
     FILL_CLASS[fill],
     resolveBorder(fill, border),
+    HOVER_CLASS[hover],
     className,
   );
 

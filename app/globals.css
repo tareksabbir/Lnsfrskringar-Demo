@@ -2355,6 +2355,25 @@ body {
   .card-hover-lift:hover { transform: none; }
 }
 
+/* Border hover — the restrained option, and the right one for flat card grids
+   where a lift or a tilt would make the whole page swim on mouse-over.
+   It recolours the hairline the card already carries and nudges the ground; it
+   never adds a border, because appearing from nothing costs 1px of layout and
+   every neighbouring card jumps. Colour and ground are both safe to animate. */
+.card-hover-border {
+  transition:
+    border-color var(--ot-dur-quick) var(--ot-ease-quick),
+    background-color var(--ot-dur-quick) var(--ot-ease-quick),
+    box-shadow var(--ot-dur-quick) var(--ot-ease-quick);
+}
+.card-hover-border:hover {
+  border-color: var(--ot-brand);
+  box-shadow: 0 1px 0 0 var(--ot-brand) inset, 0 0 0 1px var(--ot-brand);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-hover-border { transition: none; }
+}
+
 .card-hover-glow {
   transition: box-shadow var(--ot-dur-quick) var(--ot-ease-quick);
 }

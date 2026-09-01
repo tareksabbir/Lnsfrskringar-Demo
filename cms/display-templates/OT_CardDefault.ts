@@ -57,10 +57,11 @@ export const OT_CardDefault = displayTemplate({
       editor: 'select',
       sortOrder: 50,
       choices: {
-        none: { displayName: 'None (Default)',  sortOrder: 10 },
-        lift: { displayName: 'Lift',            sortOrder: 20 },
-        glow: { displayName: 'Glow',            sortOrder: 30 },
-        tilt: { displayName: 'Tilt',            sortOrder: 40 },
+        none:   { displayName: 'None (Default)',      sortOrder: 10 },
+        border: { displayName: 'Border — brand edge', sortOrder: 15 },
+        lift:   { displayName: 'Lift',                sortOrder: 20 },
+        glow:   { displayName: 'Glow',                sortOrder: 30 },
+        tilt:   { displayName: 'Tilt',                sortOrder: 40 },
       },
     },
     density: {

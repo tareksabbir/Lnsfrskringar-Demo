@@ -141,7 +141,7 @@ def column(children, span="auto"):
             "nodes": children}
 
 
-def row(columns, gap="medium", vpad="small"):
+def row(columns, gap="medium", vpad="small", anim="slide"):
     """
     `vpad` is the gap BETWEEN rows in a section. "small" is the default because
     "none" left two tile rows touching and made them read as overlapping.
@@ -155,8 +155,14 @@ def row(columns, gap="medium", vpad="small"):
             "displaySettings": {"displayTemplate": "OT_LandingRow",
                                 # stack until desktop — 3-4 cards side by side on a
                                 # phone is unreadable.
+                                # The stagger lives on the ROW, not the section:
+                                # [data-stagger] animates a node's CHILDREN, and a
+                                # row's children are its columns. Put it on the
+                                # section and the whole slab moves as one lump,
+                                # which is the opposite of choreographed.
                                 "settings": {"showAsRowFrom": "lg", "contentSpacing": gap,
-                                             "verticalPadding": vpad}},
+                                             "verticalPadding": vpad,
+                                             "entranceAnimation": anim}},
             "nodes": columns}
 
 
@@ -167,6 +173,11 @@ def section(rows, name, bg="canvas", spacing="medium", width="default"):
     `displayName` is what Visual Builder's Outline shows. Omit it and every row
     in the outline reads "Blank Section" (the underlying content type), which is
     useless once there is more than one section.
+
+    Sections stay at entranceAnimation "none" on purpose. Animating both the
+    section and its rows double-animates every element — the section fades its
+    children (the rows) while each row is already sliding its own columns, and
+    the two compose into a slower, muddier move than either alone.
     """
     return {"nodeType": "section", "layoutType": "grid", "displayName": name,
             "displaySettings": {"displayTemplate": "OT_LandingSection",
@@ -207,7 +218,7 @@ def card(heading_txt, desc=None, cta=None, image=None, image_style=None,
     return component("OT_CardBlock", "OT_CardDefault",
                      {"tile": tile, "icon": icon,
                       "fill": "light", "border": "subtle", "imageSide": image_side,
-                      "hover": "none", "density": density,
+                      "hover": "border", "density": density,
                       "noise": "false", "accentLine": "none"}, props)
 
 
@@ -267,7 +278,7 @@ def build(photos):
     # below. With the default width the band was boxed to 90rem + px-lg.
     # vpad="none": the hero is the first thing under the header, so any row
     # padding here is empty tint between the two — not a gap between rows.
-    nodes.append(section([row([column([hero(p(0))], span="col12")], vpad="none")],
+    nodes.append(section([row([column([hero(p(0))], span="col12")], vpad="none", anim="fade")],
                          "Hero", bg="canvas", spacing="none", width="full"))
 
     # 8 product tiles, 4 per row
@@ -357,7 +368,8 @@ def build(photos):
         sys.exit("No DAM asset matching 'skyline' — cannot place the illustration.")
     nodes.append(section(
         [row([column([image_block(illustration,
-                                  "Illustration of the Stockholm skyline")], span="col12")])],
+                                  "Illustration of the Stockholm skyline")], span="col12")],
+             anim="fade")],
         "Stockholm illustration", bg="canvas", spacing="small", width="full"))
 
     return {"nodeType": "experience", "layoutType": "outline", "nodes": nodes}
