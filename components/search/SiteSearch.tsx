@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  Search, X, Maximize2, Minimize2,
+  Search, X, Maximize2,
   FileText, Newspaper, LayoutGrid, Sparkles, Hash, List, SlidersHorizontal,
   CalendarDays, MapPin, Video, ExternalLink, Code2,
 } from 'lucide-react'
@@ -19,6 +19,15 @@ type TypeFilter  = 'all' | 'Blog' | 'Page' | 'Event'
 type ViewMode    = 'list' | 'card'
 
 const DISPLAY_MODE_KEY = 'ot-search-mode'
+
+/**
+ * The query inspector is off unless explicitly switched on. It shows the raw
+ * Graph request behind the current result set — useful when demoing to a
+ * technical audience, meaningless (and slightly alarming) to everyone else.
+ *
+ *     NEXT_PUBLIC_SEARCH_DEV_PANEL=true
+ */
+const DEV_PANEL_ENABLED = process.env.NEXT_PUBLIC_SEARCH_DEV_PANEL === 'true'
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; Icon: typeof LayoutGrid }[] = [
   { value: 'all',   label: 'All',    Icon: LayoutGrid   },
@@ -893,34 +902,32 @@ export default function SiteSearch() {
         }}
       >
 
-        {/* Top bar — controls only, no search wordmark */}
+        {/* Top bar — controls only, no search wordmark.
+            The Compact toggle is gone: a visitor has no use for it and no way to
+            read what it does, so on a customer demo it looked like unfinished
+            product. The query inspector survives behind an env flag rather than
+            being deleted — "here is the actual Graph query behind this result
+            set" is a genuinely good moment in a pre-sales demo, it just should
+            not be sitting in the chrome by default. */}
         <div className="flex items-center justify-end px-md lg:px-2xl py-2.5 shrink-0 gap-sm">
-          {/* Query inspector toggle — desktop/demo only */}
-          <button
-            type="button"
-            onClick={() => setShowDevPanel(v => !v)}
-            aria-label={showDevPanel ? 'Hide query inspector' : 'Show query inspector'}
-            aria-pressed={showDevPanel}
-            className={[
-              'hidden md:flex items-center gap-1.25 px-sm h-9 rounded-ot-control transition-all duration-200',
-              'focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2',
-              showDevPanel
-                ? 'bg-brand/15 text-brand ring-1 ring-brand/30'
-                : 'text-fg-muted/50 bg-fg/7 ring-1 ring-fg/10 hover:text-fg hover:ring-fg/25 hover:bg-fg/10',
-            ].join(' ')}
-          >
-            <Code2 size={14} />
-            <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Query</span>
-          </button>
-          <button
-            type="button"
-            onClick={toggleMode}
-            aria-label={t('search.compact')}
-            className="flex items-center gap-1.25 px-sm h-9 rounded-ot-control bg-brand text-fg-on-brand hover:opacity-90 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2"
-          >
-            <Minimize2 size={16} />
-            <span className="text-[10px] uppercase tracking-[0.08em] font-semibold hidden sm:inline">Compact</span>
-          </button>
+          {DEV_PANEL_ENABLED && (
+            <button
+              type="button"
+              onClick={() => setShowDevPanel(v => !v)}
+              aria-label={showDevPanel ? 'Hide query inspector' : 'Show query inspector'}
+              aria-pressed={showDevPanel}
+              className={[
+                'hidden md:flex items-center gap-1.25 px-sm h-9 rounded-ot-control transition-all duration-200',
+                'focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2',
+                showDevPanel
+                  ? 'bg-brand/15 text-brand ring-1 ring-brand/30'
+                  : 'text-fg-muted/50 bg-fg/7 ring-1 ring-fg/10 hover:text-fg hover:ring-fg/25 hover:bg-fg/10',
+              ].join(' ')}
+            >
+              <Code2 size={14} />
+              <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Query</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={closeSearch}
