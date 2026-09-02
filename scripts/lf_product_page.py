@@ -618,11 +618,34 @@ def car_insurance(photos, skyline):
                          "<li>\u2713 Stone chip repair included with half and full insurance</li>"
                          "</ul>",
                          size="headline"),
-            button("Calculate your price"),
         ], span="col6"),
         column([image(p(3)["key"], "Car insurance illustration", ratio="r16_9")], span="col6"),
     ], anim="fade", align="center", vpad="none")],
         "Hero", bg="canvas", spacing="small"))
+
+    # Quote strip — the two small input panels and the adviser card that sit
+    # directly under the hero in the reference, then the CTA.
+    nodes.append(section([
+        row([
+            column([callout("Registration number",
+                            body="Enter the car\u2019s registration number and we will fetch "
+                                 "the details automatically.",
+                            intent="neutral", variant="bordered", size="compact",
+                            icon="package")], span="col4"),
+            column([callout("Social security number",
+                            body="We use it to calculate a price that is specific to you. No "
+                                 "credit check is made.",
+                            intent="neutral", variant="bordered", size="compact",
+                            icon="lock")], span="col4"),
+            column([card("Welcome to Länsförsäkringar Stockholm",
+                         desc="As a customer you can talk to a personal adviser about your "
+                              "car, your home and your savings.",
+                         cta="Find your local office", img=p(6), image_style="side",
+                         density="compact", fill="surface",
+                         border="none", hover="none")], span="col4"),
+        ], anim="fade"),
+        row([column([button("Calculate your price")], span="col12")], vpad="none", anim="fade"),
+    ], "Get a quote", bg="canvas", spacing="small"))
 
     # The comparison matrix from the reference, as an actual table.
     #
@@ -652,6 +675,28 @@ def car_insurance(photos, skyline):
         span="col12")], anim="fade")],
         "Compare cover levels", bg="surface"))
 
+    # Wide editorial photograph, then the piece it illustrates.
+    nodes.append(section([row([column([
+        image(p(0)["key"], "Driving with car insurance", ratio="r16_9")], span="col12")],
+        vpad="none", anim="fade")],
+        "Editorial image", bg="canvas", spacing="small"))
+
+    nodes.append(section([row([column([
+        primary_text("Compare and choose the right car insurance",
+                     "<p>There are three types of car insurance. According to Swedish law, all "
+                     "cars must have third-party liability insurance, but depending on the "
+                     "value of the car, it may be a good idea to have partial or full "
+                     "insurance.</p>"
+                     "<p>When you buy a car, you must have motor liability insurance from the "
+                     "second day, the insurance needs to be in place before you drive. If you "
+                     "also need a conversation to the paragraph, you can use it based on the "
+                     "risk insurance. With semi-insurance you also have the cover most drivers "
+                     "actually claim on \u2014 fire, glass, theft, machinery damage and "
+                     "roadside assistance.</p>"
+                     "<p><a href=\'/\'>More about car insurance \u2192</a></p>")],
+        span="col12")], anim="fade")],
+        "Compare and choose", bg="canvas", spacing="small"))
+
     nodes.append(section([row([column([
         callout("Our insurance has a high rating",
                 body="4.5 out of 5. Independent reviews of car insurance rate us highly for "
@@ -679,17 +724,32 @@ def car_insurance(photos, skyline):
           "while yours is being repaired.")],
         "Cover levels explained"))
 
+    # Quick guide — the two side-by-side boxes.
+    nodes.append(section([
+        row([column([primary_text(
+            "What car insurance should I have? \u2014 check out our quick guide")],
+            span="col12")], vpad="none", anim="fade"),
+        row([
+            column([card("Which car insurance is best for you?",
+                         desc="Answer a few questions about your car and how you use it, and "
+                              "we will suggest a level of cover.",
+                         fill="surface", border="none", hover="none")], span="col6"),
+            column([card("Find the right car insurance",
+                         desc="Not sure where to start? Our quick guide walks you through the "
+                              "differences in a couple of minutes.",
+                         cta="Take the quiz here", fill="light", border="subtle",
+                         hover="border")], span="col6"),
+        ], anim="fade"),
+    ], "Quick guide", bg="canvas"))
+
     body = [
         ("Who should insure the car?",
          "<p>Car insurance should be on the person who owns the car and uses it the most. If "
-         "you use a car mainly in the same household as the car above usually, it doesn\u2019t "
-         "really matter who is the owner. However, the registered owner should also take out "
-         "insurance.</p>"
+         "the car is used mainly within one household, it does not really matter who is the "
+         "registered owner \u2014 but the registered owner should also be the policyholder.</p>"
          "<p>If you have children who have a driver\u2019s licence and use the family car for "
-         "work, training and travel, it is okay for the car to still be the family\u2019s "
-         "parent, and it may be who owns the car. However, if you are getting a car from the "
-         "child\u2019s own car, the accident needs to be the registered owner with own "
-         "communication.</p>"),
+         "work, training and travel, the car can still be insured by the parent who owns it. "
+         "If the child owns the car themselves, the insurance needs to be in their name.</p>"),
         ("Calculate your car insurance price",
          "<p>Fill in the car\u2019s registration number and your personal identification "
          "number to calculate how much your car insurance costs. You will immediately receive "
@@ -702,18 +762,22 @@ def car_insurance(photos, skyline):
          "<li>Car make, model and year</li>"
          "<li>Your age</li>"
          "<li>Where you live \u2014 big city or rural area</li>"
-         "<li>How far you run the year you drive</li>"
+         "<li>How far you drive in a year</li>"
          "<li>Which type of insurance you have chosen</li>"
          "<li>Choice of deductible</li>"
-         "<li>The car <a href=\'/\'>is driven by you as a car insurance</a> \u2014 for "
-         "example, if the car is used mainly for commuting</li>"
+         "<li>How the car is used \u2014 for example, mainly for commuting</li>"
          "</ul>"),
         ("Electric car, plug-in hybrid or vintage car?",
          "<p>No matter what type of car you drive, you can find the right insurance with us. "
-         "You can read more about our car insurance and how you can find the details on our "
-         "pages for these cars.</p>"
+         "Read more on the pages for each kind of car.</p>"
          "<ul><li><a href=\'/\'>Electric car insurance</a></li>"
+         "<li><a href=\'/\'>Plug-in hybrid insurance</a></li>"
          "<li><a href=\'/\'>Vintage car insurance</a></li></ul>"),
+        ("Our brand insurances",
+         "<p>We have brand insurance for those who drive Toyota, Lexus or Suzuki.</p>"
+         "<ul><li><a href=\'/\'>Toyota car insurance</a></li>"
+         "<li><a href=\'/\'>Lexus car insurance</a></li>"
+         "<li><a href=\'/\'>Suzuki car insurance</a></li></ul>"),
         ("Deductible",
          "<p>You choose the deductible yourself when you take out car insurance. A higher "
          "deductible usually gives a lower premium, but means you pay more of the cost "
@@ -736,6 +800,14 @@ def car_insurance(photos, skyline):
                 cta="Report damage", intent="danger", icon="shield")], span="col12")],
         anim="fade")],
         "Report damage", bg="canvas", spacing="small"))
+
+    nodes.append(section([row([column([
+        primary_text("Are you planning to park your car?",
+                     "<p>If you are not going to use the car for a while, you can deregister "
+                     "it and pause the insurance. Read about <a href=\'/\'>parking your "
+                     "car</a> and what cover still applies while it is off the road.</p>")],
+        span="col12")], anim="fade")],
+        "Parking your car", bg="canvas", spacing="small"))
 
     nodes.append(section([row([column([
         rich("<h2>Car insurance terms and conditions</h2>"
@@ -773,15 +845,15 @@ def car_insurance(photos, skyline):
          ("What car insurance do I need?",
           "If the car is new or valuable, comprehensive. If it is older but still worth "
           "repairing, semi-insurance. Otherwise motor vehicle insurance."),
-         ("When is included in all-risk insurance?",
+         ("What is included in all-risk insurance?",
           "All-risk covers sudden and unforeseen damage that the standard cover does not, "
           "such as spilling something in the interior."),
          ("Who is car insurance for?",
           "Anyone who owns a car registered in Sweden and uses it on public roads."),
-         ("What do I do if I want to cancel my car insurance or trade it?",
+         ("What do I do if I want to cancel my car insurance or sell the car?",
           "Contact us before the change. Cover can be moved to a new car or ended when the "
           "car is sold."),
-         ("How much does the insurance apply to a leasing car?",
+         ("How does the insurance apply to a leasing car?",
           "A leased car normally needs comprehensive insurance for the whole leasing period."),
          ("What happens if you are not insured?",
           "Driving without motor vehicle insurance is an offence and carries a daily fee "
