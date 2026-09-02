@@ -13,6 +13,16 @@ import { contentType } from '@optimizely/cms-sdk'
  *
  * The rendered panel collects nothing — see components/blocks/QuoteForm.tsx for
  * why that matters when one of the fields is a personal number.
+ *
+ * NO heading/intro properties here on purpose. They were added and immediately
+ * reverted: adding a property to a REGISTERED content type breaks every page in
+ * the site until Graph's schema catches up, because the SDK puts the new field
+ * in the composition fragment it sends for every request. Graph had not picked
+ * them up nine minutes later and the whole site was returning 500.
+ *
+ * Display SETTINGS do not have this problem — they live in the composition, not
+ * in Graph's type schema — which is why the hero's spacing is solved with a
+ * setting on OT_PrimaryTextDefault instead.
  */
 export const OT_QuoteForm = contentType({
   key: 'OT_QuoteForm',
@@ -20,14 +30,6 @@ export const OT_QuoteForm = contentType({
   baseType: '_component',
   compositionBehaviors: ['elementEnabled', 'sectionEnabled'],
   properties: {
-    headline: {
-      type: 'string', displayName: 'Heading', isLocalized: true, maxLength: 120,
-      group: 'OT_Content', sortOrder: 4,
-    },
-    intro: {
-      type: 'string', displayName: 'Intro', isLocalized: true, maxLength: 400,
-      group: 'OT_Content', sortOrder: 6,
-    },
     checkItems: {
       type: 'array', displayName: 'Tick list', isLocalized: true,
       description: 'One selling point per row, shown above the panel with a tick.',

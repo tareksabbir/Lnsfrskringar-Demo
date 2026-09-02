@@ -37,8 +37,6 @@ export default function OT_QuoteFormAdapter({ content, displaySettings = {} }: P
   return (
     <div {...pa(content.__composition)} className="w-full">
       <QuoteForm
-        headline={content.headline ?? undefined}
-        intro={content.intro ?? undefined}
         checkItems={strings(content.checkItems)}
         fields={fields}
         ctaLabel={content.ctaLabel ?? undefined}

@@ -208,14 +208,15 @@ def rich(html, size="editorial", color="none", treatment="standard"):
                      {"content": {"value": {"html": html}}})
 
 
-def primary_text(headline, body_html=None, size="headline", color="none", level="h2"):
+def primary_text(headline, body_html=None, size="headline", color="none", level="h2",
+                 spacing="default"):
     props = {"headline": {"value": headline}, "headingLevel": {"value": level},
              "headerEffect": {"value": "none"}}
     if body_html:
         props["body"] = {"value": {"html": body_html}}
     return component("OT_PrimaryTextBlock", "OT_PrimaryTextDefault",
                      {"alignment": "left", "color": color, "size": size,
-                      "entranceAnimation": "none"},
+                      "spacing": spacing, "entranceAnimation": "none"},
                      props)
 
 
@@ -294,14 +295,9 @@ def compare_table(headline, intro, columns, rows, bg="surface"):
 
 
 
-def quote_form(headline, intro, check_items, f1, f2, cta_label, plate=True):
+def quote_form(check_items, f1, f2, cta_label, plate=True):
     """
     The hero quote panel: tick list, two labelled fields, one CTA.
-
-    The heading and intro live here too, so the whole left column is ONE block.
-    Split across PrimaryText + QuoteForm they were separated by the sum of both
-    blocks' own vertical padding, which is where the gap between the copy and
-    the ticks came from — a composition cannot reach inside a block to close it.
 
     The ticks live here rather than in the hero copy because rich-text `ul` is
     hard-set to disc — a list of typed tick characters renders a bullet AND a
@@ -313,9 +309,7 @@ def quote_form(headline, intro, check_items, f1, f2, cta_label, plate=True):
     """
     return component("OT_QuoteForm", "OT_QuoteFormDefault",
                      {"platePrefix": "true" if plate else "false"},
-                     {"headline":          {"value": headline},
-                      "intro":             {"value": intro},
-                      "checkItems":        {"value": list(check_items)},
+                     {"checkItems":        {"value": list(check_items)},
                       "field1Label":       {"value": f1[0]},
                       "field1Placeholder": {"value": f1[1]},
                       "field1LinkLabel":   {"value": f1[2]},
@@ -649,12 +643,23 @@ def car_insurance(photos, skyline):
     # ticks and panel is set in one place rather than being whatever the sum of
     # three blocks' padding happens to be. The illustration drops its default
     # vertical padding so its top edge lines up with the heading beside it.
+    # Hero. The gap between the copy and the ticks was each block's own vertical
+    # padding, so both blocks now set spacing themselves: PrimaryText to none,
+    # and the illustration likewise, so its top edge meets the heading's.
+    #
+    # Done with display SETTINGS rather than by merging the blocks. Moving the
+    # heading into OT_QuoteForm as new properties took the entire site down —
+    # the SDK adds every registered property to the composition fragment it
+    # sends on every request, and Graph had not indexed them nine minutes later,
+    # so every page returned 500. Settings live in the composition and never
+    # touch Graph's schema.
     nodes.append(section([row([
         column([
+            primary_text("Car insurance",
+                         "<p>Choose the car insurance that best suits your car. We insure "
+                         "electric cars, plug-in hybrids and traditional fuel cars.</p>",
+                         size="headline", spacing="none"),
             quote_form(
-                "Car insurance",
-                "Choose the car insurance that best suits your car. We insure electric cars, "
-                "plug-in hybrids and traditional fuel cars.",
                 ["4.5 out of 5 ratings according to Consumers\u2019",
                  "10 percent discount when you subscribe online",
                  "Stone chipping is included in half and full insurance"],

@@ -30,6 +30,9 @@ export type PrimaryTextStyleOptions = {
   size?: "display" | "headline" | "title" | "label";
   /** Header effect on the heading (see HeaderEffect). */
   effect?: HeaderEffect;
+  /** Overrides the size-derived vertical padding. `none` for blocks stacked in a
+   *  column, where the composition should own the spacing. */
+  spacing?: "default" | "small" | "none";
 };
 
 /** Effect key → global CSS class (defined in app/globals.css). */
@@ -48,6 +51,17 @@ const EFFECT_CLASS: Record<HeaderEffect, string> = {
 // ─── CVA variant configs ─────────────────────────────────────────────────────
 
 /** Section wrapper: background + vertical padding scaled to heading size */
+// `spacing` overrides the size-derived vertical padding. A block stacked with
+// others in a hero column needs none of it — the gap there should be set by
+// whatever composes the column, not by each block's own idea of a comfortable
+// band.
+const spacingCva = cva("", {
+  variants: {
+    spacing: { default: "", small: "!py-md", none: "!py-0" },
+  },
+  defaultVariants: { spacing: "default" },
+});
+
 const sectionCva = cva("px-md lg:px-lg", {
   variants: {
     color: {
@@ -147,6 +161,7 @@ export default function PrimaryTextBlock({
     color     = "canvas",
     size      = "headline",
     effect    = "none",
+    spacing   = "default",
   } = styleOptions;
 
   const Heading = headingLevel
@@ -167,7 +182,7 @@ export default function PrimaryTextBlock({
       : headline
 
   return (
-    <section className={sectionCva({ color, size })}>
+    <section className={`${sectionCva({ color, size })} ${spacingCva({ spacing })}`}>
       <div className="ot-container">
       <div className={innerCva({ alignment })}>
         <div className={`flex flex-col gap-sm${alignment === 'center' ? ' items-center' : ''}`}>

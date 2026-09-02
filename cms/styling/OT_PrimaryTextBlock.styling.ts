@@ -8,6 +8,7 @@ export function getPrimaryTextStyles(s: Record<string, string | boolean>): Prima
     alignment: (s.alignment   ?? 'left')     as PrimaryTextStyleOptions['alignment'],
     color:     (s.color       ?? 'canvas')   as PrimaryTextStyleOptions['color'],
     size:      (s.size        ?? 'headline') as PrimaryTextStyleOptions['size'],
+    spacing:   (s.spacing     ?? 'default')  as PrimaryTextStyleOptions['spacing'],
     effect:    (headerEffect  ?? 'none')     as PrimaryTextStyleOptions['effect'],
   }
 }

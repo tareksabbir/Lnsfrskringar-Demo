@@ -6,6 +6,16 @@ export const OT_PrimaryTextDefault = displayTemplate({
   contentType: 'OT_PrimaryTextBlock',
   isDefault: true,
   settings: {
+    spacing: {
+      displayName: 'Vertical spacing',
+      editor: 'select',
+      sortOrder: 5,
+      choices: {
+        default: { displayName: 'Default', sortOrder: 10 },
+        small:   { displayName: 'Small',   sortOrder: 20 },
+        none:    { displayName: 'None',    sortOrder: 30 },
+      },
+    },
     alignment: {
       displayName: 'Alignment',
       editor: 'select',
