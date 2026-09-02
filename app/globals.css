@@ -1737,6 +1737,53 @@ body {
   margin-top: 0;
 }
 
+/* Disclosure rows — the FAQ pattern.
+   Native <details>/<summary>, so open/close, keyboard operation and the
+   accessible name come from the browser rather than from JS. Only the marker is
+   restyled: the default triangle is replaced with a chevron that rotates on
+   open. The rotation is a transform, never a layout property, and it is dropped
+   under reduced motion. */
+[data-rich-text] details {
+  border-bottom: 1px solid var(--ot-border);
+}
+[data-rich-text] details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ot-space-md);
+  padding: var(--ot-space-md) 0;
+  cursor: pointer;
+  font-weight: var(--ot-weight-title);
+  list-style: none;              /* Firefox */
+  transition: color var(--ot-dur-quick) var(--ot-ease-quick);
+}
+[data-rich-text] details > summary::-webkit-details-marker { display: none; }
+[data-rich-text] details > summary:hover { color: var(--ot-brand); }
+[data-rich-text] details > summary:focus-visible {
+  outline: 2px solid var(--ot-brand);
+  outline-offset: 2px;
+}
+[data-rich-text] details > summary::after {
+  content: "";
+  flex: none;
+  width: 0.55em;
+  height: 0.55em;
+  border-right: 2px solid var(--ot-brand);
+  border-bottom: 2px solid var(--ot-brand);
+  transform: rotate(45deg);
+  transform-origin: center;
+  transition: transform var(--ot-dur-quick) var(--ot-ease-quick);
+}
+[data-rich-text] details[open] > summary::after { transform: rotate(-135deg); }
+[data-rich-text] details > summary + * { margin-top: 0; }
+[data-rich-text] details > *:not(summary) {
+  padding-bottom: var(--ot-space-md);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-rich-text] details > summary,
+  [data-rich-text] details > summary::after { transition: none; }
+}
+
 /* Lists */
 [data-rich-text] ul,
 [data-rich-text] ol {

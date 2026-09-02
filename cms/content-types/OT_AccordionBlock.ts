@@ -17,7 +17,14 @@ export const OT_AccordionBlock = contentType({
   displayName:          'Accordion Block',
   description:          'Expandable FAQ section with headline and collapsible question/answer items.',
   baseType:             '_component',
-  compositionBehaviors: ['sectionEnabled'],
+  /* `sectionEnabled` alone made this block unplaceable on this CMS instance.
+   * A section node's component must have baseType `_section` (BlankSection);
+   * a `_component` offered there is rejected with "The component type is not
+   * based on section base type." And without `elementEnabled` a column rejects
+   * it too — "Only element enabled components are allowed within an section."
+   * So the block existed, rendered, and could never be added to a page.
+   * elementEnabled is what actually lets an editor place it. */
+  compositionBehaviors: ['elementEnabled', 'sectionEnabled'],
   properties: {
     eyebrow: {
       type:        'string',
