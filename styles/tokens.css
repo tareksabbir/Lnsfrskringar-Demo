@@ -64,11 +64,18 @@
   --ot-font-display:   var(--ot-font-syne);
 
   /* Scale */
-  --ot-text-display:  clamp(3rem, 8vw, 6rem);
-  --ot-text-hero:     clamp(2.5rem, 6.25vw, 4.5rem);  /* hero headline — one step down from 2.75/7vw/5rem; still between headline and display */
-  --ot-text-headline: clamp(1.75rem, 4vw, 2.75rem);
-  --ot-text-subhead:  1.5rem;   /* prose h2 / sub-headline tier between headline and title */
-  --ot-text-title:    1.25rem;
+  /* Trimmed roughly a fifth off every heading tier. The old scale topped out at
+     6rem for display and 2.75rem for headline, which read as shouting on dense
+     editorial pages — the product pages in particular, where a page can carry
+     eight or nine h2s. Body and label are unchanged; only the heading tiers
+     move, so the contrast between heading and prose narrows rather than the
+     whole page shrinking. Order is preserved at BOTH ends of every clamp:
+     title < subhead < headline < hero < display. */
+  --ot-text-display:  clamp(2.5rem, 6vw, 4rem);
+  --ot-text-hero:     clamp(2.25rem, 5.5vw, 3.5rem);
+  --ot-text-headline: clamp(1.5rem, 3vw, 2.25rem);
+  --ot-text-subhead:  1.375rem;  /* prose h2 / sub-headline tier between headline and title */
+  --ot-text-title:    1.125rem;
   --ot-text-body:     1rem;
   --ot-text-label:    0.8125rem;
 

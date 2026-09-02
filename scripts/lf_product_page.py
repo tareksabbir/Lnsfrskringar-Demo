@@ -306,12 +306,19 @@ def home_insurance(photos, skyline):
                          "<li>✓ 10 percent web discount the first year</li>"
                          "<li>✓ Combine with <a href='#'>car alarm</a> and get a 15 percent discount</li>"
                          "</ul>",
-                         size="display"),
+                         # `headline`, not `display`. The landing hero renders at
+                         # --ot-text-hero; PrimaryText has no hero tier, and
+                         # `display` overshot it badly.
+                         size="headline"),
             button("Get an offer"),
         ], span="col6"),
-        column([image(p(0)["key"], "Home insurance illustration", ratio="auto")], span="col6"),
+        # r16_9 stated explicitly. `auto` resolved to the same box — it is absent
+        # from RATIO_MAP in cms/styling, so it fell through to undefined and
+        # ImageBlock's 16:9 default — but naming it means the height is chosen
+        # rather than inherited from a lookup miss.
+        column([image(p(0)["key"], "Home insurance illustration", ratio="r16_9")], span="col6"),
     ], anim="fade", align="center")],
-        "Hero", bg="canvas", spacing="large"))
+        "Hero", bg="canvas", spacing="medium"))
 
     # Inspection strip — the small highlight card under the hero.
     nodes.append(section([row([column([
@@ -539,11 +546,16 @@ def home_insurance(photos, skyline):
     return {"nodeType": "experience", "layoutType": "outline", "nodes": nodes}
 
 
+# Content keys are stable CMS identifiers, so they live here rather than in a
+# scratch file — an earlier version read them from /tmp and stopped working the
+# moment the shell was recycled.
+PRODUCT_FOLDER = "4866d4dfda774334a222e0539e731025"   # Root > Product
+
 PRODUCTS = {
     "home-insurance": {
-        "key_file": "/tmp/home_insurance.txt",
-        "display":  "Home insurance",
-        "build":    home_insurance,
+        "key":     "e7312340564e47d990bb7d24618729cd",
+        "display": "Home insurance",
+        "build":   home_insurance,
     },
 }
 
@@ -575,7 +587,7 @@ def main():
     args = ap.parse_args()
 
     spec = PRODUCTS[args.product]
-    key = pathlib.Path(spec["key_file"]).read_text().strip()
+    key = spec["key"]
 
     photos  = dam_photos()
     skyline = dam_asset_by_title("skyline")
