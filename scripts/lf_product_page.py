@@ -82,6 +82,15 @@ def _need(n):
     return v
 
 
+# Placeholder destination for demo CTAs.
+#
+# NOT "#". A `url`-typed property will not store it — the CMS discards it as
+# invalid and Graph returns an empty string. ButtonBlock then sees no URL and
+# renders itself disabled on purpose ("a button with a label but no URL is a
+# misconfiguration"), which is exactly what the pale, dead "Get an offer" button
+# was. Card CTAs came back with empty hrefs for the same reason.
+PLACEHOLDER_URL = "/"
+
 CMS           = "https://api.cms.optimizely.com"
 CMP           = "https://api.cmp.optimizely.com"
 CMP_TOKEN_URL = "https://accounts.cmp.optimizely.com/o/oauth2/v1/token"
@@ -210,7 +219,7 @@ def primary_text(headline, body_html=None, size="headline", color="none", level=
                      props)
 
 
-def button(label, url="#", variant="brand", size="md", align="left"):
+def button(label, url=PLACEHOLDER_URL, variant="brand", size="md", align="left"):
     return component("OT_ButtonBlock", "OT_ButtonDefault",
                      {"size": size, "icon": "none", "iconPosition": "trailing",
                       "alignment": align, "fullWidth": "false"},
@@ -235,7 +244,7 @@ def card(heading, desc=None, cta=None, img=None, eyebrow=None,
     if desc:    props["Description"] = {"value": {"html": f"<p>{desc}</p>"}}
     if cta:
         props["ctaLabel"] = {"value": cta}
-        props["ctaUrl"]   = {"value": "#"}
+        props["ctaUrl"]   = {"value": PLACEHOLDER_URL}
     if image_style: props["imageStyle"] = {"value": image_style}
     if img:
         props["image"]    = {"value": f"cms://content/{img['key']}"}
@@ -254,7 +263,7 @@ def callout(heading, body=None, cta=None, intent="info", variant="filled",
     if body: props["body"] = {"value": body}
     if cta:
         props["ctaLabel"] = {"value": cta}
-        props["ctaUrl"]   = {"value": "#"}
+        props["ctaUrl"]   = {"value": PLACEHOLDER_URL}
     return component("OT_CalloutBlock", "OT_CalloutDefault",
                      {"variant": variant, "size": size, "alignment": "left",
                       "dismissible": "off", "sticky": "off", "icon": icon,
@@ -301,7 +310,7 @@ def home_insurance(photos, skyline):
     # Breadcrumb. No breadcrumb block exists in this repo, so it is a small rich
     # text line rather than semantic nav — flagged rather than faked silently.
     nodes.append(section([row([column([
-        rich('<p><a href="#">Private</a> / <a href="#">Insurance</a> / '
+        rich('<p><a href="/">Private</a> / <a href="/">Insurance</a> / '
              '<span>All home insurance</span></p>', size="compact")], span="col12")],
         vpad="none", anim="fade")],
         "Breadcrumb", bg="canvas", spacing="none"))
@@ -329,8 +338,8 @@ def home_insurance(photos, skyline):
         # ImageBlock's 16:9 default — but naming it means the height is chosen
         # rather than inherited from a lookup miss.
         column([image(p(0)["key"], "Home insurance illustration", ratio="r16_9")], span="col6"),
-    ], anim="fade", align="center")],
-        "Hero", bg="canvas", spacing="medium"))
+    ], anim="fade", align="center", vpad="none")],
+        "Hero", bg="canvas", spacing="small"))
 
     # Inspection strip — the small highlight card under the hero.
     nodes.append(section([row([column([
