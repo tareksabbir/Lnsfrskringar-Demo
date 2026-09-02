@@ -275,9 +275,18 @@ def faq_section(headline, qa_pairs, name, bg="surface"):
     rows = "".join(
         f"<details><summary>{q}</summary><p>{a}</p></details>" for q, a in qa_pairs
     )
+    # The .ot-faq wrapper carries the card treatment (see globals.css). `class`
+    # is on the sanitiser's attribute allowlist, which is what lets a rich text
+    # block adopt a named pattern instead of being generic prose.
+    #
+    # colour "none" on the block: the card supplies its own ground, so a block
+    # background would sit behind it as a second, slightly larger panel.
+    # `narrow` centres the card rather than letting it run the full width, which
+    # is what made the first version read as a wall of text rather than a list.
     return section([row([column([
-        rich(f"<h2>{headline}</h2>{rows}")], span="col12")], anim="fade")],
-        name, bg=bg, spacing="large")
+        rich(f'<div class="ot-faq"><h2>{headline}</h2>{rows}</div>', color="none")],
+        span="col12")], anim="fade")],
+        name, bg=bg, spacing="large", width="narrow")
 
 
 # ── Page content ─────────────────────────────────────────────────────────────

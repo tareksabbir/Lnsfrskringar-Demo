@@ -1737,6 +1737,31 @@ body {
   margin-top: 0;
 }
 
+/* FAQ card.
+   The rows are <details> in a rich text block, so the wrapper is a class on a
+   div — `class` survives the sanitiser allowlist, which is what makes a bespoke
+   pattern possible inside editor-authored content at all.
+   Scoped deliberately: styling the generic rich-text container instead would
+   have restyled every coloured rich text block on the site to fix one section. */
+[data-rich-text] .ot-faq {
+  background: var(--ot-canvas);
+  border: 1px solid oklch(from var(--ot-fg) l c h / 0.10);
+  border-radius: var(--ot-radius-surface);
+  padding: var(--ot-space-lg);
+}
+[data-rich-text] .ot-faq > h2 {
+  margin-top: 0;
+  margin-bottom: var(--ot-space-md);
+}
+/* The card edge already closes the list — a rule under the final row would read
+   as a border doubled against it. */
+[data-rich-text] .ot-faq > details:last-child { border-bottom: none; }
+[data-rich-text] .ot-faq > details:last-child > summary { padding-bottom: 0; }
+
+@media (max-width: 640px) {
+  [data-rich-text] .ot-faq { padding: var(--ot-space-md); }
+}
+
 /* Disclosure rows — the FAQ pattern.
    Native <details>/<summary>, so open/close, keyboard operation and the
    accessible name come from the browser rather than from JS. Only the marker is
@@ -1744,7 +1769,7 @@ body {
    open. The rotation is a transform, never a layout property, and it is dropped
    under reduced motion. */
 [data-rich-text] details {
-  border-bottom: 1px solid var(--ot-border);
+  border-bottom: 1px solid oklch(from var(--ot-fg) l c h / 0.10);
 }
 [data-rich-text] details > summary {
   display: flex;

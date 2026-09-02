@@ -195,7 +195,7 @@ export default function MenuDrawer({ navItems, shortcuts }: Props) {
                     : self.section
 
                   return (
-                    <li key={`${item.label}-${i}`} className="border-b border-border">
+                    <li key={`${item.label}-${i}`} className="border-b border-fg/10">
                       {hasChildren ? (
                         <>
                           <button
@@ -258,7 +258,7 @@ export default function MenuDrawer({ navItems, shortcuts }: Props) {
                   <h2 className="mt-xl text-xl font-bold text-brand">{t('nav.shortcuts')}</h2>
                   <ul className="mt-md">
                     {shortcuts.map((item, i) => (
-                      <li key={`${item.label}-${i}`} className="border-b border-border">
+                      <li key={`${item.label}-${i}`} className="border-b border-fg/10">
                         <Link
                           href={item.href}
                           onClick={close}
