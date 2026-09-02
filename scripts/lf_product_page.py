@@ -33,11 +33,9 @@ THREE CONSTRAINTS THAT SHAPE THIS FILE
          `_component` there fails with "The component type is not based on
          section base type."
      There is no legal position for any of them. The way out is `_section`:
-     OT_FaqSection is the accordion re-declared with that baseType, which may
-     both BE a section's component and hold an array of components. It reuses
-     the existing AccordionBlock React component, so it is a placement fix
-     rather than a second implementation. The same move would rescue the other
-     six.
+     OT_FaqSection is an accordion declared with that baseType, which may both
+     BE a section's component and hold an array of components. The same move
+     would rescue the other six.
   2. Rich text is a NODE TREE, not HTML. OT_RichTextBlock renders through the
      SDK's <RichText>, which walks a structured tree and knows a fixed set of
      node types. Raw markup posted as {"html": ...} is flattened to its text, so
@@ -481,8 +479,8 @@ def home_insurance(photos, skyline):
                      "become a parent.</p>")], span="col12")], anim="fade")],
         "If something happens", bg="canvas", spacing="small"))
 
-    # FAQ — see faq_section for why this is rich text rather than the accordion
-    # block. All 15 questions from the design fit; nothing is dropped.
+    # FAQ — a real accordion section (OT_FaqSection, rendered by FaqAccordion).
+    # All 15 questions are kept; nothing is capped away.
     nodes.append(faq_section(
         "Frequently asked questions and answers about home insurance",
         [("What is included in home insurance?",
