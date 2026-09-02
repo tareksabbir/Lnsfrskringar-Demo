@@ -574,6 +574,228 @@ def home_insurance(photos, skyline):
 # Content keys are stable CMS identifiers, so they live here rather than in a
 # scratch file — an earlier version read them from /tmp and stopped working the
 # moment the shell was recycled.
+
+def car_insurance(photos, skyline):
+    p = lambda i: photos[i % len(photos)] if photos else None
+    nodes = []
+
+    nodes.append(section([row([column([
+        rich('<p><a href="/">Private</a> / <a href="/">Insurance</a> / '
+             '<span>All car insurance</span></p>', size="compact")], span="col12")],
+        vpad="none", anim="fade")],
+        "Breadcrumb", bg="canvas", spacing="none"))
+
+    nodes.append(section([row([
+        column([
+            primary_text("Car insurance",
+                         "<p>Choose the car insurance that best suits your car. We insure "
+                         "electric cars, plug-in hybrids and traditional fuel cars.</p>"
+                         "<ul>"
+                         "<li>\u2713 Full or partial coverage depending on <a href=\'/\'>your needs</a></li>"
+                         "<li>\u2713 10 percent discount when you combine with home insurance</li>"
+                         "<li>\u2713 Stone chip repair included with half and full insurance</li>"
+                         "</ul>",
+                         size="headline"),
+            button("Calculate your price"),
+        ], span="col6"),
+        column([image(p(3)["key"], "Car insurance illustration", ratio="r16_9")], span="col6"),
+    ], anim="fade", align="center", vpad="none")],
+        "Hero", bg="canvas", spacing="small"))
+
+    # The three cover levels. OT_ComparisonTableBlock would be the natural fit
+    # and cannot be placed — it is one of the array-of-component types with no
+    # legal position — so the comparison is three cards, one per level, each
+    # listing what it covers. Same information, and every card is editable.
+    levels = [
+        ("Motor vehicle insurance",
+         "The legal minimum. Covers injury to people and damage to other people\u2019s "
+         "property \u2014 never damage to your own car."),
+        ("Semi-insurance",
+         "Motor vehicle insurance plus fire, glass, theft, machinery damage, roadside "
+         "assistance and legal protection."),
+        ("Comprehensive insurance",
+         "Everything in semi-insurance plus collision cover for your own car, however the "
+         "damage happened."),
+    ]
+    cmp_rows = [row([column([primary_text(
+        "Compare our car insurance policies",
+        "<p>There are three types of car insurance. According to Swedish law, all cars must "
+        "have third-party liability insurance, but depending on the value of the car, it may "
+        "be a good idea to have partial or full insurance.</p>")], span="col12")],
+        vpad="none", anim="fade")]
+    cmp_rows.append(row([
+        column([card(h, desc=d, cta="Read more", img=p(4 + i))], span="col4")
+        for i, (h, d) in enumerate(levels)
+    ]))
+    nodes.append(section(cmp_rows, "Compare cover levels", bg="canvas"))
+
+    nodes.append(section([row([column([
+        callout("Our insurance has a high rating",
+                body="4.5 out of 5. Independent reviews of car insurance rate us highly for "
+                     "claims handling and value for money.",
+                cta="See the insurance comparison", intent="info", size="compact",
+                icon="star")], span="col12")], anim="fade")],
+        "Rating", bg="canvas", spacing="small"))
+
+    # "What's the difference?" is a genuine accordion in the reference, so it is
+    # OT_FaqBlock rather than four stacked text blocks.
+    nodes.append(faq_section(
+        "Motor, semi- or full insurance \u2014 what\u2019s the difference?",
+        [("Motor vehicle insurance",
+          "The legal minimum every car on the road must carry. It pays for injury to people "
+          "and for damage your car causes to other people\u2019s property. It never pays for "
+          "damage to your own car."),
+         ("Semi-insurance",
+          "Motor vehicle insurance plus the cover most drivers actually claim on: fire, glass, "
+          "theft, machinery damage, roadside assistance and legal protection."),
+         ("Comprehensive insurance",
+          "Everything semi-insurance covers, plus damage to your own car regardless of how it "
+          "happened \u2014 including a collision you caused."),
+         ("Supplementary insurance",
+          "Add-ons such as deductible reduction, extended machinery cover and rental car "
+          "while yours is being repaired.")],
+        "Cover levels explained"))
+
+    body = [
+        ("Who should insure the car?",
+         "<p>Car insurance should be on the person who owns the car and uses it the most. If "
+         "you use a car mainly in the same household as the car above usually, it doesn\u2019t "
+         "really matter who is the owner. However, the registered owner should also take out "
+         "insurance.</p>"
+         "<p>If you have children who have a driver\u2019s licence and use the family car for "
+         "work, training and travel, it is okay for the car to still be the family\u2019s "
+         "parent, and it may be who owns the car. However, if you are getting a car from the "
+         "child\u2019s own car, the accident needs to be the registered owner with own "
+         "communication.</p>"),
+        ("Calculate your car insurance price",
+         "<p>Fill in the car\u2019s registration number and your personal identification "
+         "number to calculate how much your car insurance costs. You will immediately receive "
+         "a price quote and can adjust deductibles and add-ons before you decide. You are not "
+         "obligated to buy.</p>"),
+        ("How much does car insurance cost?",
+         "<p>The price of your car insurance is calculated individually and is based on "
+         "several factors:</p>"
+         "<ul>"
+         "<li>Car make, model and year</li>"
+         "<li>Your age</li>"
+         "<li>Where you live \u2014 big city or rural area</li>"
+         "<li>How far you run the year you drive</li>"
+         "<li>Which type of insurance you have chosen</li>"
+         "<li>Choice of deductible</li>"
+         "<li>The car <a href=\'/\'>is driven by you as a car insurance</a> \u2014 for "
+         "example, if the car is used mainly for commuting</li>"
+         "</ul>"),
+        ("Electric car, plug-in hybrid or vintage car?",
+         "<p>No matter what type of car you drive, you can find the right insurance with us. "
+         "You can read more about our car insurance and how you can find the details on our "
+         "pages for these cars.</p>"
+         "<ul><li><a href=\'/\'>Electric car insurance</a></li>"
+         "<li><a href=\'/\'>Vintage car insurance</a></li></ul>"),
+        ("Deductible",
+         "<p>You choose the deductible yourself when you take out car insurance. A higher "
+         "deductible usually gives a lower premium, but means you pay more of the cost "
+         "yourself if something happens. Read more about <a href=\'/\'>the deductible "
+         "here</a>.</p>"),
+        ("Easily manage your insurance in the app and on My Pages",
+         "<p>In our app you can see your insurance, report damage and get help quickly. On My "
+         "Pages you can change your address, adjust your cover and download your documents "
+         "whenever it suits you.</p>"),
+    ]
+    nodes.append(section(
+        [row([column([primary_text(h, html)], span="col12")], vpad="small", anim="fade")
+         for h, html in body],
+        "About car insurance", bg="canvas"))
+
+    nodes.append(section([row([column([
+        callout("Do you need to report damage?",
+                body="Have you had a collision, hit an animal or had something else happen "
+                     "that you need to report to us? You can report your damage online.",
+                cta="Report damage", intent="danger", icon="shield")], span="col12")],
+        anim="fade")],
+        "Report damage", bg="canvas", spacing="small"))
+
+    nodes.append(section([row([column([
+        rich("<h2>Car insurance terms and conditions</h2>"
+             "<p>Please read the terms and conditions before you purchase. The full terms "
+             "are also available in the app.</p>"
+             "<ul><li><a href=\'/\'>Car insurance \u2014 pre- and post-purchase "
+             "information (pdf)</a></li>"
+             "<li><a href=\'/\'>Car insurance \u2014 complete terms (pdf)</a></li>"
+             "<li><a href=\'/\'>Motor vehicle insurance terms and conditions (pdf)</a></li>"
+             "</ul>")], span="col12")], anim="fade")],
+        "Terms and conditions", bg="surface", spacing="medium"))
+
+    nodes.append(faq_section(
+        "Questions and answers about car insurance",
+        [("What affects the price of car insurance?",
+          "The car\u2019s make, model and year, where you live, how far you drive, your age, "
+          "the level of cover you choose and the deductible you set."),
+         ("Who should be responsible for the car insurance?",
+          "The registered owner should hold the insurance. If someone else drives the car "
+          "most, tell us \u2014 it can affect the price."),
+         ("How does insurance apply to damage to the electric car battery?",
+          "The traction battery is covered against sudden and unforeseen damage under semi- "
+          "and comprehensive insurance."),
+         ("Is my car insurance still relevant?",
+          "Review it whenever your circumstances change \u2014 a new address, a different "
+          "annual mileage or a change of car."),
+         ("Do you have to have car insurance?",
+          "Yes. Every car in traffic must have motor vehicle insurance by law. Partial and "
+          "full cover are optional."),
+         ("Can I insure a car that someone else owns?",
+          "The insurance should be in the registered owner\u2019s name, but the car can be "
+          "driven by anyone with a licence."),
+         ("Can I choose a lower mileage for my leasing car?",
+          "Yes. Tell us your expected annual mileage and the price is adjusted accordingly."),
+         ("What car insurance do I need?",
+          "If the car is new or valuable, comprehensive. If it is older but still worth "
+          "repairing, semi-insurance. Otherwise motor vehicle insurance."),
+         ("When is included in all-risk insurance?",
+          "All-risk covers sudden and unforeseen damage that the standard cover does not, "
+          "such as spilling something in the interior."),
+         ("Who is car insurance for?",
+          "Anyone who owns a car registered in Sweden and uses it on public roads."),
+         ("What do I do if I want to cancel my car insurance or trade it?",
+          "Contact us before the change. Cover can be moved to a new car or ended when the "
+          "car is sold."),
+         ("How much does the insurance apply to a leasing car?",
+          "A leased car normally needs comprehensive insurance for the whole leasing period."),
+         ("What happens if you are not insured?",
+          "Driving without motor vehicle insurance is an offence and carries a daily fee "
+          "until cover is in place."),
+         ("When can I change insurance company for my car?",
+          "At the end of your insurance period, or immediately if you sell the car or it is "
+          "written off."),
+         ("How does the insurance apply if I collide with another vehicle?",
+          "Damage to the other vehicle is covered by motor vehicle insurance. Damage to your "
+          "own car needs comprehensive cover.")],
+        "FAQ"))
+
+    articles = [
+        ("SAFETY", "Safer car journeys with us",
+         "Our car insurance includes 24-hour roadside assistance. Here is what is covered and "
+         "how to reach us."),
+        ("ELECTRIC", "Planning a used electric car?",
+         "What to check before you buy \u2014 battery health, charging history and warranty "
+         "cover."),
+        ("WINTER", "Do you have a broken car window?",
+         "Stone chip repair is included with semi- and comprehensive insurance, and you pay no "
+         "deductible for the repair itself."),
+    ]
+    nodes.append(section([row([
+        column([card(t, desc=d, eyebrow=e, cta="Read more", img=p(5 + i),
+                     border="none", hover="none")], span="col4")
+        for i, (e, t, d) in enumerate(articles)
+    ], anim="slide")], "Articles", bg="canvas"))
+
+    nodes.append(section([row([column([
+        image(skyline, "Illustration of the Stockholm skyline")], span="col12")],
+        vpad="none", anim="fade")],
+        "Stockholm illustration", bg="canvas", spacing="small", width="full"))
+
+    return {"nodeType": "experience", "layoutType": "outline", "nodes": nodes}
+
+
 PRODUCT_FOLDER = "4866d4dfda774334a222e0539e731025"   # Root > Product
 
 PRODUCTS = {
@@ -581,6 +803,11 @@ PRODUCTS = {
         "key":     "e7312340564e47d990bb7d24618729cd",
         "display": "Home insurance",
         "build":   home_insurance,
+    },
+    "car-insurance": {
+        "key":     "3084f3d943b149838c1deba283e5bcb2",
+        "display": "Car insurance",
+        "build":   car_insurance,
     },
 }
 
