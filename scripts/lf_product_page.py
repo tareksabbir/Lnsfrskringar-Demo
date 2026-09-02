@@ -21,7 +21,7 @@ USAGE
 Add a product by writing a PRODUCTS entry and running the script again. The page
 shape is shared; only the copy differs.
 
-TWO CONSTRAINTS THAT SHAPE THIS FILE
+THREE CONSTRAINTS THAT SHAPE THIS FILE
   1. Every array-based block in this repo is unplaceable. OT_AccordionBlock,
      OT_FeatureGridBlock, OT_StatBlock, OT_TabsBlock, OT_ComparisonTableBlock,
      OT_DisclosureBlock and OT_TrustRail all carry an array-of-component
@@ -32,13 +32,21 @@ TWO CONSTRAINTS THAT SHAPE THIS FILE
        - and a section's component must have baseType `_section`, so offering a
          `_component` there fails with "The component type is not based on
          section base type."
-     There is no legal position for any of them. The FAQ is therefore built from
-     native <details>/<summary> in a rich text block (see faq_section), which
-     also lifts the accordion block's silent 12-item cap.
-  2. No block renders a tick list. OT_HeroBlock.body is a plain 300-char string,
-     and rich-text `ul` is hard-set to disc. The hero is therefore composed by
-     hand from PrimaryText + Button + Image rather than using OT_HeroBlock, and
-     the ticks are literal characters in the rich text.
+     There is no legal position for any of them. The way out is `_section`:
+     OT_FaqSection is the accordion re-declared with that baseType, which may
+     both BE a section's component and hold an array of components. It reuses
+     the existing AccordionBlock React component, so it is a placement fix
+     rather than a second implementation. The same move would rescue the other
+     six.
+  2. Rich text is a NODE TREE, not HTML. OT_RichTextBlock renders through the
+     SDK's <RichText>, which walks a structured tree and knows a fixed set of
+     node types. Raw markup posted as {"html": ...} is flattened to its text, so
+     no custom element or class can be smuggled in that way — an earlier FAQ
+     built from <details> looked correct in the payload and rendered as a wall
+     of plain text.
+  3. No block renders a tick list. OT_HeroBlock.body is a plain 300-char string,
+     so the hero is composed by hand from PrimaryText + Button + Image rather
+     than using OT_HeroBlock.
 """
 
 import argparse
@@ -253,55 +261,32 @@ def callout(heading, body=None, cta=None, intent="info", variant="filled",
 
 def faq_section(headline, qa_pairs, name, bg="surface"):
     """
-    FAQ as native <details>/<summary> inside a rich text block.
+    FAQ as a real accordion component — OT_FaqSection, rendered by the same
+    AccordionBlock the site already ships.
 
-    NOT OT_AccordionBlock. That block cannot be placed in a composition on this
-    instance at all, and the reason is worth recording because it applies to
-    every array-based block here (FeatureGrid, StatBlock, Tabs, ComparisonTable,
-    Disclosure, TrustRail):
+    The first attempt built this from <details>/<summary> in a rich text block,
+    which never worked: OT_RichTextBlock renders through the SDK's <RichText>,
+    which walks a structured node tree and knows a fixed set of node types. Raw
+    HTML posted as {"html": ...} is not that tree, so the markup was flattened to
+    its text and no amount of CSS could have helped.
 
-      - a section node's component must have baseType `_section`; offering a
-        `_component` is refused with "The component type is not based on section
-        base type."
-      - a column only accepts `elementEnabled`;
-      - and `elementEnabled` cannot be granted to it, because the CMS rejects
-        "The property 'items' is not allowed when content type has
-        ElementEnabled." Its `items` array is exactly what makes it an accordion.
-
-    So it has no legal position. Rich text does the job with no JS, and the
-    browser supplies open/close, keyboard operation and the accessible name.
-    There is also no 12-item cap here, which the block silently imposed.
+    OT_FaqSection exists because OT_AccordionBlock cannot be placed at all — see
+    the content type for the full trap. The short version: `_section` is the one
+    baseType that may both be a section's component AND hold an array of
+    components.
     """
-    def answer_html(a):
-        # Answers split on a blank line so a reply can run to more than one
-        # paragraph, as the reference does.
-        paras = "".join(f"<p>{part.strip()}</p>" for part in a.split("\n\n") if part.strip())
-        # "Did this answer help you?" is PRESENTATIONAL ONLY. The sanitiser
-        # allows no <button>, and there is no endpoint behind it, so these are
-        # spans that look like the reference rather than controls that pretend to
-        # work. Wiring it up needs a real feedback block, not rich text.
-        return (paras +
-                '<div class="ot-faq-vote">'
-                '<span class="ot-faq-vote-label">Did this answer help you?</span>'
-                '<span class="ot-faq-vote-btn">Yes</span>'
-                '<span class="ot-faq-vote-btn">No</span>'
-                '</div>')
-
-    rows = "".join(
-        f"<details><summary>{q}</summary>{answer_html(a)}</details>" for q, a in qa_pairs
-    )
-    # The .ot-faq wrapper carries the card treatment (see globals.css). `class`
-    # is on the sanitiser's attribute allowlist, which is what lets a rich text
-    # block adopt a named pattern instead of being generic prose.
-    #
-    # colour "none" on the block: the card supplies its own ground, so a block
-    # background would sit behind it as a second, slightly larger panel.
-    # `narrow` centres the card rather than letting it run the full width, which
-    # is what made the first version read as a wall of text rather than a list.
-    return section([row([column([
-        rich(f'<div class="ot-faq"><h2>{headline}</h2>{rows}</div>', color="none")],
-        span="col12")], anim="fade")],
-        name, bg=bg, spacing="large", width="narrow")
+    return {"nodeType": "section", "layoutType": "grid", "displayName": name,
+            "displaySettings": {"displayTemplate": "OT_FaqSectionDefault",
+                                "settings": {"color": bg, "borderStyle": "boxed",
+                                             "openMode": "single", "defaultOpen": "false"}},
+            "component": {"contentType": "OT_FaqSection",
+                          "properties": {
+                              "headline": {"value": headline},
+                              "items": {"value": [
+                                  {"properties": {"question": {"value": q},
+                                                  "answer":   {"value": a}}}
+                                  for q, a in qa_pairs]}}},
+            "nodes": []}
 
 
 # ── Page content ─────────────────────────────────────────────────────────────

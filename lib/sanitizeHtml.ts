@@ -9,10 +9,11 @@ const ALLOWED_TAGS = [
   'table', 'thead', 'tbody', 'tr', 'th', 'td',
   'figure', 'figcaption', 'img',
   'hr', 'sup', 'sub',
-  // Native disclosure. This is how an FAQ gets built here: OT_AccordionBlock
-  // cannot be placed in a composition at all on this CMS — its `items` array
-  // bars it from being elementEnabled, and a `_component` is refused as a
-  // section's component — so rich text is the only route to collapsible rows.
+  // Native disclosure, allowed for hand-authored rich text that wants a
+  // collapsible aside. NOT how the FAQ is built — that is OT_FaqSection, a real
+  // component. Note that this only matters for HTML that reaches the sanitiser:
+  // OT_RichTextBlock renders through the SDK's <RichText>, which walks a
+  // structured node tree and ignores raw HTML entirely.
   // Both tags are inert structure with no scripting surface, and the attribute
   // allowlist below still applies (class / id / data-* only, so no `open`
   // toggling from content).
