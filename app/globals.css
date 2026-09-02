@@ -1737,76 +1737,132 @@ body {
   margin-top: 0;
 }
 
-/* FAQ card.
-   The rows are <details> in a rich text block, so the wrapper is a class on a
-   div — `class` survives the sanitiser allowlist, which is what makes a bespoke
-   pattern possible inside editor-authored content at all.
-   Scoped deliberately: styling the generic rich-text container instead would
-   have restyled every coloured rich text block on the site to fix one section. */
-[data-rich-text] .ot-faq {
-  background: var(--ot-canvas);
-  border: 1px solid oklch(from var(--ot-fg) l c h / 0.10);
-  border-radius: var(--ot-radius-surface);
-  padding: var(--ot-space-lg);
-}
+/* ── FAQ ─────────────────────────────────────────────────────────────────────
+   Each question is its OWN white card on the grey band — not one card with
+   hairlines through it, which is what the first pass built and why it read as a
+   block of text rather than a list.
+
+   The rows are native <details>/<summary> inside a rich text block, so open and
+   close, keyboard operation and the accessible name all come from the browser
+   with no JS. Only the marker is restyled. The wrapper is a class on a div:
+   `class` survives the sanitiser allowlist, which is what lets editor-authored
+   content adopt a named pattern at all.
+
+   Scoped to .ot-faq on purpose — styling [data-rich-text] details generally
+   would have reached every rich text block on the site. */
 [data-rich-text] .ot-faq > h2 {
   margin-top: 0;
   margin-bottom: var(--ot-space-md);
-}
-/* The card edge already closes the list — a rule under the final row would read
-   as a border doubled against it. */
-[data-rich-text] .ot-faq > details:last-child { border-bottom: none; }
-[data-rich-text] .ot-faq > details:last-child > summary { padding-bottom: 0; }
-
-@media (max-width: 640px) {
-  [data-rich-text] .ot-faq { padding: var(--ot-space-md); }
+  color: var(--ot-brand);
 }
 
-/* Disclosure rows — the FAQ pattern.
-   Native <details>/<summary>, so open/close, keyboard operation and the
-   accessible name come from the browser rather than from JS. Only the marker is
-   restyled: the default triangle is replaced with a chevron that rotates on
-   open. The rotation is a transform, never a layout property, and it is dropped
-   under reduced motion. */
-[data-rich-text] details {
-  border-bottom: 1px solid oklch(from var(--ot-fg) l c h / 0.10);
+[data-rich-text] .ot-faq details {
+  background: var(--ot-canvas);
+  border-radius: var(--ot-radius-surface);
+  margin-bottom: var(--ot-space-sm);
+  overflow: hidden;             /* keeps the open row's fill inside the radius */
 }
-[data-rich-text] details > summary {
+[data-rich-text] .ot-faq details:last-child { margin-bottom: 0; }
+
+[data-rich-text] .ot-faq summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--ot-space-md);
-  padding: var(--ot-space-md) 0;
+  padding: var(--ot-space-md) var(--ot-space-lg);
   cursor: pointer;
-  font-weight: var(--ot-weight-title);
-  list-style: none;              /* Firefox */
-  transition: color var(--ot-dur-quick) var(--ot-ease-quick);
+  color: var(--ot-brand);
+  font-weight: var(--ot-weight-headline);
+  line-height: var(--ot-leading-title);
+  list-style: none;                                  /* Firefox */
+  transition: background-color var(--ot-dur-quick) var(--ot-ease-quick);
 }
-[data-rich-text] details > summary::-webkit-details-marker { display: none; }
-[data-rich-text] details > summary:hover { color: var(--ot-brand); }
-[data-rich-text] details > summary:focus-visible {
+[data-rich-text] .ot-faq summary::-webkit-details-marker { display: none; }
+[data-rich-text] .ot-faq summary:hover {
+  background: oklch(from var(--ot-brand) l c h / 0.04);
+}
+[data-rich-text] .ot-faq summary:focus-visible {
   outline: 2px solid var(--ot-brand);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
-[data-rich-text] details > summary::after {
+
+/* The open row keeps a brand rule under its header, separating question from
+   answer the way the reference does. */
+[data-rich-text] .ot-faq details[open] > summary {
+  border-bottom: 2px solid var(--ot-brand);
+}
+
+/* Chevron: a square with two borders, rotated. Down when closed, up when open.
+   Rotation is a transform, never a layout property, and it is dropped under
+   reduced motion. */
+[data-rich-text] .ot-faq summary::after {
   content: "";
   flex: none;
-  width: 0.55em;
-  height: 0.55em;
-  border-right: 2px solid var(--ot-brand);
-  border-bottom: 2px solid var(--ot-brand);
+  width: 0.5em;
+  height: 0.5em;
+  margin-bottom: 0.18em;                             /* optical centring */
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
   transform-origin: center;
   transition: transform var(--ot-dur-quick) var(--ot-ease-quick);
 }
-[data-rich-text] details[open] > summary::after { transform: rotate(-135deg); }
-[data-rich-text] details > summary + * { margin-top: 0; }
-[data-rich-text] details > *:not(summary) {
+[data-rich-text] .ot-faq details[open] > summary::after {
+  transform: rotate(-135deg);
+  margin-bottom: -0.18em;
+}
+
+/* Answer body — normal prose weight and colour, indented to the question. */
+[data-rich-text] .ot-faq details > *:not(summary) {
+  padding: 0 var(--ot-space-lg);
+  color: var(--ot-fg);
+  font-weight: var(--ot-weight-body);
+}
+[data-rich-text] .ot-faq details > *:not(summary):first-of-type {
+  padding-top: var(--ot-space-md);
+}
+[data-rich-text] .ot-faq details > *:not(summary):last-child {
   padding-bottom: var(--ot-space-md);
 }
+
+/* "Did this answer help you?" — presentational. These are spans, not controls:
+   the sanitiser allows no <button>, and there is nothing behind them. They match
+   the reference without pretending to be interactive; a real feedback control
+   needs its own block. */
+[data-rich-text] .ot-faq-vote {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ot-space-sm);
+  margin-top: var(--ot-space-md);
+  padding-top: var(--ot-space-md);
+  border-top: 1px solid oklch(from var(--ot-fg) l c h / 0.10);
+}
+[data-rich-text] .ot-faq-vote-label {
+  margin-right: var(--ot-space-xs);
+  font-size: var(--ot-text-body);
+}
+[data-rich-text] .ot-faq-vote-btn {
+  min-width: 3.25rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--ot-brand);
+  border-radius: var(--ot-radius-control);
+  color: var(--ot-brand);
+  font-size: var(--ot-text-label);
+  font-weight: var(--ot-weight-label);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  [data-rich-text] .ot-faq summary,
+  [data-rich-text] .ot-faq details > *:not(summary) {
+    padding-left: var(--ot-space-md);
+    padding-right: var(--ot-space-md);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  [data-rich-text] details > summary,
-  [data-rich-text] details > summary::after { transition: none; }
+  [data-rich-text] .ot-faq summary,
+  [data-rich-text] .ot-faq summary::after { transition: none; }
 }
 
 /* Lists */

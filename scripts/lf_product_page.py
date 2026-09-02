@@ -272,8 +272,23 @@ def faq_section(headline, qa_pairs, name, bg="surface"):
     browser supplies open/close, keyboard operation and the accessible name.
     There is also no 12-item cap here, which the block silently imposed.
     """
+    def answer_html(a):
+        # Answers split on a blank line so a reply can run to more than one
+        # paragraph, as the reference does.
+        paras = "".join(f"<p>{part.strip()}</p>" for part in a.split("\n\n") if part.strip())
+        # "Did this answer help you?" is PRESENTATIONAL ONLY. The sanitiser
+        # allows no <button>, and there is no endpoint behind it, so these are
+        # spans that look like the reference rather than controls that pretend to
+        # work. Wiring it up needs a real feedback block, not rich text.
+        return (paras +
+                '<div class="ot-faq-vote">'
+                '<span class="ot-faq-vote-label">Did this answer help you?</span>'
+                '<span class="ot-faq-vote-btn">Yes</span>'
+                '<span class="ot-faq-vote-btn">No</span>'
+                '</div>')
+
     rows = "".join(
-        f"<details><summary>{q}</summary><p>{a}</p></details>" for q, a in qa_pairs
+        f"<details><summary>{q}</summary>{answer_html(a)}</details>" for q, a in qa_pairs
     )
     # The .ot-faq wrapper carries the card treatment (see globals.css). `class`
     # is on the sanitiser's attribute allowlist, which is what lets a rich text
@@ -489,7 +504,11 @@ def home_insurance(photos, skyline):
           "Home insurance includes property protection, travel protection for 45 days, "
           "assault protection, legal protection, liability coverage and ID protection."),
          ("Who does home insurance apply to?",
-          "It applies to you and everyone registered at your address, and to your belongings."),
+          "Home insurance applies to you as the policyholder. It also applies to the family "
+          "members in your household who are registered and reside at the address stated in "
+          "the insurance policy.\n\n"
+          "The insurance does not apply to residents at the address who do not belong to the "
+          "household, such as boarders."),
          ("How much does home insurance cost per month?",
           "The price is set individually from your type of home, its size, where you live, "
           "your deductible and the insurance amount you choose."),
