@@ -271,6 +271,28 @@ def callout(heading, body=None, cta=None, intent="info", variant="filled",
                      props)
 
 
+
+def compare_table(headline, intro, columns, rows, bg="surface"):
+    """
+    `rows` is [(label, [cell, cell, ...]), ...]; the cells are flattened
+    row-major here because OT_CompareTable holds them as one string array — an
+    elementEnabled type may not hold arrays of components. Mismatched row widths
+    are refused rather than silently shifting every later cell into the wrong
+    column, which is the failure mode a flat grid invites.
+    """
+    cells = []
+    for label, values in rows:
+        if len(values) != len(columns):
+            sys.exit(f"{headline}: row {label!r} has {len(values)} cells, expected {len(columns)}")
+        cells.extend(values)
+    return component("OT_CompareTable", "OT_CompareTableDefault", {"color": bg},
+                     {"headline":     {"value": headline},
+                      "intro":        {"value": intro},
+                      "columnLabels": {"value": list(columns)},
+                      "rowLabels":    {"value": [r[0] for r in rows]},
+                      "cells":        {"value": cells}})
+
+
 def faq_section(headline, qa_pairs, name, bg="surface"):
     """
     FAQ — OT_FaqBlock in a column, like every other block on the page.
@@ -602,32 +624,33 @@ def car_insurance(photos, skyline):
     ], anim="fade", align="center", vpad="none")],
         "Hero", bg="canvas", spacing="small"))
 
-    # The three cover levels. OT_ComparisonTableBlock would be the natural fit
-    # and cannot be placed — it is one of the array-of-component types with no
-    # legal position — so the comparison is three cards, one per level, each
-    # listing what it covers. Same information, and every card is editable.
-    levels = [
-        ("Motor vehicle insurance",
-         "The legal minimum. Covers injury to people and damage to other people\u2019s "
-         "property \u2014 never damage to your own car."),
-        ("Semi-insurance",
-         "Motor vehicle insurance plus fire, glass, theft, machinery damage, roadside "
-         "assistance and legal protection."),
-        ("Comprehensive insurance",
-         "Everything in semi-insurance plus collision cover for your own car, however the "
-         "damage happened."),
-    ]
-    cmp_rows = [row([column([primary_text(
+    # The comparison matrix from the reference, as an actual table.
+    #
+    # OT_ComparisonTableBlock is the block that should do this and cannot be
+    # placed — it is one of the seven array-of-component types with no legal
+    # position. OT_CompareTable is the same idea in the shape that works:
+    # `_component` + elementEnabled, grid held as flat string arrays.
+    cover_cols = ["Motor vehicle insurance", "Semi-insurance", "Comprehensive insurance"]
+    nodes.append(section([row([column([compare_table(
         "Compare our car insurance policies",
-        "<p>There are three types of car insurance. According to Swedish law, all cars must "
-        "have third-party liability insurance, but depending on the value of the car, it may "
-        "be a good idea to have partial or full insurance.</p>")], span="col12")],
-        vpad="none", anim="fade")]
-    cmp_rows.append(row([
-        column([card(h, desc=d, cta="Read more", img=p(4 + i))], span="col4")
-        for i, (h, d) in enumerate(levels)
-    ]))
-    nodes.append(section(cmp_rows, "Compare cover levels", bg="canvas"))
+        "There are three types of car insurance. According to Swedish law, all cars must have "
+        "motor vehicle insurance, but depending on the value of the car it may be a good idea "
+        "to have semi- or comprehensive cover.",
+        cover_cols,
+        [("Traffic injury",            ["yes", "yes", "yes"]),
+         ("Damage to other vehicles",  ["yes", "yes", "yes"]),
+         ("Fire",                      ["no",  "yes", "yes"]),
+         ("Glass",                     ["no",  "yes", "yes"]),
+         ("Theft",                     ["no",  "yes", "yes"]),
+         ("Machinery damage",          ["no",  "yes", "yes"]),
+         ("Legal protection",          ["no",  "yes", "yes"]),
+         ("Roadside assistance",       ["no",  "yes", "yes"]),
+         ("Collision damage to your own car", ["no", "no", "yes"]),
+         ("Vandalism",                 ["no",  "no",  "yes"]),
+         ("Rental car while repaired", ["no",  "no",  "Optional"]),
+         ("Deductible reduction",      ["no",  "no",  "Optional"])])],
+        span="col12")], anim="fade")],
+        "Compare cover levels", bg="surface"))
 
     nodes.append(section([row([column([
         callout("Our insurance has a high rating",
