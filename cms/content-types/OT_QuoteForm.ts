@@ -20,6 +20,14 @@ export const OT_QuoteForm = contentType({
   baseType: '_component',
   compositionBehaviors: ['elementEnabled', 'sectionEnabled'],
   properties: {
+    headline: {
+      type: 'string', displayName: 'Heading', isLocalized: true, maxLength: 120,
+      group: 'OT_Content', sortOrder: 4,
+    },
+    intro: {
+      type: 'string', displayName: 'Intro', isLocalized: true, maxLength: 400,
+      group: 'OT_Content', sortOrder: 6,
+    },
     checkItems: {
       type: 'array', displayName: 'Tick list', isLocalized: true,
       description: 'One selling point per row, shown above the panel with a tick.',

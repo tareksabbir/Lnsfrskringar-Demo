@@ -227,9 +227,9 @@ def button(label, url=PLACEHOLDER_URL, variant="brand", size="md", align="left")
                       "url": {"value": url}})
 
 
-def image(asset, alt, ratio="natural", bg="canvas"):
+def image(asset, alt, ratio="natural", bg="canvas", spacing="default"):
     return component("OT_ImageBlock", "OT_ImageDefault",
-                     {"bgColor": bg, "ratio": ratio, "overlay": "false", "frame": "none",
+                     {"bgColor": bg, "ratio": ratio, "spacing": spacing, "overlay": "false", "frame": "none",
                       "animate": "false", "captionPosition": "below", "shadow": "false",
                       "lightbox": "false", "entranceAnimation": "none"},
                      {"image": {"value": f"cms://content/{asset}"},
@@ -294,9 +294,14 @@ def compare_table(headline, intro, columns, rows, bg="surface"):
 
 
 
-def quote_form(check_items, f1, f2, cta_label, plate=True):
+def quote_form(headline, intro, check_items, f1, f2, cta_label, plate=True):
     """
     The hero quote panel: tick list, two labelled fields, one CTA.
+
+    The heading and intro live here too, so the whole left column is ONE block.
+    Split across PrimaryText + QuoteForm they were separated by the sum of both
+    blocks' own vertical padding, which is where the gap between the copy and
+    the ticks came from — a composition cannot reach inside a block to close it.
 
     The ticks live here rather than in the hero copy because rich-text `ul` is
     hard-set to disc — a list of typed tick characters renders a bullet AND a
@@ -308,7 +313,9 @@ def quote_form(check_items, f1, f2, cta_label, plate=True):
     """
     return component("OT_QuoteForm", "OT_QuoteFormDefault",
                      {"platePrefix": "true" if plate else "false"},
-                     {"checkItems":        {"value": list(check_items)},
+                     {"headline":          {"value": headline},
+                      "intro":             {"value": intro},
+                      "checkItems":        {"value": list(check_items)},
                       "field1Label":       {"value": f1[0]},
                       "field1Placeholder": {"value": f1[1]},
                       "field1LinkLabel":   {"value": f1[2]},
@@ -638,13 +645,16 @@ def car_insurance(photos, skyline):
     # the quote panel on the left; illustration with the adviser card beneath it
     # on the right. The quote panel is a block rather than two callouts — it is a
     # form in the design, and it was the piece most obviously missing.
+    # Hero. Left column is a single block so the rhythm between heading, copy,
+    # ticks and panel is set in one place rather than being whatever the sum of
+    # three blocks' padding happens to be. The illustration drops its default
+    # vertical padding so its top edge lines up with the heading beside it.
     nodes.append(section([row([
         column([
-            primary_text("Car insurance",
-                         "<p>Choose the car insurance that best suits your car. We insure "
-                         "electric cars, plug-in hybrids and traditional fuel cars.</p>",
-                         size="headline"),
             quote_form(
+                "Car insurance",
+                "Choose the car insurance that best suits your car. We insure electric cars, "
+                "plug-in hybrids and traditional fuel cars.",
                 ["4.5 out of 5 ratings according to Consumers\u2019",
                  "10 percent discount when you subscribe online",
                  "Stone chipping is included in half and full insurance"],
@@ -654,7 +664,7 @@ def car_insurance(photos, skyline):
                 "See price & subscribe"),
         ], span="col6"),
         column([
-            image(p(3)["key"], "Car insurance illustration", ratio="r16_9"),
+            image(p(3)["key"], "Car insurance illustration", ratio="r16_9", spacing="none"),
             card("Welcome to Stockholm!",
                  desc="As a new customer, you get a 10 percent discount when you subscribe "
                       "online.",

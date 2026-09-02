@@ -41,7 +41,14 @@ export default function OT_ImageBlock({ content, displaySettings = {} }: Props) 
     return (
       <div
         {...pa(content.__composition)}
-        className="w-full py-xl px-md lg:px-lg"
+        className={`w-full px-md lg:px-lg ${
+          // py-xl is right for a standalone band, and 64px too much when the
+          // block sits in a hero column beside a heading — it pushed the
+          // illustration a whole step below the text it should line up with.
+          { none: '', small: 'py-md', default: 'py-xl' }[
+            String(displaySettings?.spacing ?? 'default')
+          ] ?? 'py-xl'
+        }`}
         data-stagger={staggerAttr}
       >
         <div className="mx-auto max-w-360">

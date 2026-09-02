@@ -32,16 +32,40 @@ export type QuoteFormField = {
 }
 
 type Props = {
+  headline?: string
+  intro?: string
+  checkItems?: string[]
   fields: QuoteFormField[]
   ctaLabel?: string
   ctaUrl?: string
 }
 
-export default function QuoteForm({ fields, ctaLabel, ctaUrl }: Props) {
-  if (!fields.length) return null
+export default function QuoteForm({
+  headline, intro, checkItems = [], fields, ctaLabel, ctaUrl,
+}: Props) {
+  if (!fields.length && !headline) return null
 
   return (
-    <div className="rounded-ot-surface bg-brand-tint p-lg">
+    <div className="flex w-full flex-col">
+      {headline && (
+        <h1 className="text-hero font-bold leading-headline tracking-headline text-brand">
+          {headline}
+        </h1>
+      )}
+      {intro && <p className="mt-sm max-w-(--ot-measure) leading-body text-fg">{intro}</p>}
+      {checkItems.length > 0 && (
+        <div className="mt-lg">
+          <CheckList items={checkItems} />
+        </div>
+      )}
+      {fields.length > 0 && <Panel fields={fields} ctaLabel={ctaLabel} ctaUrl={ctaUrl} />}
+    </div>
+  )
+}
+
+function Panel({ fields, ctaLabel, ctaUrl }: Pick<Props, 'fields' | 'ctaLabel' | 'ctaUrl'>) {
+  return (
+    <div className="mt-lg rounded-ot-surface bg-brand-tint p-lg">
       <div className="grid gap-md sm:grid-cols-2">
         {fields.map((f, i) => {
           const id = `quote-field-${i}`

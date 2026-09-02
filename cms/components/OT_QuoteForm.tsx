@@ -1,7 +1,7 @@
 import { ContentProps } from '@optimizely/cms-sdk'
 import { getPreviewUtils } from '@optimizely/cms-sdk/react/server'
 import { OT_QuoteForm as OT_QuoteFormContentType } from '@/cms/content-types/OT_QuoteForm'
-import QuoteForm, { CheckList, type QuoteFormField } from '@/components/blocks/QuoteForm'
+import QuoteForm, { type QuoteFormField } from '@/components/blocks/QuoteForm'
 
 type Props = {
   content:          ContentProps<typeof OT_QuoteFormContentType>
@@ -35,9 +35,11 @@ export default function OT_QuoteFormAdapter({ content, displaySettings = {} }: P
   }
 
   return (
-    <div {...pa(content.__composition)} className="flex w-full flex-col gap-lg">
-      <CheckList items={strings(content.checkItems)} />
+    <div {...pa(content.__composition)} className="w-full">
       <QuoteForm
+        headline={content.headline ?? undefined}
+        intro={content.intro ?? undefined}
+        checkItems={strings(content.checkItems)}
         fields={fields}
         ctaLabel={content.ctaLabel ?? undefined}
         ctaUrl={content.ctaUrl?.default ?? undefined}
