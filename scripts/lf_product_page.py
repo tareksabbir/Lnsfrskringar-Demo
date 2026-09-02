@@ -32,10 +32,15 @@ THREE CONSTRAINTS THAT SHAPE THIS FILE
        - and a section's component must have baseType `_section`, so offering a
          `_component` there fails with "The component type is not based on
          section base type."
-     There is no legal position for any of them. The way out is `_section`:
-     OT_FaqSection is an accordion declared with that baseType, which may both
-     BE a section's component and hold an array of components. The same move
-     would rescue the other six.
+     There is no legal position for any of them, and `_section` is NOT the way
+     out: a `_section` type is accepted by the CMS and Graph returns its rows
+     correctly, but the SDK builds composition fragments only for
+     `baseType === '_component'` (isExperienceComponent, util/queryUtils.js), so
+     the front end selects none of its fields and the block renders empty.
+     The shape that works is `_component` + elementEnabled with the rows held in
+     parallel arrays of STRINGS — arrays of scalars are permitted where arrays
+     of components are not. OT_FaqBlock does this; the same move would rescue
+     the other six.
   2. Rich text is a NODE TREE, not HTML. OT_RichTextBlock renders through the
      SDK's <RichText>, which walks a structured tree and knows a fixed set of
      node types. Raw markup posted as {"html": ...} is flattened to its text, so
@@ -259,32 +264,32 @@ def callout(heading, body=None, cta=None, intent="info", variant="filled",
 
 def faq_section(headline, qa_pairs, name, bg="surface"):
     """
-    FAQ as a real accordion component — OT_FaqSection, rendered by the same
-    AccordionBlock the site already ships.
+    FAQ — OT_FaqBlock in a column, like every other block on the page.
 
-    The first attempt built this from <details>/<summary> in a rich text block,
-    which never worked: OT_RichTextBlock renders through the SDK's <RichText>,
-    which walks a structured node tree and knows a fixed set of node types. Raw
-    HTML posted as {"html": ...} is not that tree, so the markup was flattened to
-    its text and no amount of CSS could have helped.
+    Two earlier shapes failed, both silently, which is why this is spelled out:
 
-    OT_FaqSection exists because OT_AccordionBlock cannot be placed at all — see
-    the content type for the full trap. The short version: `_section` is the one
-    baseType that may both be a section's component AND hold an array of
-    components.
+      - <details> in a rich text block: OT_RichTextBlock renders through the
+        SDK's <RichText>, which walks a structured node tree. Raw HTML posted as
+        {"html": ...} is flattened to its text, so the markup never existed in
+        the DOM.
+      - OT_FaqSection as a `_section` component: accepted by the CMS, and Graph
+        returned all fifteen rows correctly — but the SDK builds composition
+        fragments only for `baseType === '_component'` (isExperienceComponent in
+        util/queryUtils.js), so the front end selected none of its fields and the
+        block rendered its empty state.
+
+    OT_FaqBlock is `_component` + elementEnabled, which forces the rows into two
+    parallel string arrays: an elementEnabled type may not hold an array of
+    components. The adapter zips them.
     """
-    return {"nodeType": "section", "layoutType": "grid", "displayName": name,
-            "displaySettings": {"displayTemplate": "OT_FaqSectionDefault",
-                                "settings": {"color": bg, "borderStyle": "boxed",
-                                             "openMode": "single", "defaultOpen": "false"}},
-            "component": {"contentType": "OT_FaqSection",
-                          "properties": {
-                              "headline": {"value": headline},
-                              "items": {"value": [
-                                  {"properties": {"question": {"value": q},
-                                                  "answer":   {"value": a}}}
-                                  for q, a in qa_pairs]}}},
-            "nodes": []}
+    return section([row([column([
+        component("OT_FaqBlock", "OT_FaqBlockDefault",
+                  {"color": bg, "openMode": "single", "defaultOpen": "false"},
+                  {"headline":  {"value": headline},
+                   "questions": {"value": [q for q, _ in qa_pairs]},
+                   "answers":   {"value": [a for _, a in qa_pairs]}})],
+        span="col12")], anim="fade")],
+        name, bg=bg, spacing="large", width="narrow")
 
 
 # ── Page content ─────────────────────────────────────────────────────────────

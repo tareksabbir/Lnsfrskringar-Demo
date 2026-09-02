@@ -1,15 +1,13 @@
 import { displayTemplate } from '@optimizely/cms-sdk'
 
 /**
- * Mirrors OT_AccordionDefault — both templates drive the same React component,
- * so the settings vocabulary is deliberately identical. `boxed` is the default
- * here rather than `ruled`: on a product page each question reads as its own
- * card, which is what the LF reference shows.
+ * No `borderStyle` here, unlike OT_AccordionDefault: FaqAccordion draws one row
+ * treatment by design (a card per question), so there would be nothing to switch.
  */
-export const OT_FaqSectionDefault = displayTemplate({
-  key: 'OT_FaqSectionDefault',
-  displayName: 'FAQ Section Default',
-  contentType: 'OT_FaqSection',
+export const OT_FaqBlockDefault = displayTemplate({
+  key: 'OT_FaqBlockDefault',
+  displayName: 'FAQ Default',
+  contentType: 'OT_FaqBlock',
   isDefault: true,
   settings: {
     color: {
@@ -22,20 +20,10 @@ export const OT_FaqSectionDefault = displayTemplate({
         brand:   { displayName: 'Brand',             sortOrder: 30 },
       },
     },
-    borderStyle: {
-      displayName: 'Row style',
-      editor: 'select',
-      sortOrder: 20,
-      choices: {
-        boxed: { displayName: 'Cards (Default)', sortOrder: 10 },
-        ruled: { displayName: 'Ruled',           sortOrder: 20 },
-        clean: { displayName: 'Clean',           sortOrder: 30 },
-      },
-    },
     openMode: {
       displayName: 'Open behaviour',
       editor: 'select',
-      sortOrder: 30,
+      sortOrder: 20,
       choices: {
         single:   { displayName: 'One at a time (Default)', sortOrder: 10 },
         multiple: { displayName: 'Several at once',         sortOrder: 20 },
@@ -44,7 +32,7 @@ export const OT_FaqSectionDefault = displayTemplate({
     defaultOpen: {
       displayName: 'First row open on load',
       editor: 'select',
-      sortOrder: 40,
+      sortOrder: 30,
       choices: {
         false: { displayName: 'No (Default)', sortOrder: 10 },
         true:  { displayName: 'Yes',          sortOrder: 20 },

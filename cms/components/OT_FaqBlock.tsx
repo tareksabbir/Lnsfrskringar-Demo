@@ -1,25 +1,16 @@
 import { ContentProps } from '@optimizely/cms-sdk'
 import { getPreviewUtils } from '@optimizely/cms-sdk/react/server'
-import { OT_FaqSection as OT_FaqSectionContentType } from '@/cms/content-types/OT_FaqSection'
+import { OT_FaqBlock as OT_FaqBlockContentType } from '@/cms/content-types/OT_FaqBlock'
 import FaqAccordion, {
   type FaqItem,
   type FaqAccordionStyleOptions,
 } from '@/components/blocks/FaqAccordion'
 
 type Props = {
-  content:          ContentProps<typeof OT_FaqSectionContentType>
+  content:          ContentProps<typeof OT_FaqBlockContentType>
   displaySettings?: Record<string, string | boolean>
 }
 
-/**
- * Renders OT_FaqSection with FaqAccordion — the LF FAQ pattern: a white card per
- * question on a grey band, brand-blue question text, and a brand rule under an
- * open question. AccordionBlock draws a different pattern and has a silent
- * twelve-item cap, which would quietly drop three of the fifteen questions here.
- *
- * `borderStyle` from the display template is intentionally not forwarded:
- * FaqAccordion has one row treatment by design, so there is nothing to switch.
- */
 function buildStyleOptions(ds: Record<string, string | boolean>): FaqAccordionStyleOptions {
   return {
     color:    String(ds.color    ?? 'surface') as FaqAccordionStyleOptions['color'],
@@ -29,14 +20,28 @@ function buildStyleOptions(ds: Record<string, string | boolean>): FaqAccordionSt
   }
 }
 
+/**
+ * Zips the two parallel arrays into rows.
+ *
+ * They are parallel because an `elementEnabled` type may not hold an array of
+ * components — see OT_FaqBlock for the full reasoning. Zipping to the SHORTER
+ * array is deliberate: a half-finished edit then shows fewer complete rows
+ * rather than rendering a question with an empty answer.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildItems(content: any): FaqItem[] {
-  if (!Array.isArray(content.items)) return []
-  return (content.items as any[])
-    .filter(item => item?.question && item?.answer)
-    .map(item => ({ question: String(item.question), answer: String(item.answer) }))
+  const questions: string[] = Array.isArray(content.questions) ? content.questions : []
+  const answers:   string[] = Array.isArray(content.answers)   ? content.answers   : []
+  const rows: FaqItem[] = []
+  for (let i = 0; i < Math.min(questions.length, answers.length); i++) {
+    const q = String(questions[i] ?? '').trim()
+    const a = String(answers[i]   ?? '').trim()
+    if (q && a) rows.push({ question: q, answer: a })
+  }
+  return rows
 }
 
-export default function OT_FaqSectionAdapter({ content, displaySettings = {} }: Props) {
+export default function OT_FaqBlockAdapter({ content, displaySettings = {} }: Props) {
   const { pa } = getPreviewUtils(content)
 
   return (

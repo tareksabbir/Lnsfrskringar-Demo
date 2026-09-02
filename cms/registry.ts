@@ -22,7 +22,7 @@ import { OT_LandingColumn }           from '@/cms/display-templates/OT_LandingCo
 import { OptiFormsContainerDefault }  from '@/cms/display-templates/OptiFormsContainer'
 import { OT_BlogFeedDefault }         from '@/cms/display-templates/OT_BlogFeedDefault'
 import { OT_AccordionDefault }        from '@/cms/display-templates/OT_AccordionDefault'
-import { OT_FaqSectionDefault }       from '@/cms/display-templates/OT_FaqSectionDefault'
+import { OT_FaqBlockDefault }         from '@/cms/display-templates/OT_FaqBlockDefault'
 import { OT_TabsDefault }            from '@/cms/display-templates/OT_TabsDefault'
 import { OT_ChartDefault }           from '@/cms/display-templates/OT_ChartDefault'
 import { OT_BannerBlockDefault }     from '@/cms/display-templates/OT_BannerBlockDefault'
@@ -73,7 +73,7 @@ import { ImageMedia }           from '@/cms/content-types/ImageMedia'
 import { OT_BlogFeedBlock }     from '@/cms/content-types/OT_BlogFeedBlock'
 import { OT_AccordionItem }    from '@/cms/content-types/OT_AccordionItem'
 import { OT_AccordionBlock }   from '@/cms/content-types/OT_AccordionBlock'
-import { OT_FaqSection }       from '@/cms/content-types/OT_FaqSection'
+import { OT_FaqBlock }         from '@/cms/content-types/OT_FaqBlock'
 import { OT_TabItem }          from '@/cms/content-types/OT_TabItem'
 import { OT_TabsBlock }        from '@/cms/content-types/OT_TabsBlock'
 import { OT_ChartBlock }       from '@/cms/content-types/OT_ChartBlock'
@@ -137,7 +137,7 @@ import OT_FolderPageAdapter       from '@/cms/components/OT_FolderPage'
 import ImageMediaAdapter          from '@/cms/components/ImageMedia'
 import OT_BlogFeedBlockAdapter    from '@/cms/components/OT_BlogFeedBlock'
 import OT_AccordionBlockAdapter   from '@/cms/components/OT_AccordionBlock'
-import OT_FaqSectionAdapter       from '@/cms/components/OT_FaqSection'
+import OT_FaqBlockAdapter         from '@/cms/components/OT_FaqBlock'
 import OT_TabsBlockAdapter        from '@/cms/components/OT_TabsBlock'
 import OT_ChartBlockAdapter      from '@/cms/components/OT_ChartBlock'
 import OT_BannerBlockAdapter           from '@/cms/components/OT_BannerBlock'
@@ -256,7 +256,7 @@ initDisplayTemplateRegistry([
   OT_LandingColumn,
   OT_BlogFeedDefault,
   OT_AccordionDefault,
-  OT_FaqSectionDefault,
+  OT_FaqBlockDefault,
   OT_TabsDefault,
   OT_ChartDefault,
   OT_BannerBlockDefault,
@@ -307,7 +307,7 @@ initContentTypeRegistry([
   OT_BlogFeedBlock,
   OT_AccordionItem,
   OT_AccordionBlock,
-  OT_FaqSection,
+  OT_FaqBlock,
   OT_TabItem,
   OT_TabsBlock,
   OT_ChartBlock,
@@ -361,7 +361,7 @@ initReactComponentRegistry({
     ImageMedia:          ImageMediaAdapter,
     OT_BlogFeedBlock:    OT_BlogFeedBlockAdapter,
     OT_AccordionBlock:   OT_AccordionBlockAdapter,
-    OT_FaqSection:       OT_FaqSectionAdapter,
+    OT_FaqBlock:         OT_FaqBlockAdapter,
     OT_TabsBlock:        OT_TabsBlockAdapter,
     OT_ChartBlock:       OT_ChartBlockAdapter,
     OT_BannerBlock:           OT_BannerBlockAdapter,
