@@ -24,6 +24,7 @@ import { OT_BlogFeedDefault }         from '@/cms/display-templates/OT_BlogFeedD
 import { OT_AccordionDefault }        from '@/cms/display-templates/OT_AccordionDefault'
 import { OT_FaqBlockDefault }         from '@/cms/display-templates/OT_FaqBlockDefault'
 import { OT_CompareTableDefault }     from '@/cms/display-templates/OT_CompareTableDefault'
+import { OT_QuoteFormDefault }        from '@/cms/display-templates/OT_QuoteFormDefault'
 import { OT_TabsDefault }            from '@/cms/display-templates/OT_TabsDefault'
 import { OT_ChartDefault }           from '@/cms/display-templates/OT_ChartDefault'
 import { OT_BannerBlockDefault }     from '@/cms/display-templates/OT_BannerBlockDefault'
@@ -76,6 +77,7 @@ import { OT_AccordionItem }    from '@/cms/content-types/OT_AccordionItem'
 import { OT_AccordionBlock }   from '@/cms/content-types/OT_AccordionBlock'
 import { OT_FaqBlock }         from '@/cms/content-types/OT_FaqBlock'
 import { OT_CompareTable }     from '@/cms/content-types/OT_CompareTable'
+import { OT_QuoteForm }        from '@/cms/content-types/OT_QuoteForm'
 import { OT_TabItem }          from '@/cms/content-types/OT_TabItem'
 import { OT_TabsBlock }        from '@/cms/content-types/OT_TabsBlock'
 import { OT_ChartBlock }       from '@/cms/content-types/OT_ChartBlock'
@@ -141,6 +143,7 @@ import OT_BlogFeedBlockAdapter    from '@/cms/components/OT_BlogFeedBlock'
 import OT_AccordionBlockAdapter   from '@/cms/components/OT_AccordionBlock'
 import OT_FaqBlockAdapter         from '@/cms/components/OT_FaqBlock'
 import OT_CompareTableAdapter     from '@/cms/components/OT_CompareTable'
+import OT_QuoteFormAdapter        from '@/cms/components/OT_QuoteForm'
 import OT_TabsBlockAdapter        from '@/cms/components/OT_TabsBlock'
 import OT_ChartBlockAdapter      from '@/cms/components/OT_ChartBlock'
 import OT_BannerBlockAdapter           from '@/cms/components/OT_BannerBlock'
@@ -261,6 +264,7 @@ initDisplayTemplateRegistry([
   OT_AccordionDefault,
   OT_FaqBlockDefault,
   OT_CompareTableDefault,
+  OT_QuoteFormDefault,
   OT_TabsDefault,
   OT_ChartDefault,
   OT_BannerBlockDefault,
@@ -313,6 +317,7 @@ initContentTypeRegistry([
   OT_AccordionBlock,
   OT_FaqBlock,
   OT_CompareTable,
+  OT_QuoteForm,
   OT_TabItem,
   OT_TabsBlock,
   OT_ChartBlock,
@@ -368,6 +373,7 @@ initReactComponentRegistry({
     OT_AccordionBlock:   OT_AccordionBlockAdapter,
     OT_FaqBlock:         OT_FaqBlockAdapter,
     OT_CompareTable:     OT_CompareTableAdapter,
+    OT_QuoteForm:        OT_QuoteFormAdapter,
     OT_TabsBlock:        OT_TabsBlockAdapter,
     OT_ChartBlock:       OT_ChartBlockAdapter,
     OT_BannerBlock:           OT_BannerBlockAdapter,

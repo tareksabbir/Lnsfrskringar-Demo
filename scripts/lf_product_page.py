@@ -293,6 +293,33 @@ def compare_table(headline, intro, columns, rows, bg="surface"):
                       "cells":        {"value": cells}})
 
 
+
+def quote_form(check_items, f1, f2, cta_label, plate=True):
+    """
+    The hero quote panel: tick list, two labelled fields, one CTA.
+
+    The ticks live here rather than in the hero copy because rich-text `ul` is
+    hard-set to disc — a list of typed tick characters renders a bullet AND a
+    tick on every row, which is what the first version did.
+
+    `f1` and `f2` are (label, placeholder, link_or_help). The panel collects
+    nothing; see components/blocks/QuoteForm.tsx for why that is deliberate when
+    one field asks for a personal number.
+    """
+    return component("OT_QuoteForm", "OT_QuoteFormDefault",
+                     {"platePrefix": "true" if plate else "false"},
+                     {"checkItems":        {"value": list(check_items)},
+                      "field1Label":       {"value": f1[0]},
+                      "field1Placeholder": {"value": f1[1]},
+                      "field1LinkLabel":   {"value": f1[2]},
+                      "field1LinkUrl":     {"value": PLACEHOLDER_URL},
+                      "field2Label":       {"value": f2[0]},
+                      "field2Placeholder": {"value": f2[1]},
+                      "field2Help":        {"value": f2[2]},
+                      "ctaLabel":          {"value": cta_label},
+                      "ctaUrl":            {"value": PLACEHOLDER_URL}})
+
+
 def faq_section(headline, qa_pairs, name, bg="surface"):
     """
     FAQ — OT_FaqBlock in a column, like every other block on the page.
@@ -607,45 +634,35 @@ def car_insurance(photos, skyline):
         vpad="none", anim="fade")],
         "Breadcrumb", bg="canvas", spacing="none"))
 
+    # Hero. Two columns, exactly as the reference lays it out: copy, ticks and
+    # the quote panel on the left; illustration with the adviser card beneath it
+    # on the right. The quote panel is a block rather than two callouts — it is a
+    # form in the design, and it was the piece most obviously missing.
     nodes.append(section([row([
         column([
             primary_text("Car insurance",
                          "<p>Choose the car insurance that best suits your car. We insure "
-                         "electric cars, plug-in hybrids and traditional fuel cars.</p>"
-                         "<ul>"
-                         "<li>\u2713 Full or partial coverage depending on <a href=\'/\'>your needs</a></li>"
-                         "<li>\u2713 10 percent discount when you combine with home insurance</li>"
-                         "<li>\u2713 Stone chip repair included with half and full insurance</li>"
-                         "</ul>",
+                         "electric cars, plug-in hybrids and traditional fuel cars.</p>",
                          size="headline"),
+            quote_form(
+                ["4.5 out of 5 ratings according to Consumers\u2019",
+                 "10 percent discount when you subscribe online",
+                 "Stone chipping is included in half and full insurance"],
+                ("Registration number", "ABC123", "How we process personal data"),
+                ("Social security number", "yyyymmdd-nnnn",
+                 "We may contact you to assist you further."),
+                "See price & subscribe"),
         ], span="col6"),
-        column([image(p(3)["key"], "Car insurance illustration", ratio="r16_9")], span="col6"),
-    ], anim="fade", align="center", vpad="none")],
+        column([
+            image(p(3)["key"], "Car insurance illustration", ratio="r16_9"),
+            card("Welcome to Stockholm!",
+                 desc="As a new customer, you get a 10 percent discount when you subscribe "
+                      "online.",
+                 img=p(6), image_style="side", density="compact",
+                 fill="surface", border="none", hover="none"),
+        ], span="col6"),
+    ], anim="fade", align="start", vpad="none")],
         "Hero", bg="canvas", spacing="small"))
-
-    # Quote strip — the two small input panels and the adviser card that sit
-    # directly under the hero in the reference, then the CTA.
-    nodes.append(section([
-        row([
-            column([callout("Registration number",
-                            body="Enter the car\u2019s registration number and we will fetch "
-                                 "the details automatically.",
-                            intent="neutral", variant="bordered", size="compact",
-                            icon="package")], span="col4"),
-            column([callout("Social security number",
-                            body="We use it to calculate a price that is specific to you. No "
-                                 "credit check is made.",
-                            intent="neutral", variant="bordered", size="compact",
-                            icon="lock")], span="col4"),
-            column([card("Welcome to Länsförsäkringar Stockholm",
-                         desc="As a customer you can talk to a personal adviser about your "
-                              "car, your home and your savings.",
-                         cta="Find your local office", img=p(6), image_style="side",
-                         density="compact", fill="surface",
-                         border="none", hover="none")], span="col4"),
-        ], anim="fade"),
-        row([column([button("Calculate your price")], span="col12")], vpad="none", anim="fade"),
-    ], "Get a quote", bg="canvas", spacing="small"))
 
     # The comparison matrix from the reference, as an actual table.
     #
