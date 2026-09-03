@@ -29,11 +29,25 @@ export const revalidate = 3600
 /** Content types that produce a public URL. Add a type by adding a line. */
 const PAGE_TYPES = ['BlankExperience', 'OT_BlogPage'] as const
 
+/**
+ * Graph's hard ceiling. Asking for more is not clamped — it is a 400:
+ *
+ *   Invalid 'limit' (value: 200, expected: [0-100])
+ *
+ * This is what emptied the sitemap. The old query asked for 200, the whole
+ * document failed, and a bare `catch { return [] }` turned a loud API error
+ * into a silent empty file that robots.txt still pointed crawlers at.
+ *
+ * Per type, so the real ceiling is 100 × PAGE_TYPES.length. Well clear of this
+ * site; if it is ever approached, page with `skip` rather than raising this.
+ */
+const GRAPH_MAX_LIMIT = 100
+
 const queryFor = (type: string) => `
   query Sitemap_${type} {
     ${type}(
       where: { _metadata: { status: { eq: "Published" } } }
-      limit: 200
+      limit: ${GRAPH_MAX_LIMIT}
     ) {
       items {
         _metadata { url { default } lastModified published }
