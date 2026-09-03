@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getClient } from '@/lib/optimizely'
+import { DEFAULT_LOCALE } from '@/lib/i18n/config'
 
 /**
  * XML sitemap, built from what Optimizely Graph has published.
@@ -57,6 +58,33 @@ const queryFor = (type: string) => `
   }
 `
 
+/**
+ * Rewrite a Graph URL into the one this site actually serves.
+ *
+ * Graph returns the default locale as a path segment — "/en/blog/x/" — but
+ * i18n/config is explicit that the default locale carries NO prefix, and every
+ * link on the site points at "/blog/x". Both forms render, and each declares
+ * ITSELF canonical, so shipping the prefixed form in the sitemap hands search
+ * engines two URLs for one page and splits the ranking signal between them.
+ * Non-default locales keep their prefix — there the prefix is the real URL.
+ *
+ * The trailing slash goes for the same reason: the page at "/blog/x" says its
+ * canonical is "/blog/x", with no slash.
+ */
+function toSiteUrl(raw: string): string {
+  const url = new URL(raw)
+  const segments = url.pathname.split('/').filter(Boolean)
+
+  if (segments[0] === DEFAULT_LOCALE) segments.shift()
+
+  // The home page keeps its slash — "https://host/" is the form everything else
+  // on the site uses for the root, and a bare origin invites a needless redirect.
+  if (segments.length === 0) return `${url.origin}/`
+
+  url.pathname = `/${segments.join('/')}`
+  return url.toString().replace(/\/$/, '')
+}
+
 type GraphItem = {
   _metadata?: {
     url?: { default?: string | null } | null
@@ -107,8 +135,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Graph may hand back an absolute URL or a site-relative path.
     let fullUrl: string
     try {
-      fullUrl = raw.startsWith('http') ? raw : `${siteUrl}${raw}`
-      new URL(fullUrl)
+      fullUrl = toSiteUrl(raw.startsWith('http') ? raw : `${siteUrl}${raw}`)
     } catch {
       continue
     }
