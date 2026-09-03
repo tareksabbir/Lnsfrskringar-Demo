@@ -35,15 +35,38 @@ const MAX_BODY = 20_000
  * does not leak the secret's length or prefix.
  */
 function authorized(req: NextRequest): { ok: true } | { ok: false; status: number; error: string } {
-  const secret = process.env.OPAL_TOOL_SECRET
+  // Trimmed, because a secret pasted into a dashboard field routinely arrives
+  // with a trailing newline or space and the mismatch it causes is invisible.
+  const secret = (process.env.OPAL_TOOL_SECRET || '').trim()
   if (!secret) {
     return { ok: false, status: 503, error: 'OPAL_TOOL_SECRET is not set — this endpoint is disabled.' }
   }
-  const header = req.headers.get('authorization') || ''
-  const token = header.startsWith('Bearer ') ? header.slice(7) : ''
-  if (!token || !timingSafeEqualString(token, secret)) {
+
+  // RFC 7235: the auth scheme is case-INSENSITIVE. `startsWith('Bearer ')`
+  // rejected "bearer abc" outright, which is a legal thing for a client to
+  // send and produced a 401 indistinguishable from a wrong secret.
+  const header = (req.headers.get('authorization') || '').trim()
+  const match = /^bearer\s+(.+)$/i.exec(header)
+  const token = match ? match[1].trim() : ''
+
+  if (!token) {
+    console.warn(
+      '[opal/create-blog] 401: no bearer token on the request. '
+      + `Authorization header was ${header ? 'present but unparseable' : 'absent'}.`,
+    )
     return { ok: false, status: 401, error: 'Unauthorized.' }
   }
+
+  if (!timingSafeEqualString(token, secret)) {
+    // Lengths only. Enough to tell "wrong secret" from "truncated paste"
+    // without putting either value in a log.
+    console.warn(
+      `[opal/create-blog] 401: bearer token did not match OPAL_TOOL_SECRET `
+      + `(sent ${token.length} chars, expected ${secret.length}).`,
+    )
+    return { ok: false, status: 401, error: 'Unauthorized.' }
+  }
+
   return { ok: true }
 }
 
