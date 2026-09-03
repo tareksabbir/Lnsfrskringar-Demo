@@ -47,13 +47,18 @@ export function GET(req: NextRequest) {
           + 'The article is created as a DRAFT and a person publishes it in the CMS.',
         endpoint: `${base}/api/opal/create-blog`,
         http_method: 'POST',
-        auth_requirements: [
-          {
-            provider: 'bearer',
-            scope_bundle: 'write',
-            required: true,
-          },
-        ],
+        // Deliberately empty.
+        //
+        // `auth_requirements` declares an IDENTITY PROVIDER whose credentials
+        // Opal resolves on the user's behalf and forwards to the tool — the
+        // values are providers like "google" or "microsoft" (see the Opal tools
+        // SDK's @requires_auth). "bearer" is not one of them, and declaring it
+        // makes Opal reject the whole manifest with a 400 during registration.
+        //
+        // The bearer token entered on the tool registry is a separate mechanism:
+        // Opal simply puts it in the Authorization header of every call, which
+        // is what /api/opal/create-blog checks. It needs no declaration here.
+        auth_requirements: [],
         parameters: [
           {
             name: 'title',
@@ -69,14 +74,16 @@ export function GET(req: NextRequest) {
           },
           {
             name: 'breadcrumb',
-            type: 'array',
+            // "list", not "array" — Opal's ParameterType enum is
+            // string | integer | number | boolean | list | dictionary.
+            type: 'list',
             description:
               'Trail shown above the title, e.g. ["Private", "Tips & guides", "Renovation"].',
             required: false,
           },
           {
             name: 'sections',
-            type: 'array',
+            type: 'list',
             description:
               'The body of the article, in order. Each entry is an object with a `type`:\n'
               + '• {"type":"text","heading":"…","body":"<p>…</p><ul><li>…</li></ul>"} — a heading '
