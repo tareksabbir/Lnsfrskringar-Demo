@@ -127,11 +127,20 @@ export function GET(req: NextRequest) {
       },
       {
         name: 'create_blog_article',
+        // The description is what an assistant reads when choosing between this
+        // and its own built-in CMS tools, and in practice it kept choosing
+        // those — producing a page outside the Blog folder in a shape the site
+        // cannot render. So the description states the exclusivity outright
+        // rather than merely describing the capability.
         description:
-          'Write a blog article into the Optimizely CMS as a draft. Use this when '
-          + 'someone asks for an article, guide or blog post to be created on the site. '
-          + 'Describe the article in sections; the tool builds the page. '
-          + 'The article is created as a DRAFT and a person publishes it in the CMS.',
+          'THE way to create a blog article, guide, tips page or editorial post on '
+          + 'this website. Use this instead of any generic CMS, content or page-creation '
+          + 'tool for blog content on this site: only this tool places the article in the '
+          + 'Blog folder and builds the section layout the site renders. A page made any '
+          + 'other way lands in the wrong place and does not display. '
+          + 'Describe the article as a list of sections and the tool builds the page. '
+          + 'For pictures, call list_dam_images first and pass a key it returned — never '
+          + 'invent one. The article is created as a DRAFT; a person publishes it in the CMS.',
         endpoint: `${base}/api/opal/create-blog`,
         http_method: 'POST',
         auth_requirements: [],
