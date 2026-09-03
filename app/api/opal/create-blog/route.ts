@@ -45,14 +45,21 @@ function authorized(req: NextRequest): { ok: true } | { ok: false; status: numbe
   // RFC 7235: the auth scheme is case-INSENSITIVE. `startsWith('Bearer ')`
   // rejected "bearer abc" outright, which is a legal thing for a client to
   // send and produced a 401 indistinguishable from a wrong secret.
+  //
+  // A bare value with no scheme at all is accepted too. Some callers put the
+  // raw token in the header, and refusing that buys no security — the value
+  // still has to equal the secret — while costing an afternoon of debugging.
   const header = (req.headers.get('authorization') || '').trim()
   const match = /^bearer\s+(.+)$/i.exec(header)
-  const token = match ? match[1].trim() : ''
+  const token = (match ? match[1] : header).trim()
 
   if (!token) {
+    // Header NAMES only, never values: enough to see whether the caller sent
+    // its token somewhere unexpected, without writing a credential to a log.
+    const names = [...req.headers.keys()].sort().join(', ')
     console.warn(
-      '[opal/create-blog] 401: no bearer token on the request. '
-      + `Authorization header was ${header ? 'present but unparseable' : 'absent'}.`,
+      '[opal/create-blog] 401: no Authorization header on the request. '
+      + `Headers received: ${names}`,
     )
     return { ok: false, status: 401, error: 'Unauthorized.' }
   }
