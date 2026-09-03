@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * Opal tool manifest.
@@ -12,8 +12,29 @@ import { NextResponse } from 'next/server'
  * to use it. Every tool it advertises requires a bearer token of its own.
  */
 
-export function GET() {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+/**
+ * The origin Opal should call back on.
+ *
+ * Derived from the request that reached us, NOT from NEXT_PUBLIC_SITE_URL.
+ * That variable is a canonical-URL setting for SEO, and pointing it at
+ * localhost during development is normal — but a manifest is a set of live
+ * addresses, and one advertising http://localhost:3000 sends every Opal tool
+ * call into the void with no error anyone can see. Whatever host fetched this
+ * document can, by definition, be reached.
+ *
+ * `x-forwarded-*` is what Vercel's proxy sets; `req.nextUrl.origin` is the
+ * fallback for a direct hit.
+ */
+function callbackOrigin(req: NextRequest): string {
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host')
+  if (!host) return req.nextUrl.origin.replace(/\/$/, '')
+  const proto = req.headers.get('x-forwarded-proto')
+    || (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https')
+  return `${proto}://${host}`.replace(/\/$/, '')
+}
+
+export function GET(req: NextRequest) {
+  const base = callbackOrigin(req)
 
   return NextResponse.json({
     functions: [
