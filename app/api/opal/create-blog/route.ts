@@ -38,6 +38,44 @@ function slugify(title: string): string {
     .slice(0, 80) || `article-${Date.now()}`
 }
 
+/**
+ * Coerce a list parameter that may have arrived as a JSON string.
+ *
+ * Opal declares `sections` as type `list`, and then serialises it — a caller
+ * reported "the section payload needs to go over as compact JSON" and every
+ * attempt failed on `sections must be a non-empty array` while the array it
+ * sent was perfectly well formed. It was a string containing an array.
+ *
+ * Rejecting that would be pedantry: the content is right, only the wrapping
+ * differs, and the caller cannot change how its runtime encodes a parameter.
+ * Each element is unwrapped the same way, since a list of JSON strings is the
+ * other shape this comes in.
+ */
+function asArray(value: unknown): unknown[] | null {
+  let v = value
+  if (typeof v === 'string') {
+    const text = v.trim()
+    if (!text) return null
+    try {
+      v = JSON.parse(text)
+    } catch {
+      return null
+    }
+  }
+  if (!Array.isArray(v)) return null
+
+  return v.map(item => {
+    if (typeof item !== 'string') return item
+    const text = item.trim()
+    if (!text.startsWith('{') && !text.startsWith('[')) return item
+    try {
+      return JSON.parse(text)
+    } catch {
+      return item
+    }
+  })
+}
+
 function validate(body: unknown): { ok: true; input: BlogInput } | { ok: false; error: string } {
   const b = unwrapOpalParameters(body)
   if (!b) return { ok: false, error: 'Body must be a JSON object.' }
@@ -49,8 +87,14 @@ function validate(body: unknown): { ok: true; input: BlogInput } | { ok: false; 
   const intro = typeof b.intro === 'string' ? b.intro.trim() : undefined
   if (intro && intro.length > MAX_INTRO) return { ok: false, error: `\`intro\` must be ${MAX_INTRO} characters or fewer.` }
 
-  const sections = Array.isArray(b.sections) ? b.sections : []
-  if (!sections.length) return { ok: false, error: '`sections` must be a non-empty array.' }
+  const sections = asArray(b.sections) ?? []
+  if (!sections.length) {
+    return {
+      ok: false,
+      error: '`sections` must be a non-empty array of section objects '
+        + '(or a JSON string containing one).',
+    }
+  }
   if (sections.length > MAX_SECTIONS) return { ok: false, error: `At most ${MAX_SECTIONS} sections.` }
 
   const oversized = sections.find(s =>
@@ -65,7 +109,9 @@ function validate(body: unknown): { ok: true; input: BlogInput } | { ok: false; 
       intro,
       heroImageKey: typeof b.heroImageKey === 'string' ? b.heroImageKey : undefined,
       heroImageAlt: typeof b.heroImageAlt === 'string' ? b.heroImageAlt : undefined,
-      breadcrumb: Array.isArray(b.breadcrumb) ? b.breadcrumb.filter(x => typeof x === 'string') : undefined,
+      breadcrumb: (asArray(b.breadcrumb) ?? undefined)?.filter(
+        (x): x is string => typeof x === 'string',
+      ),
       sections: sections as BlogInput['sections'],
     },
   }
@@ -88,12 +134,22 @@ export async function POST(req: NextRequest) {
 
   const checked = validate(body)
   if (!checked.ok) {
-    // Field NAMES only. A rejected payload is nearly always the wrong envelope
-    // rather than the wrong content, and the keys say which at a glance.
-    const keys = body && typeof body === 'object'
-      ? Object.keys(body as Record<string, unknown>).join(', ')
-      : typeof body
-    console.warn(`[opal/create-blog] 400: ${checked.error} Top-level keys: ${keys}`)
+    // Field names and TYPES, never values. A rejected payload is nearly always
+    // the wrong envelope or the wrong encoding rather than the wrong content —
+    // `sections` arriving as a string instead of an array cost three round
+    // trips to spot, and "sections=string" in a log would have said it at once.
+    const shape = (o: unknown): string => {
+      if (!o || typeof o !== 'object') return typeof o
+      return Object.entries(o as Record<string, unknown>)
+        .map(([k, v]) => `${k}=${Array.isArray(v) ? `array[${v.length}]` : typeof v}`)
+        .join(', ')
+    }
+    const params = unwrapOpalParameters(body)
+    console.warn(
+      `[opal/create-blog] 400: ${checked.error} `
+      + `Received: ${shape(params)}`
+      + (params !== body ? ` (unwrapped from ${shape(body)})` : ''),
+    )
     return NextResponse.json({ error: checked.error }, { status: 400 })
   }
 
