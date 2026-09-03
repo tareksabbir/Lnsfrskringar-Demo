@@ -73,16 +73,22 @@ const FALLBACK_URL = '/'
  * max-w-[90rem] (1440px) — a 500px jump, so the left edge moved every few
  * sections and the page read as three documents stacked on top of each other.
  *
- * "article" is a width added for exactly this: 1024px, sitting between the two.
- * narrow reads well for prose but cramps a three-up gallery or a comparison
- * table; default is far too wide to read a paragraph in. See the widthClasses
- * map in cms/compositions/Section.tsx.
+ * narrow it is. 896px puts body text at roughly the measure it wants to be,
+ * and that matters more here than giving a gallery or a table extra room —
+ * this is an article, and most of it is prose.
+ *
+ * A middle width ("article", 1024px) exists in cms/compositions/Section.tsx and
+ * in the pushed OT_LandingSection template. It is deliberately not used as the
+ * default: it was tried and read as too loose. It stays available so an editor
+ * can pick it per section in Visual Builder, and so the class exists to back
+ * that choice — a width offered in the dropdown with no class behind it would
+ * silently fall back to `default`.
  *
  * Full-bleed moments are a real editorial device, but they have to be chosen
  * deliberately for a given design — not fall out of which block a section
  * happens to use. Change this one constant to move the whole article.
  */
-const ARTICLE_WIDTH = 'article'
+const ARTICLE_WIDTH = 'narrow'
 
 export type BlogSection =
   | { type: 'text';      heading?: string; body: string }
