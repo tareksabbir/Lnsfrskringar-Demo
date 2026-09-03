@@ -138,6 +138,20 @@ export async function POST(req: NextRequest) {
     // The response body is empty — the new key arrives in the Location header.
     const key = (res.headers.get('location') || '').replace(/\/$/, '').split('/').pop()
 
+    // Say WHERE it went, in the log and in the reply.
+    //
+    // "the article was created somewhere other than the Blog folder" is not a
+    // question anyone should have to answer by hunting through the content
+    // tree. This endpoint always posts `container: BLOG_FOLDER`, so an article
+    // outside that folder means either CMS_BLOG_CONTAINER_KEY is set to the
+    // wrong key on this deployment, or the article was made by something other
+    // than this tool. Reporting the container distinguishes the two instantly.
+    const usingDefault = !process.env.CMS_BLOG_CONTAINER_KEY
+    console.info(
+      `[opal/create-blog] created ${key} in container ${BLOG_FOLDER}`
+      + `${usingDefault ? ' (built-in default — CMS_BLOG_CONTAINER_KEY is not set)' : ''}`,
+    )
+
     return NextResponse.json({
       status: 'created',
       key,
@@ -145,7 +159,9 @@ export async function POST(req: NextRequest) {
       routeSegment,
       url: `/blog/${routeSegment}`,
       sections: composition.nodes.length,
-      note: 'Created as a draft. Publish it in the CMS to make it live.',
+      container: BLOG_FOLDER,
+      note: 'Created as a DRAFT inside the Blog folder (container above). '
+        + 'It will not appear on the site until someone publishes it in the CMS.',
     })
   } catch (err) {
     console.error('[opal/create-blog] failed:', err)
