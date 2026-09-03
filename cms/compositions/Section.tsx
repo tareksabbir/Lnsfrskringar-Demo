@@ -25,6 +25,13 @@ const widthClasses: Record<string, string> = {
   // themselves, so the coloured band bleeds while the content still lines up.
   full:    'w-full',
   narrow:  'max-w-4xl w-full mx-auto px-lg',
+  // Between narrow (896px) and default (1440px), which is a 500px jump with
+  // nothing in between. Long-form articles want a single column the whole way
+  // down: narrow is the right measure for prose but cramps a three-up gallery
+  // or a comparison table, and default is far too wide to read a paragraph in.
+  // 1024px keeps the text near its comfortable measure while giving the
+  // wider blocks somewhere to breathe. Used by lib/blogComposition.ts.
+  article: 'max-w-5xl w-full mx-auto px-lg',
   default: 'max-w-[90rem] w-full mx-auto px-lg',
   wide:    'max-w-[98rem] w-full mx-auto px-lg',
 }

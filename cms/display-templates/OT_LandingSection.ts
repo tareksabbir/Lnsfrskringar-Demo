@@ -14,6 +14,7 @@ export const OT_LandingSection = displayTemplate({
         full:    { displayName: 'Full bleed',       sortOrder: 10 },
         default: { displayName: 'Default',          sortOrder: 20 },
         wide:    { displayName: 'Wide (max-7xl)',    sortOrder: 30 },
+        article: { displayName: 'Article (max-5xl)', sortOrder: 35 },
         narrow:  { displayName: 'Narrow (max-4xl)', sortOrder: 40 },
       },
     },

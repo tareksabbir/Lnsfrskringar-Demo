@@ -65,6 +65,25 @@ function cap(text: string, max: number): string {
 // returns an empty string, which makes ButtonBlock render itself disabled.
 const FALLBACK_URL = '/'
 
+/**
+ * ONE content width for the whole article.
+ *
+ * Sections used to pick their own: prose and quotes at "narrow", cards,
+ * galleries, tables and video at "default". Those are max-w-4xl (896px) and
+ * max-w-[90rem] (1440px) — a 500px jump, so the left edge moved every few
+ * sections and the page read as three documents stacked on top of each other.
+ *
+ * "article" is a width added for exactly this: 1024px, sitting between the two.
+ * narrow reads well for prose but cramps a three-up gallery or a comparison
+ * table; default is far too wide to read a paragraph in. See the widthClasses
+ * map in cms/compositions/Section.tsx.
+ *
+ * Full-bleed moments are a real editorial device, but they have to be chosen
+ * deliberately for a given design — not fall out of which block a section
+ * happens to use. Change this one constant to move the whole article.
+ */
+const ARTICLE_WIDTH = 'article'
+
 export type BlogSection =
   | { type: 'text';      heading?: string; body: string }
   | { type: 'accordion'; heading?: string; items: { question: string; answer: string }[] }
@@ -144,7 +163,7 @@ const section = (
   name: string,
   bg = 'canvas',
   spacing = 'medium',
-  width = 'narrow',
+  width = ARTICLE_WIDTH,
 ): Node => ({
   nodeType: 'section',
   layoutType: 'grid',
@@ -163,7 +182,7 @@ const section = (
 })
 
 /** One block, alone in its own section — the shape most article sections take. */
-const single = (block: Node, name: string, bg = 'canvas', width = 'narrow'): Node =>
+const single = (block: Node, name: string, bg = 'canvas', width = ARTICLE_WIDTH): Node =>
   section([row([column([block])])], name, bg, 'medium', width)
 
 // ── Section mappers ─────────────────────────────────────────────────────────
@@ -305,7 +324,7 @@ function mapSection(s: BlogSection, i: number): Node | null {
                 : {}),
             }),
         ], cards.length === 3 ? 'col4' : cards.length === 2 ? 'col6' : 'col12'))))
-      return section(rows, s.heading || `Cards ${i + 1}`, 'canvas', 'medium', 'default')
+      return section(rows, s.heading || `Cards ${i + 1}`, 'canvas', 'medium', ARTICLE_WIDTH)
     }
 
     case 'links': {
@@ -341,7 +360,7 @@ function mapSection(s: BlogSection, i: number): Node | null {
           ratio: 'r4_3',
         }),
         s.heading || `Image and text ${i + 1}`,
-        'canvas', 'default')
+        'canvas', ARTICLE_WIDTH)
     }
 
     case 'gallery': {
@@ -352,7 +371,7 @@ function mapSection(s: BlogSection, i: number): Node | null {
       const span = images.length === 3 ? 'col4' : images.length === 2 ? 'col6' : 'col12'
       rows.push(row(images.map(img =>
         column([imageBlock(img.imageKey, { alt: img.alt, caption: img.caption, ratio: 'r1_1' })], span))))
-      return section(rows, s.heading || `Gallery ${i + 1}`, 'canvas', 'medium', 'default')
+      return section(rows, s.heading || `Gallery ${i + 1}`, 'canvas', 'medium', ARTICLE_WIDTH)
     }
 
     // ── Structure ───────────────────────────────────────────────────────────
@@ -406,7 +425,7 @@ function mapSection(s: BlogSection, i: number): Node | null {
             rowLabels:    { value: rowsIn.map(r => r.label) },
             cells:        { value: cells },
           }),
-        s.heading || `Table ${i + 1}`, 'canvas', 'default')
+        s.heading || `Table ${i + 1}`, 'canvas', ARTICLE_WIDTH)
     }
 
     case 'divider':
@@ -448,7 +467,7 @@ function mapSection(s: BlogSection, i: number): Node | null {
               Description: { value: { html: `<p>${escapeHtml(st.label)}</p>` } },
             }),
         ], span))))
-      return section(rows, s.heading || `Stats ${i + 1}`, 'surface', 'medium', 'default')
+      return section(rows, s.heading || `Stats ${i + 1}`, 'surface', 'medium', ARTICLE_WIDTH)
     }
 
     case 'banner':
@@ -469,7 +488,7 @@ function mapSection(s: BlogSection, i: number): Node | null {
                 }
               : {}),
           }),
-        s.heading, 'canvas', 'default')
+        s.heading, 'canvas', ARTICLE_WIDTH)
 
     case 'video': {
       // The content type enforces a YouTube/Vimeo pattern. Anything else is
@@ -491,7 +510,7 @@ function mapSection(s: BlogSection, i: number): Node | null {
             ...(s.heading ? { heading: { value: cap(s.heading, LIMITS.imageHeading) } } : {}),
             ...(s.body    ? { body:    { value: { html: sanitizeCmsHtml(s.body) } } }   : {}),
           }),
-        s.title || s.heading || `Video ${i + 1}`, 'canvas', 'default')
+        s.title || s.heading || `Video ${i + 1}`, 'canvas', ARTICLE_WIDTH)
     }
 
     default:
@@ -537,7 +556,7 @@ export function buildBlogComposition(input: BlogInput) {
         alt: input.heroImageAlt || input.title,
         ratio: 'r16_9',
       }),
-      'Lead image', 'canvas', 'default'))
+      'Lead image', 'canvas', ARTICLE_WIDTH))
   }
 
   for (const [i, s] of (input.sections || []).entries()) {
