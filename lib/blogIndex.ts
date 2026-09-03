@@ -68,16 +68,37 @@ export type BlogIndexPost = {
  */
 export type BlogIndexResult = BlogIndexPost[] | null
 
-/** Articles live under this prefix. The index page itself is excluded. */
-const BLOG_PREFIX = '/blog/'
+/** Articles live under this segment. The index page itself is excluded. */
+const BLOG_SEGMENT = 'blog'
 
+/** Normalise whatever Graph hands back into a leading-slash pathname. */
 function pathOf(raw: unknown): string | null {
-  if (typeof raw !== 'string' || !raw) return null
+  if (typeof raw !== 'string' || !raw.trim()) return null
+  const trimmed = raw.trim()
   try {
-    return raw.startsWith('http') ? new URL(raw).pathname : raw
+    const p = trimmed.startsWith('http') ? new URL(trimmed).pathname : trimmed
+    return p.startsWith('/') ? p : `/${p}`
   } catch {
     return null
   }
+}
+
+/**
+ * Is this path a blog ARTICLE — i.e. `blog` followed by at least one more
+ * segment?
+ *
+ * Deliberately tolerant about what comes before `blog`. Graph returns
+ * `url.default` with a locale prefix on this instance (`/en/blog/…`), and a
+ * plain `startsWith('/blog/')` silently matched nothing — the index rendered
+ * "No articles have been published yet" over a blog that had an article in it.
+ * Rather than hard-code which prefixes are allowed, find the `blog` segment
+ * wherever it sits and require something after it. That also excludes the index
+ * itself, whose path ends at `blog`.
+ */
+function isArticlePath(path: string): boolean {
+  const segments = path.split('/').filter(Boolean)
+  const i = segments.indexOf(BLOG_SEGMENT)
+  return i !== -1 && i < segments.length - 1
 }
 
 export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogIndexResult> {
@@ -97,6 +118,7 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
 
   const seen = new Set<string>()
   const posts: BlogIndexPost[] = []
+  const rejected: string[] = []
 
   for (const raw of items) {
     const item = raw as {
@@ -111,8 +133,10 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
     }
 
     const path = pathOf(item._metadata?.url?.default)
-    // Under /blog/, but not the index itself and not a deeper sub-folder page.
-    if (!path || !path.startsWith(BLOG_PREFIX)) continue
+    if (!path || !isArticlePath(path)) {
+      if (path) rejected.push(path)
+      continue
+    }
 
     const key = item._metadata?.key
     if (!key || seen.has(key)) continue
@@ -126,6 +150,19 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
       published:   item._metadata?.published ?? null,
       imageUrl:    item.ogImage?.url?.default ?? null,
     })
+  }
+
+  // If Graph answered but nothing looked like an article, say what it DID
+  // return. "No articles have been published yet" over a blog that has one is
+  // the same silent-empty failure as the sitemap, and the paths are the whole
+  // diagnosis.
+  if (posts.length === 0 && items.length > 0) {
+    console.warn(
+      `[blog-index] ${items.length} experiences returned, none under "/${BLOG_SEGMENT}/". `
+      + (rejected.length
+        ? `Paths seen: ${rejected.slice(0, 15).join(', ')}`
+        : 'None of them carried a _metadata.url.default at all.'),
+    )
   }
 
   // Newest first. Anything without a date sorts last rather than to the top —
