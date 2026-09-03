@@ -1,5 +1,5 @@
 ---
-name: LF Stockholm blog articles
+name: lf-stockholm-blog-articles
 description: Use whenever someone asks for a blog article, guide, tips page or editorial post to be written for the Länsförsäkringar Stockholm site. Forces the site's own create_blog_article tool instead of built-in CMS tools, and requires image keys to come from list_dam_images.
 ---
 

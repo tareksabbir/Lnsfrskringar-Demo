@@ -28,6 +28,16 @@ Check **Activation Trigger** too. Keyword and intent matching is right for the
 blog skill; the alternative fires only when specific tools are already in use,
 which is too late to influence which tool gets chosen.
 
+## Frontmatter rules
+
+`name` is a slug, not a title. The importer rejects anything else:
+
+    SKILL.md frontmatter is invalid: name must be lowercase alphanumeric with hyphens
+
+So `name: lf-stockholm-blog-articles`, matching the folder, and the readable
+title lives in the body's `# ` heading. The generator that writes `skill.json`
+asserts this, so a bad slug fails locally instead of at import time.
+
 ## Which file the importer wants
 
 `SKILL.md` is the documented format and the one to prefer. `skill.json` is
