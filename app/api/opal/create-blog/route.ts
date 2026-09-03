@@ -87,9 +87,30 @@ function slugify(title: string): string {
     .slice(0, 80) || `article-${Date.now()}`
 }
 
+/**
+ * Opal does not post the tool's arguments at the top level. It wraps them:
+ *
+ *     { "parameters": { "title": …, "sections": […] }, "auth": { … } }
+ *
+ * which is the same envelope the Opal tools SDK unwraps before handing a
+ * handler its typed `parameters` object. Reading `body.title` directly got
+ * `"`title` is required."` on a call that carried a perfectly good title.
+ *
+ * Both shapes are accepted. curl and scripts post flat, Opal posts wrapped,
+ * and neither should have to know what the other does. `auth` is ignored — this
+ * tool authenticates on the Authorization header, not on forwarded credentials.
+ */
+function unwrap(body: Record<string, unknown>): Record<string, unknown> {
+  const p = body.parameters
+  if (p && typeof p === 'object' && !Array.isArray(p)) {
+    return p as Record<string, unknown>
+  }
+  return body
+}
+
 function validate(body: unknown): { ok: true; input: BlogInput } | { ok: false; error: string } {
   if (!body || typeof body !== 'object') return { ok: false, error: 'Body must be a JSON object.' }
-  const b = body as Record<string, unknown>
+  const b = unwrap(body as Record<string, unknown>)
 
   const title = typeof b.title === 'string' ? b.title.trim() : ''
   if (!title) return { ok: false, error: '`title` is required.' }
@@ -136,7 +157,15 @@ export async function POST(req: NextRequest) {
   }
 
   const checked = validate(body)
-  if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 })
+  if (!checked.ok) {
+    // Field NAMES only. A rejected payload is nearly always the wrong envelope
+    // rather than the wrong content, and the keys say which at a glance.
+    const keys = body && typeof body === 'object'
+      ? Object.keys(body as Record<string, unknown>).join(', ')
+      : typeof body
+    console.warn(`[opal/create-blog] 400: ${checked.error} Top-level keys: ${keys}`)
+    return NextResponse.json({ error: checked.error }, { status: 400 })
+  }
 
   const input = checked.input
   const composition = buildBlogComposition(input)
