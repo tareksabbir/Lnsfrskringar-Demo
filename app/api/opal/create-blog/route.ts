@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCmsAccessToken, cmsConfigured } from '@/lib/cmsApi'
 import { buildBlogComposition, type BlogInput } from '@/lib/blogComposition'
+import { timingSafeEqualString } from '@/lib/webhookAuth'
 
 /**
  * Create a blog article in the CMS from a plain description of it.
@@ -28,21 +29,10 @@ const MAX_SECTIONS = 40
 const MAX_BODY = 20_000
 
 /**
- * Constant-time comparison. A plain `===` on a secret leaks its length and
- * prefix through timing; the difference is small but free to avoid.
- */
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
-}
-
-/**
  * Fails CLOSED. If OPAL_TOOL_SECRET is unset the endpoint refuses every request
- * rather than running unauthenticated — the opposite of the CMP webhooks in this
- * repo, which skip verification entirely when their secret is missing and so are
- * open to anyone who finds the URL.
+ * rather than running unauthenticated, the same rule the CMP webhooks follow.
+ * The comparison is constant-time (see lib/webhookAuth.ts) so response timing
+ * does not leak the secret's length or prefix.
  */
 function authorized(req: NextRequest): { ok: true } | { ok: false; status: number; error: string } {
   const secret = process.env.OPAL_TOOL_SECRET
@@ -51,7 +41,7 @@ function authorized(req: NextRequest): { ok: true } | { ok: false; status: numbe
   }
   const header = req.headers.get('authorization') || ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : ''
-  if (!token || !safeEqual(token, secret)) {
+  if (!token || !timingSafeEqualString(token, secret)) {
     return { ok: false, status: 401, error: 'Unauthorized.' }
   }
   return { ok: true }

@@ -7,6 +7,7 @@ import {
 } from '@/lib/cmpPreviewStore'
 import { mapCmpPreviewToBlog } from '@/lib/cmpBlog'
 import { cmsConfigured, upsertBlogPage, type BlogPageProperties } from '@/lib/cmsApi'
+import { verifyCallbackSecret } from '@/lib/webhookAuth'
 
 // CMP publish webhook — PHASE 4: capture + create/update the blog.
 //
@@ -155,13 +156,12 @@ async function readBody(req: NextRequest): Promise<unknown> {
 }
 
 export async function POST(req: NextRequest) {
-  const expectedSecret = process.env.CMP_CALLBACK_SECRET
-  if (expectedSecret) {
-    const provided = req.headers.get('callback-secret')
-    if (provided !== expectedSecret) {
-      console.warn('[cmp-publish] rejected webhook — callback-secret mismatch')
-      return NextResponse.json({ ok: false, error: 'invalid callback secret' }, { status: 401 })
-    }
+  // Fails closed: no CMP_CALLBACK_SECRET means no webhook, not an open one.
+  // This endpoint WRITES to the CMS, so an unverified caller here would be able
+  // to create content — worth more care than the preview handler, not less.
+  const auth = verifyCallbackSecret(req.headers, 'CMP_CALLBACK_SECRET', 'cmp-publish')
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status })
   }
 
   const body = await readBody(req)

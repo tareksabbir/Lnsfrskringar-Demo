@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { putDelivery, getLatestDelivery } from '@/lib/cmpPreviewStore'
 import { mapCmpPreviewToBlog } from '@/lib/cmpBlog'
 import { cmpConfigured, acknowledgePreview, completePreview } from '@/lib/cmpApi'
+import { verifyCallbackSecret } from '@/lib/webhookAuth'
 
 // CMP blog preview webhook.
 //
@@ -93,14 +94,11 @@ async function runPreviewHandshake(mapped: NonNullable<ReturnType<typeof mapCmpP
 }
 
 export async function POST(req: NextRequest) {
-  // ── 1. Verify the inbound webhook secret (when configured) ──────────────────
-  const expectedSecret = process.env.CMP_CALLBACK_SECRET
-  if (expectedSecret) {
-    const provided = req.headers.get('callback-secret')
-    if (provided !== expectedSecret) {
-      console.warn('[cmp-preview] rejected webhook — callback-secret mismatch')
-      return NextResponse.json({ ok: false, error: 'invalid callback secret' }, { status: 401 })
-    }
+  // ── 1. Verify the inbound webhook secret ────────────────────────────────────
+  // Fails closed: no CMP_CALLBACK_SECRET means no webhook, not an open one.
+  const auth = verifyCallbackSecret(req.headers, 'CMP_CALLBACK_SECRET', 'cmp-preview')
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status })
   }
 
   const body = await readBody(req)

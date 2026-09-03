@@ -55,12 +55,25 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Allow all Optimizely SaaS CMS instances to embed this app in the Visual Builder iframe.
+        // Who is allowed to put this app in an iframe.
+        //
+        //   *.cms.optimizely.com  — SaaS CMS, for the Visual Builder canvas
+        //   *.cmp.optimizely.com  — CMP, for the content preview pane
+        //   *.welcomesoftware.com — CMP's legacy origin; some tenants still
+        //                           serve the app from it, and a preview from
+        //                           there fails silently without this entry
+        //
+        // A `*` matches ONE label, so these three do not overlap. Anything not
+        // listed here gets a blank pane and a console error the editor in CMP
+        // never sees, so keep the list in step with Optimizely's published
+        // domain allowlist.
         source: "/(.*)",
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self' https://*.cms.optimizely.com",
+            value:
+              "frame-ancestors 'self' https://*.cms.optimizely.com "
+              + "https://*.cmp.optimizely.com https://*.welcomesoftware.com",
           },
         ],
       },
