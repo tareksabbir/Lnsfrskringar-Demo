@@ -932,3 +932,53 @@ Without `mayContainTypes`, the CMS defaults to "None" for allowed child content 
 ### OptiForm elements are third-party — and gated
 
 `OptiFormsChoiceElement` and related types in the registry are Optimizely Forms — a separate service. They exist in the registry only for GraphQL fragment compatibility, and only when `NEXT_PUBLIC_OPTIFORMS_ENABLED=true`. On an instance without Forms, registering them makes every page query fail with `HTTP 400: 9 errors in the GraphQL query`. Preview and rendering issues with forms are Forms service issues, not Next.js issues.
+
+### Graph rejects `limit` over 100 — it does not clamp
+
+`Invalid 'limit' (value: 200, expected: [0-100])`, and the whole document fails. `app/sitemap.ts` asked for 200 and served a valid, **empty** `<urlset>` for weeks, because a bare `catch { return [] }` turned an API error into a silent empty file that `robots.txt` kept advertising to crawlers. Cap at 100 per type and page with `skip` beyond that. The wider lesson is the `catch`, not the limit: swallowing an error on a route nobody looks at means nobody looks at it.
+
+### DAM references need the `DamImageSource` segment
+
+Ordinary CMS media is `cms://content/<key>`. A **DAM asset is not**:
+
+```
+cms://content/DamImageSource/2f4c455aa50b11f1916b4a7836a56b60
+```
+
+The trailing id is `cmp_Asset._itemMetadata.key` from Graph. Written without the segment the CMS accepts the value and the block renders with no image at all — no error, nothing in a log. Read the published home page's composition if you need to confirm the shape for a property; the CMS stores what it means, and it is faster than guessing.
+
+### The CMS drops empty strings from a string array
+
+Post `["1500 kr", "500 kr", "No", "Yes", "No", ""]` to an `array` of `string` and six values come back as five. For `OT_CompareTable`, whose grid is rebuilt from `columnLabels.length`, that shifts every value after the gap into the wrong column — silently, and the table still looks plausible. Pad missing cells with a visible placeholder (an em dash) rather than `""`.
+
+### An array property's `items` type is not always what you assume
+
+`OT_CompareTable.intro` is a plain `string`; posting `{ html: … }` is rejected with *"requires an element of type 'String', but the target element has type 'Object'"*. Check the content type before assuming a text field is rich text — several blocks mix both.
+
+### The CMS accepts display-setting values the template does not declare
+
+Posting `gridWidth: "article"` returned 201 at a point when `OT_LandingSection` declared only full/default/wide/narrow. (It declares `article` now — that push went through — so this is the account of how the width was introduced, not a claim about the current template.)
+
+Useful, because a new width can be rendered before the template is pushed. Two conditions though: the front end falls back to `default` for an unknown value, so the class in `cms/compositions/Section.tsx` has to exist first; and the choice only appears in the Visual Builder dropdown after `yarn cms:push`, so until then an editor opening that control sees no matching option.
+
+### `yarn cms:push` currently fails on content types, not display templates
+
+```
+Successfully imported 37 display templates.
+Errors:
+  - The property 'items' is not allowed when content type has ElementEnabled.
+```
+
+The CMS *holds* `elementEnabled` types with `items` quite happily — `OT_FaqBlock` and `OT_CompareTable` are live with exactly that shape, confirmed by reading them back from `/v1/contenttypes`. So this is the importer's rule, not the stored schema's, and nothing on the instance is broken by it. Display-template pushes still work; content-type pushes are blocked until the tooling or the rule changes. cms-cli 2.2.0.
+
+### Opal caches a tool manifest at registration
+
+Opal reads a discovery URL once, when the registry is created, and does not re-read it. Add a tool and Opal keeps reporting the old list — correctly, for what it can see. Delete the registry and recreate it, or register a new one with a cache-busting query string. `app/api/opal/discovery/route.ts` logs every fetch, so the absence of a line distinguishes "never re-read" from "read it and something else is wrong".
+
+### Opal serialises `list` parameters as JSON strings
+
+A parameter declared `list` in the manifest can arrive as a **string containing** an array, not an array. `Array.isArray()` then rejects a perfectly well-formed payload with a message that sends everyone looking at the content instead of the wrapping. Parse a string before validating. Related: Opal posts arguments wrapped as `{ "parameters": { … }, "auth": { … } }` rather than at the top level, and its `ParameterType` enum is `string | integer | number | boolean | list | dictionary` — `array` is not a member, and declaring it fails registration with a 400.
+
+### `auth_requirements` in an Opal manifest means an identity provider
+
+The values are providers whose credentials Opal resolves for the user — `google`, `microsoft`, Opti ID. There is no `bearer` provider, and inventing one makes Opal reject the whole manifest at registration. A registry's Bearer Token is a separate mechanism that Opal simply puts in the `Authorization` header; declare nothing for it.

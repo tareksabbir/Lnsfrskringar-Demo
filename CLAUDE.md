@@ -120,6 +120,26 @@ things learned by doing it, both of which cost a rebuild:
 `Optimizely.md` carries the full gotcha list, including the two-layer API authorization that makes
 `/contenttypes` return 200 while `POST /v1/content` returns 403.
 
+### Blog articles and the Opal tools
+
+Blog articles are `BlankExperience` documents in **Root > Blog**, built from the
+same blocks as any other page, and can be written by Optimizely Opal through two
+tools under `app/api/opal/`. `lib/blogComposition.ts` turns a flat list of
+section descriptions into a composition and absorbs every CMS trap so a caller —
+Opal, a script, curl — never has to know composition shape.
+
+Read [`docs/blog-and-opal.md`](docs/blog-and-opal.md) before touching anything
+under `app/api/opal/`, `lib/blogComposition.ts`, `lib/blogIndex.ts` or
+`lib/damImages.ts`. It covers the section vocabulary, why `stats` is not
+`OT_StatBlock`, the `DamImageSource` reference format, and the Opal-side setup
+that is not in this repo.
+
+Adding a section type means editing three things together: the `BlogSection`
+union and its mapper in `lib/blogComposition.ts`, the `SECTIONS_DOC` text in
+`app/api/opal/discovery/route.ts` (that string is what tells the model the type
+exists), and `scripts/emit_section_probe.mts`, which builds an article using
+every type so the CMS can be asked whether it accepts them.
+
 ### Adding a CMS-driven page route
 
 CMS **pages** are a separate flow from blocks (the block skill does not cover them). They render through
