@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCmsAccessToken, cmsConfigured } from '@/lib/cmsApi'
 import { buildBlogComposition, type BlogInput } from '@/lib/blogComposition'
-import { timingSafeEqualString } from '@/lib/webhookAuth'
+import { authorizeOpal, unwrapOpalParameters } from '@/lib/opalAuth'
 
 /**
  * Create a blog article in the CMS from a plain description of it.
@@ -28,55 +28,6 @@ const MAX_INTRO = 400
 const MAX_SECTIONS = 40
 const MAX_BODY = 20_000
 
-/**
- * Fails CLOSED. If OPAL_TOOL_SECRET is unset the endpoint refuses every request
- * rather than running unauthenticated, the same rule the CMP webhooks follow.
- * The comparison is constant-time (see lib/webhookAuth.ts) so response timing
- * does not leak the secret's length or prefix.
- */
-function authorized(req: NextRequest): { ok: true } | { ok: false; status: number; error: string } {
-  // Trimmed, because a secret pasted into a dashboard field routinely arrives
-  // with a trailing newline or space and the mismatch it causes is invisible.
-  const secret = (process.env.OPAL_TOOL_SECRET || '').trim()
-  if (!secret) {
-    return { ok: false, status: 503, error: 'OPAL_TOOL_SECRET is not set — this endpoint is disabled.' }
-  }
-
-  // RFC 7235: the auth scheme is case-INSENSITIVE. `startsWith('Bearer ')`
-  // rejected "bearer abc" outright, which is a legal thing for a client to
-  // send and produced a 401 indistinguishable from a wrong secret.
-  //
-  // A bare value with no scheme at all is accepted too. Some callers put the
-  // raw token in the header, and refusing that buys no security — the value
-  // still has to equal the secret — while costing an afternoon of debugging.
-  const header = (req.headers.get('authorization') || '').trim()
-  const match = /^bearer\s+(.+)$/i.exec(header)
-  const token = (match ? match[1] : header).trim()
-
-  if (!token) {
-    // Header NAMES only, never values: enough to see whether the caller sent
-    // its token somewhere unexpected, without writing a credential to a log.
-    const names = [...req.headers.keys()].sort().join(', ')
-    console.warn(
-      '[opal/create-blog] 401: no Authorization header on the request. '
-      + `Headers received: ${names}`,
-    )
-    return { ok: false, status: 401, error: 'Unauthorized.' }
-  }
-
-  if (!timingSafeEqualString(token, secret)) {
-    // Lengths only. Enough to tell "wrong secret" from "truncated paste"
-    // without putting either value in a log.
-    console.warn(
-      `[opal/create-blog] 401: bearer token did not match OPAL_TOOL_SECRET `
-      + `(sent ${token.length} chars, expected ${secret.length}).`,
-    )
-    return { ok: false, status: 401, error: 'Unauthorized.' }
-  }
-
-  return { ok: true }
-}
-
 function slugify(title: string): string {
   return title
     .toLowerCase()
@@ -87,30 +38,9 @@ function slugify(title: string): string {
     .slice(0, 80) || `article-${Date.now()}`
 }
 
-/**
- * Opal does not post the tool's arguments at the top level. It wraps them:
- *
- *     { "parameters": { "title": …, "sections": […] }, "auth": { … } }
- *
- * which is the same envelope the Opal tools SDK unwraps before handing a
- * handler its typed `parameters` object. Reading `body.title` directly got
- * `"`title` is required."` on a call that carried a perfectly good title.
- *
- * Both shapes are accepted. curl and scripts post flat, Opal posts wrapped,
- * and neither should have to know what the other does. `auth` is ignored — this
- * tool authenticates on the Authorization header, not on forwarded credentials.
- */
-function unwrap(body: Record<string, unknown>): Record<string, unknown> {
-  const p = body.parameters
-  if (p && typeof p === 'object' && !Array.isArray(p)) {
-    return p as Record<string, unknown>
-  }
-  return body
-}
-
 function validate(body: unknown): { ok: true; input: BlogInput } | { ok: false; error: string } {
-  if (!body || typeof body !== 'object') return { ok: false, error: 'Body must be a JSON object.' }
-  const b = unwrap(body as Record<string, unknown>)
+  const b = unwrapOpalParameters(body)
+  if (!b) return { ok: false, error: 'Body must be a JSON object.' }
 
   const title = typeof b.title === 'string' ? b.title.trim() : ''
   if (!title) return { ok: false, error: '`title` is required.' }
@@ -142,7 +72,7 @@ function validate(body: unknown): { ok: true; input: BlogInput } | { ok: false; 
 }
 
 export async function POST(req: NextRequest) {
-  const auth = authorized(req)
+  const auth = authorizeOpal(req, 'opal/create-blog')
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   if (!cmsConfigured()) {
