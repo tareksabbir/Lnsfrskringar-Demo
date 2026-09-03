@@ -72,8 +72,27 @@ const SECTIONS_DOC = [
   'still publishes.',
 ].join('\n')
 
+/**
+ * The manifest changes; a registry that read it once does not.
+ *
+ * Opal caches the discovery document at registration. After the tool list grew
+ * from one function to two, Opal kept answering from the old copy and reported
+ * — correctly, for what it could see — that list_dam_images did not exist. From
+ * the outside there was no way to tell "never re-read it" from "read it and
+ * something is wrong", so every fetch is logged with the caller and the tool
+ * count. If Opal has not re-read this, no line appears.
+ */
+function logFetch(req: NextRequest, tools: string[]) {
+  const ua = req.headers.get('user-agent') || 'unknown'
+  console.info(
+    `[opal/discovery] manifest served — ${tools.length} tools (${tools.join(', ')}) `
+    + `to ${ua.slice(0, 120)}`,
+  )
+}
+
 export function GET(req: NextRequest) {
   const base = callbackOrigin(req)
+  logFetch(req, ['list_dam_images', 'create_blog_article'])
 
   return NextResponse.json({
     functions: [
