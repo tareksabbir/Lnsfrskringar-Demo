@@ -40,6 +40,9 @@ interface Props {
   eyebrow?:    string
   headline:    string
   subHeadline?: string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   columns:     ComparisonColumn[]
   rows:        ComparisonRow[]
   color?:      'canvas' | 'surface'
@@ -221,6 +224,7 @@ export default function ComparisonTableBlock({
   eyebrow,
   headline,
   subHeadline,
+  epi,
   columns,
   rows,
   color = 'canvas',
@@ -303,15 +307,15 @@ export default function ComparisonTableBlock({
         <div className="mb-2xl">
           {eyebrow && (
             <p className="text-label tracking-label uppercase font-semibold mb-sm accent-ink">
-              {eyebrow}
+              <span {...epi?.eyebrow}>{eyebrow}</span>
             </p>
           )}
           <h2 className="text-headline font-bold leading-headline text-fg">
-            {headline}
+            <span {...epi?.headline}>{headline}</span>
           </h2>
           {subHeadline && (
             <p className="text-body leading-body text-fg-muted mt-md max-w-[65ch]">
-              {subHeadline}
+              <span {...epi?.subHeadline}>{subHeadline}</span>
             </p>
           )}
         </div>

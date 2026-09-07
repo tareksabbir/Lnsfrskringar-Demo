@@ -39,6 +39,7 @@ export default function OT_TabsBlockAdapter({ content, displaySettings = {} }: P
       data-stagger={entranceAnimation !== 'none' ? entranceAnimation : undefined}
     >
       <TabsBlock
+        epi={{ eyebrow: pa('eyebrow'), heading: pa('heading') }}
         eyebrow={content.eyebrow ?? undefined}
         heading={content.heading ?? undefined}
         tabs={tabs}

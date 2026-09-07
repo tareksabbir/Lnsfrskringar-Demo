@@ -16,6 +16,7 @@ export default function OT_ChartBlockAdapter({ content, displaySettings = {} }: 
   return (
     <div style={{ width: '100%', minWidth: 0 }} {...pa(content.__composition)}>
       <ChartBlock
+        epi={{ heading: pa('heading'), subtext: pa('subtext') }}
         heading={content.heading ?? ''}
         subtext={content.subtext ?? undefined}
         chartType={content.chartType ?? 'bar'}

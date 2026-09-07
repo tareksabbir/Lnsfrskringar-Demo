@@ -22,6 +22,9 @@ export type CompareTableStyleOptions = {
 type Props = {
   headline?: string
   intro?: string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   columnLabels: string[]
   rowLabels: string[]
   /** Row-major: cell (r, c) is cells[r * columnLabels.length + c]. */
@@ -65,6 +68,7 @@ function Cell({ value }: { value: string }) {
 export default function CompareTable({
   headline,
   intro,
+  epi = {},
   columnLabels,
   rowLabels,
   cells,
@@ -79,11 +83,11 @@ export default function CompareTable({
     <section className={sectionCva({ color })}>
       <div className="mx-auto w-full max-w-5xl">
         {headline && (
-          <h2 className="text-headline font-bold leading-headline tracking-headline text-brand">
+          <h2 className="text-headline font-bold leading-headline tracking-headline text-brand" {...epi.headline}>
             {headline}
           </h2>
         )}
-        {intro && <p className="mt-sm max-w-(--ot-measure) leading-body text-fg">{intro}</p>}
+        {intro && <p className="mt-sm max-w-(--ot-measure) leading-body text-fg" {...epi.intro}>{intro}</p>}
 
         {/* Horizontal scroll lives on the wrapper, not the page: a matrix this
             wide cannot reflow on a phone, and the alternative is a body that

@@ -37,6 +37,9 @@ export type AccordionBlockStyleOptions = {
 export type AccordionBlockProps = {
   eyebrow?:     string
   headline?:    string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   items:        AccordionItem[]
   styleOptions?: AccordionBlockStyleOptions
 }
@@ -202,6 +205,7 @@ function EmptyState({ color }: { color: 'canvas' | 'surface' | 'brand' }) {
 export default function AccordionBlock({
   eyebrow,
   headline,
+  epi = {},
   items,
   styleOptions = {},
 }: AccordionBlockProps) {
@@ -236,10 +240,10 @@ export default function AccordionBlock({
         {(eyebrow || headline) && (
           <header className="mb-lg">
             {eyebrow && (
-              <p className={eyebrowCva({ color })}>{eyebrow}</p>
+              <p className={eyebrowCva({ color })} {...epi.eyebrow}>{eyebrow}</p>
             )}
             {headline && (
-              <h2 className={headlineCva({ color })}>{headline}</h2>
+              <h2 className={headlineCva({ color })} {...epi.headline}>{headline}</h2>
             )}
           </header>
         )}

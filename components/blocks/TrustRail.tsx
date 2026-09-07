@@ -61,6 +61,9 @@ export type TrustRailStyleOptions = {
 
 export type TrustRailProps = {
   headline?:     string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   logos:         LogoItem[]
   styleOptions?: TrustRailStyleOptions
 }
@@ -171,6 +174,7 @@ function EmptyState() {
 
 export default function TrustRail({
   headline,
+  epi = {},
   logos,
   styleOptions = {},
 }: TrustRailProps) {
@@ -258,7 +262,7 @@ export default function TrustRail({
             'text-label uppercase tracking-label font-semibold',
             onBrand ? 'text-fg-on-brand/55' : 'text-fg-muted/55',
           )}>
-            {headline}
+            <span {...epi.headline}>{headline}</span>
           </p>
         </div>
       )}

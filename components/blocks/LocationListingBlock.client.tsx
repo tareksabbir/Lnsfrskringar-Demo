@@ -34,6 +34,8 @@ type Props = {
   styleOptions: LocationListingStyleOptions
   mapboxToken:  string
   emptyMessage: string
+  /** data-epi-edit from the adapter. Empty outside edit context. */
+  epiEmptyMessage?: Record<string, string | undefined>
 }
 
 const GRID_COLS: Record<LocationListingColumns, string> = {
@@ -130,7 +132,7 @@ function LabelChips({
 
 // ─── Directory client ─────────────────────────────────────────────────────────
 
-export default function LocationListingClient({ locations, styleOptions, mapboxToken, emptyMessage }: Props) {
+export default function LocationListingClient({ locations, styleOptions, mapboxToken, emptyMessage, epiEmptyMessage }: Props) {
   const { defaultView, showViewToggle, mapHeight, color, columns, showSearch, showLabelFilter, density } = styleOptions
 
   const [view, setView]               = useState<LocationListingView>(defaultView)
@@ -252,7 +254,7 @@ export default function LocationListingClient({ locations, styleOptions, mapboxT
 
       {/* ── Results ── */}
       {results.length === 0 ? (
-        <EmptyState message={emptyMessage} filtersActive={filtersActive} onClear={clearAll} />
+        <EmptyState message={emptyMessage} epi={epiEmptyMessage} filtersActive={filtersActive} onClear={clearAll} />
       ) : view === 'map' ? (
         <div className="grid gap-md lg:grid-cols-[26rem_1fr]" style={{ ['--map-h' as string]: `${mapPx}px` }}>
           {/* Rail — below the map on mobile, beside it (scrollable, matched height) on desktop. */}
@@ -320,7 +322,7 @@ export default function LocationListingClient({ locations, styleOptions, mapboxT
   )
 }
 
-function EmptyState({ message, filtersActive, onClear }: { message: string; filtersActive: boolean; onClear: () => void }) {
+function EmptyState({ message, epi, filtersActive, onClear }: { message: string; epi?: Record<string, string | undefined>; filtersActive: boolean; onClear: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-sm py-2xl text-center">
       <span
@@ -330,7 +332,7 @@ function EmptyState({ message, filtersActive, onClear }: { message: string; filt
       >
         {filtersActive ? <SlidersHorizontal size={24} strokeWidth={1.5} /> : <MapPinned size={24} strokeWidth={1.5} />}
       </span>
-      <p className="text-title font-semibold text-fg">{message}</p>
+      <p className="text-title font-semibold text-fg" {...epi}>{message}</p>
       {filtersActive && (
         <button
           type="button"

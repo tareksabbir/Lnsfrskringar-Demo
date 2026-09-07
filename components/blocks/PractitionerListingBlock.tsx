@@ -7,6 +7,9 @@ export type PractitionerListingBlockProps = {
   subtext?:      string
   practitioners: PractitionerCardData[]
   emptyMessage?: string
+  /** data-epi-edit from the adapter. Empty outside edit context. */
+  epiEmptyMessage?: Record<string, string | undefined>
+
   styleOptions:  PractitionerListingStyleOptions
   /** Preview-attribute factory from getPreviewUtils — server context only. */
   pa?:           (prop: string) => Record<string, unknown>
@@ -20,6 +23,7 @@ export default function PractitionerListingBlock({
   subtext,
   practitioners,
   emptyMessage,
+  epiEmptyMessage,
   styleOptions,
   pa = () => ({}),
 }: PractitionerListingBlockProps) {
@@ -52,6 +56,7 @@ export default function PractitionerListingBlock({
           showSearchFilters={styleOptions.showSearchFilters}
           density={styleOptions.density}
           emptyMessage={emptyMessage?.trim() || 'No results found.'}
+          epiEmptyMessage={epiEmptyMessage}
         />
       </div>
     </section>

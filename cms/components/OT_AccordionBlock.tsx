@@ -46,6 +46,7 @@ export default function OT_AccordionBlockAdapter({ content, displaySettings = {}
   return (
     <div {...pa(content.__composition)} className="w-full">
       <AccordionBlock
+        epi={{ eyebrow: pa('eyebrow'), headline: pa('headline') }}
         eyebrow={content.eyebrow   ?? undefined}
         headline={content.headline ?? undefined}
         items={items}

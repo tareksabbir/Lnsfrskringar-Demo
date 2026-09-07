@@ -19,6 +19,7 @@ export default function OT_CompareTableAdapter({ content, displaySettings = {} }
   return (
     <div {...pa(content.__composition)} className="w-full">
       <CompareTable
+        epi={{ headline: pa('headline'), intro: pa('intro') }}
         headline={content.headline ?? undefined}
         intro={content.intro ?? undefined}
         columnLabels={strings(content.columnLabels)}

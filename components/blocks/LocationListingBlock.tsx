@@ -8,6 +8,7 @@ export type LocationListingBlockProps = {
   heading?:      string
   subtext?:      string
   locations:     LocationData[]
+  epiEmptyMessage?: Record<string, string | undefined>
   emptyMessage?: string
   styleOptions:  LocationListingStyleOptions
   /** Preview-attribute factory from getPreviewUtils — server context only. */

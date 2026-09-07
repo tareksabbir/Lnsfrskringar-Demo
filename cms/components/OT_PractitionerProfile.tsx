@@ -51,7 +51,7 @@ export default function OT_PractitionerProfileAdapter({ content }: Props) {
   // carries the data-epi-block-id for CMS selection.
   return (
     <div className="min-h-screen bg-canvas" {...pa(content.__composition)}>
-      <PractitionerHeader practitioner={practitioner} />
+      <PractitionerHeader practitioner={practitioner} pa={pa} />
     </div>
   )
 }

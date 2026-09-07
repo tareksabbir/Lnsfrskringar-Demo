@@ -11,6 +11,8 @@ export type ProductRecommendationsBlockProps = {
   widgetPosition?: string
   initialCount?:   number
   showAllLabel?:   string
+  /** data-epi-edit from the adapter. Empty outside edit context. */
+  epiShowAllLabel?: Record<string, string | undefined>
   color?:          ProductRecColor
   /** Sample recs for the showcase — passed straight to the client widget. */
   initialRecs?:    ProductRec[]
@@ -34,6 +36,7 @@ export default function ProductRecommendationsBlock({
   widgetPosition,
   initialCount = 3,
   showAllLabel = 'Show all',
+  epiShowAllLabel,
   color = 'canvas',
   initialRecs,
   pa = () => ({}),
@@ -67,6 +70,7 @@ export default function ProductRecommendationsBlock({
           widgetPosition={widgetPosition}
           initialCount={initialCount}
           showAllLabel={showAllLabel}
+          epiShowAllLabel={epiShowAllLabel}
           onBrand={onBrand}
           initialRecs={initialRecs}
         />

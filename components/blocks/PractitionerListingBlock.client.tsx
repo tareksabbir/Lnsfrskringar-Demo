@@ -22,6 +22,9 @@ type Props = {
   showSearchFilters: boolean
   density:       PractitionerListingDensity
   emptyMessage:  string
+  /** data-epi-edit from the adapter. Empty outside edit context. */
+  epiEmptyMessage?: Record<string, string | undefined>
+
 }
 
 const GRID_COLS: Record<PractitionerListingColumns, string> = {
@@ -74,6 +77,7 @@ export default function PractitionerListingClient({
   showSearchFilters,
   density,
   emptyMessage,
+  epiEmptyMessage,
 }: Props) {
   const [query, setQuery]         = useState('')
   const [areas, setAreas]         = useState<string[]>([])
@@ -274,7 +278,7 @@ export default function PractitionerListingClient({
           >
             {filtersActive ? <SlidersHorizontal size={24} strokeWidth={1.5} /> : <UserSearch size={24} strokeWidth={1.5} />}
           </span>
-          <p className="text-title font-semibold text-fg">{emptyMessage}</p>
+          <p className="text-title font-semibold text-fg" {...epiEmptyMessage}>{emptyMessage}</p>
           {filtersActive && (
             <button
               type="button"

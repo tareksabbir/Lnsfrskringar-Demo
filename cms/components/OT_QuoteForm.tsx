@@ -22,6 +22,9 @@ export default function OT_QuoteFormAdapter({ content, displaySettings = {} }: P
       label:       content.field1Label,
       placeholder: content.field1Placeholder ?? undefined,
       linkLabel:   content.field1LinkLabel ?? undefined,
+      // Carried per field because the block renders `fields` through a map —
+      // there is no single element for "field1Label" until the row exists.
+      epi:         { label: pa('field1Label'), linkLabel: pa('field1LinkLabel') },
       linkUrl:     content.field1LinkUrl?.default ?? undefined,
       platePrefix: String(displaySettings.platePrefix ?? 'true') === 'true',
     })
@@ -31,6 +34,7 @@ export default function OT_QuoteFormAdapter({ content, displaySettings = {} }: P
       label:       content.field2Label,
       placeholder: content.field2Placeholder ?? undefined,
       help:        content.field2Help ?? undefined,
+      epi:         { label: pa('field2Label'), help: pa('field2Help') },
     })
   }
 
@@ -39,6 +43,7 @@ export default function OT_QuoteFormAdapter({ content, displaySettings = {} }: P
       <QuoteForm
         checkItems={strings(content.checkItems)}
         fields={fields}
+        epiCtaLabel={pa('ctaLabel')}
         ctaLabel={content.ctaLabel ?? undefined}
         ctaUrl={content.ctaUrl?.default ?? undefined}
       />

@@ -16,6 +16,9 @@ import ChartEmptyState from './chart/ChartEmptyState'
 export type ChartBlockClientProps = {
   heading:       string
   subtext?:      string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   chartType:     string
   chartData:     string | null
   seriesColors:  string
@@ -80,6 +83,7 @@ function wrapperProps(color: ChartStyleOptions['color']): {
 export default function ChartBlockClient({
   heading,
   subtext,
+  epi,
   chartType,
   chartData,
   seriesColors,
@@ -161,7 +165,7 @@ export default function ChartBlockClient({
           margin:        0,
           textWrap:      'balance',
         } as React.CSSProperties}>
-          {heading}
+          <span {...epi?.heading}>{heading}</span>
         </h3>
         {subtext && (
           <p style={{
@@ -175,7 +179,7 @@ export default function ChartBlockClient({
             textTransform: 'uppercase',
             margin:        '6px 0 0',
           } as React.CSSProperties}>
-            {subtext}
+            <span {...epi?.subtext}>{subtext}</span>
           </p>
         )}
       </div>

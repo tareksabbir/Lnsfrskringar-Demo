@@ -29,6 +29,8 @@ export type QuoteFormField = {
   linkUrl?: string
   /** Renders the Swedish plate badge inside the input. */
   platePrefix?: boolean
+  /** data-epi-edit per sub-field, from the adapter. Empty outside edit context. */
+  epi?: Partial<Record<'label' | 'linkLabel' | 'help', Record<string, string | undefined>>>
 }
 
 type Props = {
@@ -38,10 +40,11 @@ type Props = {
   fields: QuoteFormField[]
   ctaLabel?: string
   ctaUrl?: string
+  epiCtaLabel?: Record<string, string | undefined>
 }
 
 export default function QuoteForm({
-  headline, intro, checkItems = [], fields, ctaLabel, ctaUrl,
+  headline, intro, checkItems = [], fields, ctaLabel, ctaUrl, epiCtaLabel,
 }: Props) {
   if (!fields.length && !headline) return null
 
@@ -58,12 +61,12 @@ export default function QuoteForm({
           <CheckList items={checkItems} />
         </div>
       )}
-      {fields.length > 0 && <Panel fields={fields} ctaLabel={ctaLabel} ctaUrl={ctaUrl} />}
+      {fields.length > 0 && <Panel fields={fields} ctaLabel={ctaLabel} ctaUrl={ctaUrl} epiCtaLabel={epiCtaLabel} />}
     </div>
   )
 }
 
-function Panel({ fields, ctaLabel, ctaUrl }: Pick<Props, 'fields' | 'ctaLabel' | 'ctaUrl'>) {
+function Panel({ fields, ctaLabel, ctaUrl, epiCtaLabel }: Pick<Props, 'fields' | 'ctaLabel' | 'ctaUrl' | 'epiCtaLabel'>) {
   return (
     <div className="mt-lg rounded-ot-surface bg-brand-tint p-lg">
       <div className="grid gap-md sm:grid-cols-2">
@@ -71,7 +74,7 @@ function Panel({ fields, ctaLabel, ctaUrl }: Pick<Props, 'fields' | 'ctaLabel' |
           const id = `quote-field-${i}`
           return (
             <div key={f.label}>
-              <label htmlFor={id} className="block text-body font-semibold text-fg">
+              <label htmlFor={id} className="block text-body font-semibold text-fg" {...f.epi?.label}>
                 {f.label}
               </label>
 
@@ -98,10 +101,10 @@ function Panel({ fields, ctaLabel, ctaUrl }: Pick<Props, 'fields' | 'ctaLabel' |
                   href={f.linkUrl || '/'}
                   className="mt-xs inline-block text-label text-brand underline underline-offset-2 hover:text-brand-hover"
                 >
-                  {f.linkLabel}
+                  <span {...f.epi?.linkLabel}>{f.linkLabel}</span>
                 </a>
               )}
-              {f.help && <p className="mt-xs text-label leading-title text-fg-muted">{f.help}</p>}
+              {f.help && <p className="mt-xs text-label leading-title text-fg-muted" {...f.epi?.help}>{f.help}</p>}
             </div>
           )
         })}
@@ -112,7 +115,7 @@ function Panel({ fields, ctaLabel, ctaUrl }: Pick<Props, 'fields' | 'ctaLabel' |
           href={ctaUrl || '/'}
           className="mt-lg inline-block rounded-ot-control bg-brand px-lg py-sm text-body font-semibold text-fg-on-brand transition-colors duration-150 ease-quick hover:bg-brand-hover motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
-          {ctaLabel}
+          <span {...epiCtaLabel}>{ctaLabel}</span>
         </a>
       )}
     </div>

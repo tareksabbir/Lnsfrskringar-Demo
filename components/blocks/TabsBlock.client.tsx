@@ -34,6 +34,9 @@ export type TabItemData = {
 export type TabsBlockClientProps = {
   eyebrow?:     string
   heading?:     string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   tabs:         TabItemData[]
   styleOptions: TabsStyleOptions
 }
@@ -100,6 +103,7 @@ function ctaVariant(color: ColorCtx): 'brand' | 'ghost' {
 export default function TabsBlockClient({
   eyebrow,
   heading,
+  epi,
   tabs,
   styleOptions,
 }: TabsBlockClientProps) {
@@ -200,7 +204,7 @@ export default function TabsBlockClient({
               : color === 'glass' ? 'text-white/75'
               : 'text-brand',
             )}>
-              {eyebrow}
+              <span {...epi?.eyebrow}>{eyebrow}</span>
             </p>
           )}
           {heading && (
@@ -210,7 +214,7 @@ export default function TabsBlockClient({
               : color === 'glass' ? 'text-white'
               : 'text-fg',
             )}>
-              {heading}
+              <span {...epi?.heading}>{heading}</span>
             </h2>
           )}
         </header>

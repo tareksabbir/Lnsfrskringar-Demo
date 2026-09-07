@@ -49,6 +49,7 @@ export default function OT_ComparisonTableBlockAdapter({ content, displaySetting
   return (
     <div {...pa(content.__composition)} className="w-full">
       <ComparisonTableBlock
+        epi={{ eyebrow: pa('eyebrow'), headline: pa('headline'), subHeadline: pa('subHeadline') }}
         eyebrow={content.eyebrow      ?? undefined}
         headline={content.headline    ?? ''}
         subHeadline={content.subHeadline ?? undefined}

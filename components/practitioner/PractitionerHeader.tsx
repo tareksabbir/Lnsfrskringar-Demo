@@ -180,14 +180,14 @@ export default function PractitionerHeader({ practitioner, profileLabel, pa }: P
                   className="font-bold"
                   style={{ fontSize: '0.65em', color: 'var(--ot-accent)', letterSpacing: '0.04em' }}
                 >
-                  , {p.credentials}
+                  , <span {...pa?.('credentials')}>{p.credentials}</span>
                 </span>
               )}
             </h1>
 
             {/* Title — the professional role statement */}
             {p.title && (
-              <p className="mt-md text-title leading-title font-semibold text-fg">{p.title}</p>
+              <p className="mt-md text-title leading-title font-semibold text-fg" {...pa?.('title')}>{p.title}</p>
             )}
 
             {/* Primary practice area · facility */}
@@ -208,15 +208,15 @@ export default function PractitionerHeader({ practitioner, profileLabel, pa }: P
               <div className="mt-lg flex flex-wrap gap-x-lg gap-y-sm border-t border-fg/8 pt-md">
                 {p.phone && (
                   <ContactItem icon={Phone} href={`tel:${p.phone.replace(/[^\d+]/g, '')}`}>
-                    {p.phone}
+                    <span {...pa?.('phone')}>{p.phone}</span>
                   </ContactItem>
                 )}
                 {p.email && (
                   <ContactItem icon={Mail} href={`mailto:${p.email}`}>
-                    {p.email}
+                    <span {...pa?.('email')}>{p.email}</span>
                   </ContactItem>
                 )}
-                {p.officeLocation && <ContactItem icon={MapPin}>{p.officeLocation}</ContactItem>}
+                {p.officeLocation && <ContactItem icon={MapPin}><span {...pa?.('officeLocation')}>{p.officeLocation}</span></ContactItem>}
                 {languages.length > 0 && (
                   <ContactItem icon={Languages}>{languages.join(', ')}</ContactItem>
                 )}

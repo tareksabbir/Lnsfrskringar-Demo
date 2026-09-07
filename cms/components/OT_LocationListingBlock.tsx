@@ -35,6 +35,7 @@ export default async function OT_LocationListingBlockAdapter({
         heading={content.heading ?? undefined}
         subtext={content.subtext ?? undefined}
         locations={locations}
+        epiEmptyMessage={pa('emptyMessage')}
         emptyMessage={content.emptyMessage ?? undefined}
         styleOptions={styleOptions}
         pa={pa}

@@ -176,12 +176,16 @@ export type FeatureGridBlockProps = {
   heading?:     string
   subheading?:  string
   ctaLabel?:    string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   ctaUrl?:      string
   styleOptions?: FeatureGridStyleOptions
 }
 
 export default function FeatureGridBlock({
   features,
+  epi = {},
   eyebrow,
   heading,
   subheading,
@@ -252,13 +256,13 @@ export default function FeatureGridBlock({
       {hasHeader && (
         <div className="mb-xl">
           {eyebrow && (
-            <p className={eyebrowCva({ color })}>{eyebrow}</p>
+            <p className={eyebrowCva({ color })} {...epi.eyebrow}>{eyebrow}</p>
           )}
           {heading && (
-            <h2 className={headingCva({ color })}>{heading}</h2>
+            <h2 className={headingCva({ color })} {...epi.heading}>{heading}</h2>
           )}
           {subheading && (
-            <p className={subheadingCva({ color })}>{subheading}</p>
+            <p className={subheadingCva({ color })} {...epi.subheading}>{subheading}</p>
           )}
         </div>
       )}
@@ -358,7 +362,7 @@ export default function FeatureGridBlock({
       {hasSectionCta && (
         <div className="mt-xl">
           <a href={ctaUrl} className={sectionCtaCva({ color })}>
-            {ctaLabel}
+            <span {...epi.ctaLabel}>{ctaLabel}</span>
             <ArrowUpRight size={14} strokeWidth={2.5} aria-hidden="true" />
           </a>
         </div>

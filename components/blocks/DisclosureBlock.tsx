@@ -16,6 +16,9 @@ export type DisclosureStyleOptions = {
 
 export type DisclosureBlockProps = {
   heading?:      string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   items:         DisclosureItem[]
   styleOptions?: DisclosureStyleOptions
 }
@@ -113,6 +116,7 @@ const BORDER_COLOR: Record<'finePrint' | 'section', string> = {
 
 export default function DisclosureBlock({
   heading,
+  epi = {},
   items,
   styleOptions = {},
 }: DisclosureBlockProps) {
@@ -130,7 +134,7 @@ export default function DisclosureBlock({
       <div className={innerCva({ style })}>
         {heading && (
           <p className={headingCva({ style })}>
-            {heading}
+            <span {...epi.heading}>{heading}</span>
           </p>
         )}
         <ol className={listCva({ style })}>

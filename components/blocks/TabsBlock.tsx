@@ -7,6 +7,9 @@ export type { TabItemData }
 export type TabsBlockProps = {
   eyebrow?:     string
   heading?:     string
+  /** Precomputed data-epi-edit attributes, keyed by property. Empty outside edit context. */
+  epi?: Partial<Record<string, Record<string, string | undefined>>>
+
   tabs:         TabItemData[]
   styleOptions: TabsStyleOptions
 }

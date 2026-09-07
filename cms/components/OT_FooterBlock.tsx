@@ -66,6 +66,7 @@ export default function OT_FooterBlockAdapter({ content }: Props) {
       {/* Description */}
       {descriptionJson && (
         <div
+          {...pa('description')}
           className="
             text-[1rem] font-medium leading-[1.65] text-fg
             max-w-[52ch] mb-lg

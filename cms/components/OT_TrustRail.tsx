@@ -45,6 +45,7 @@ export default function OT_TrustRailAdapter({ content, displaySettings = {} }: P
       data-stagger={entranceAnimation !== 'none' ? entranceAnimation : undefined}
     >
       <TrustRail
+        epi={{ headline: pa('headline') }}
         headline={content.headline ?? undefined}
         logos={logos}
         styleOptions={styleOptions}

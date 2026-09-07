@@ -34,6 +34,7 @@ export default async function OT_PractitionerListingBlockAdapter({
         heading={content.heading ?? undefined}
         subtext={content.subtext ?? undefined}
         practitioners={practitioners}
+        epiEmptyMessage={pa('emptyMessage')}
         emptyMessage={content.emptyMessage ?? undefined}
         styleOptions={styleOptions}
         pa={pa}

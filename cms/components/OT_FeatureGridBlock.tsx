@@ -54,6 +54,7 @@ export default function OT_FeatureGridBlockAdapter({ content, displaySettings = 
     <div {...pa(content.__composition)} className="w-full">
       <FeatureGridBlock
         features={features}
+        epi={{ eyebrow: pa('eyebrow'), heading: pa('heading'), subheading: pa('subheading'), ctaLabel: pa('ctaLabel') }}
         eyebrow={content.eyebrow    ?? undefined}
         heading={content.heading    ?? undefined}
         subheading={content.subheading ?? undefined}

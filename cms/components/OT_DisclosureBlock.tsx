@@ -38,6 +38,7 @@ export default function OT_DisclosureBlockAdapter({ content, displaySettings = {
   return (
     <div {...pa(content.__composition)} className="w-full">
       <DisclosureBlock
+        epi={{ heading: pa('heading') }}
         heading={content.heading ?? undefined}
         items={items}
         styleOptions={styleOptions}

@@ -29,7 +29,7 @@ import { join } from 'node:path'
 const ROOT = process.cwd()
 const CONTENT_TYPES = join(ROOT, 'cms/content-types')
 const ADAPTERS = join(ROOT, 'cms/components')
-const BLOCKS = join(ROOT, 'components/blocks')
+const COMPONENTS = join(ROOT, 'components')
 
 /**
  * Property groups that never render visible text, so an overlay on them would
@@ -37,12 +37,58 @@ const BLOCKS = join(ROOT, 'components/blocks')
  */
 const NON_VISUAL_GROUPS = new Set(['OT_SEO', 'OT_Integrations', 'OT_Theme'])
 
-/** Properties that are configuration rather than content. */
-const NON_VISUAL_NAMES = new Set([
-  'headingLevel', 'headerEffect', 'treatment', 'intent', 'style', 'variant',
-  'mediaSide', 'imageSide', 'topicFilter', 'pageSize', 'articleRoot',
-  'enableExternalPreview', 'noIndex', 'FxFlagKey', 'siteKey',
+/**
+ * Is this property rendered as visible text, i.e. could an element's CONTENT be
+ * this value?
+ *
+ * That is the whole test for data-epi-edit. The attribute marks an element the
+ * CMS patches in place on save, so it only makes sense where the property IS
+ * the text. Everything else — how many items to show, which layout, which
+ * colour, an alt attribute, a content reference — is edited in the property
+ * panel and reaches the page through the refetch.
+ *
+ * Decided from the declared type rather than a list of names, because a list
+ * needs extending every time a block is added and quietly rots when nobody
+ * does. Booleans, numbers, enums, references and URLs are never rendered text.
+ */
+/**
+ * Configuration that happens to be declared as a plain string, so the
+ * type-based test below cannot catch it. Kept deliberately short — every entry
+ * is a property whose value never appears as text on the page.
+ */
+const CONFIG_STRINGS = new Set([
+  'headingLevel',    // which tag to render, not what it says
+  'siteKey',         // scoping
+  'damFolderId',     // an id
+  'widgetPosition',  // a slot name
+  'chartData',       // serialised data
+  'videoUrl',        // a URL with a pattern, not typed 'url'
+  'title',           // VideoBlock: the iframe's title attribute
+  'valuePrefix',     // ChartBlock: formatting, rendered inside the chart library
+  'valueSuffix',
+  // Rendered only as part of a COMPUTED value, so no element's content is this
+  // property on its own. Patching one in place would replace the whole
+  // composite — "Anna Berg" becoming "Anna". These update via the refetch.
+  'firstName',       // → practitionerName(first, last, suffix)
+  'lastName',
+  'suffix',
+  'languages',       // → a joined, comma-separated list
+  'bio',             // → bioPreview(bio, 160), a truncation
 ])
+
+function isRenderedText(src, prop) {
+  if (CONFIG_STRINGS.has(prop)) return false
+  const body = bodyOf(src, prop)
+  if (/type:\s*'(boolean|integer|float|contentReference|binary|dateTime|url)'/.test(body)) return false
+  // A selectOne enum is a setting, whatever its underlying type.
+  if (/format:\s*'selectOne'/.test(body)) return false
+  // These live in HTML ATTRIBUTES, not in an element's content, so there is
+  // nothing for data-epi-edit to mark: alt text, input placeholders, and the
+  // iframe title on a video embed.
+  if (/alt$/i.test(prop)) return false
+  if (/placeholder$/i.test(prop)) return false
+  return true
+}
 
 function read(path) {
   try { return readFileSync(path, 'utf8') } catch { return '' }
@@ -97,7 +143,11 @@ function isArrayProp(src, prop) {
 }
 
 function blocksFor(adapterSrc) {
-  return [...adapterSrc.matchAll(/from\s+'@\/components\/blocks\/([\w./]+)'/g)]
+  // Any component under components/, not just components/blocks/. An adapter
+  // can hand its content to a shared presenter — OT_PractitionerProfile renders
+  // through components/practitioner/PractitionerHeader — and scoping the search
+  // to blocks/ reported it as 0/5 while the overlays were sitting in that file.
+  return [...adapterSrc.matchAll(/from\s+'@\/components\/([\w./-]+)'/g)]
     .map(m => m[1])
 }
 
@@ -123,27 +173,29 @@ for (const file of readdirSync(CONTENT_TYPES).sort()) {
   const adapterSrc = read(adapterPath)
 
   const blockNames = blocksFor(adapterSrc)
+  // Both files, always. A server wrapper that delegates to `X.client.tsx` keeps
+  // the props type in `X.tsx` and every render site in the client file, so
+  // reading only the first one reports zero for a block that is fully done.
   const blockSrc = blockNames
-    .map(n => read(join(BLOCKS, `${n}.tsx`)) || read(join(BLOCKS, `${n}.client.tsx`)))
+    .flatMap(n => [read(join(COMPONENTS, `${n}.tsx`)), read(join(COMPONENTS, `${n}.client.tsx`))])
     .join('\n')
   const haystack = adapterSrc + '\n' + blockSrc
 
   const edited = new Set(
-    [...haystack.matchAll(/\bpa\(\s*'([^']+)'\s*\)/g)].map(m => m[1]),
+    // `pa?.('x')` as well as `pa('x')` — the optional form is what a component
+    // uses when the factory is an optional prop, and requiring the bare call
+    // reported PractitionerProfile as 0/4 with four overlays already in place.
+    [...haystack.matchAll(/\bpa\??\.?\(\s*'([^']+)'\s*\)/g)].map(m => m[1]),
   )
 
   const props = propertiesOf(ctSrc).filter(p => {
-    if (NON_VISUAL_NAMES.has(p)) return false
+    if (!isRenderedText(ctSrc, p)) return false
     // An array property renders as N elements. data-epi-edit names ONE
     // property and the CMS patches the element whose content is that property,
     // so there is nothing for it to point at. These update through the refetch
     // on save like any structural change. Counting them as missing would put a
     // ceiling on the metric and make it useless as a signal.
     if (isArrayProp(ctSrc, p)) return false
-    // A URL is not rendered text. data-epi-edit marks an element whose CONTENT
-    // is the property; a href has no such element, and it is edited in the
-    // property panel like any other non-textual field.
-    if (/url$/i.test(p)) return false
     const g = groupOf(ctSrc, p)
     return !(g && NON_VISUAL_GROUPS.has(g))
   })

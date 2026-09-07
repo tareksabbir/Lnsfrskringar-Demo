@@ -20,6 +20,8 @@ interface Props {
   widgetPosition?: string
   initialCount:    number
   showAllLabel:    string
+  /** data-epi-edit from the adapter. Empty outside edit context. */
+  epiShowAllLabel?: Record<string, string | undefined>
   onBrand:         boolean
   /** Sample recs for the showcase — bypasses the live Peerius listener. */
   initialRecs?:    ProductRec[]
@@ -85,6 +87,7 @@ export default function ProductRecommendationsClient({
   widgetPosition,
   initialCount,
   showAllLabel,
+  epiShowAllLabel,
   onBrand,
   initialRecs,
 }: Props) {
@@ -184,7 +187,7 @@ export default function ProductRecommendationsClient({
             onClick={() => setExpanded(true)}
             className="px-lg py-[9px] border border-fg/[0.14] text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-fg hover:border-brand/40 hover:text-brand transition-colors duration-150"
           >
-            {showAllLabel || 'Show all'}
+            <span {...epiShowAllLabel}>{showAllLabel || 'Show all'}</span>
           </button>
         </div>
       )}

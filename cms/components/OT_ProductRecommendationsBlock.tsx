@@ -29,6 +29,7 @@ export default function OT_ProductRecommendationsBlockAdapter({
         subheading={content.subheading ?? undefined}
         widgetPosition={content.widgetPosition ?? undefined}
         initialCount={initialCount}
+        epiShowAllLabel={pa('showAllLabel')}
         showAllLabel={content.showAllLabel ?? 'Show all'}
         color={color}
         pa={pa}
