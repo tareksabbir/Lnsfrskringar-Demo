@@ -31,6 +31,7 @@ import type { ContentRecItem }         from '@/components/blocks/ContentRecommen
 import ProductRecommendationsBlock     from '@/components/blocks/ProductRecommendationsBlock'
 import type { ProductRec }             from '@/components/blocks/ProductRecommendationsBlock'
 import OT_ComparisonTableBlock         from '@/cms/components/OT_ComparisonTableBlock'
+import OT_NotificationBlock            from '@/cms/components/OT_NotificationBlock'
 import {
   ArrowRight, Zap, ChevronRight, Play, Download,
   Sparkles, Send, Rocket, Star, Plus,
@@ -63,7 +64,7 @@ const BLOCK_SLUGS = [
   'hero', 'card', 'primary-text', 'quote', 'rich-text',
   'image', 'video', 'stat', 'feature-grid', 'trust-rail',
   'accordion', 'tabs', 'blog-feed', 'button', 'chart', 'banner', 'resource-library',
-  'callout', 'divider', 'event-listing', 'practitioner-listing', 'location-listing',
+  'callout', 'notification', 'divider', 'event-listing', 'practitioner-listing', 'location-listing',
   'content-recommendations', 'product-recommendations',
   'comparison-table',
   'disclosure',
@@ -91,6 +92,7 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'banner':           { label: 'BannerBlock',          cmsKey: 'OT_BannerBlock',          description: 'Full-bleed background image with layered content: eyebrow, headline, optional body, and up to two CTAs. Two overlay modes: scrim (color overlay over the image) and glass (content inside a frosted panel). Three color variants, two alignment options, two height sizes, and two image blend modes.' },
   'resource-library': { label: 'ResourceLibraryBlock', cmsKey: 'OT_ResourceLibraryBlock', description: 'DAM-connected asset download list. The editor pastes a DAM Folder ID (ParentFolderGuid); the block fetches all assets in that folder via Optimizely Graph and renders them as a dense list or card grid with Lucide file-type iconography and native download links.' },
   'callout':          { label: 'CalloutBlock',          cmsKey: 'OT_CalloutBlock',          description: 'Compact semantic inline notification. Six intent types: neutral, info, success, warning, danger, brand. Three variants: filled, bordered, bar. Dismissible with a two-phase kinetic exit — content sweeps right and fades, then the container height collapses.' },
+  'notification':     { label: 'NotificationBlock',     cmsKey: 'OT_NotificationBlock',     description: 'Security or service advisory — the "we will never ask for your password" notice. An icon plate, a kicker label trailed by a hairline that draws itself in, the message, optional detail and link. Tone and icon frame default to the site preset (lib/siteNotification.ts), which is what lets one shared content type read as each site\'s own notice; an editor can override both per placement. Band or stacked layout, two densities, optionally dismissible with the same two-phase exit as CalloutBlock.' },
   'divider':          { label: 'DividerBlock',          cmsKey: 'OT_DividerBlock',          description: 'Structural section divider that opens deliberate breathing room between stacked sections. Three treatments: mark (a hairline broken by an editable label or an editorial ornament), glow (a precise luminous rule — a chromatic line of light with a soft bloom above and below), and bleed (atmospheric luminance — an elliptical light seam rising from the boundary). One Tone control spans all three — neutral, brand, accent, spectrum, aurora — plus editor-controlled spacing, weight, and an optional draw-in reveal that rides the shared scroll observer.' },
   'event-listing':    { label: 'EventListingBlock',     cmsKey: 'OT_EventListingBlock',     description: 'CMS-driven listing of Event Pages with three toggleable views: card grid, list (calendar-style date blocks), and a monthly calendar with day agenda. A segmented icon control switches views; type-filter chips and a past-events toggle refine the set. Works across technology, healthcare, legal, and financial events on both canvas and surface grounds. In production, events are fetched at render time from published Event Pages; the showcase uses static fixtures.' },
   'practitioner-listing': { label: 'PractitionerListingBlock', cmsKey: 'OT_PractitionerListingBlock', description: 'CMS-driven, vertical-agnostic people directory pulled from Practitioner Profiles. Grid (cards) or list (rows) layout, client-side search across name / credentials / specialty, and three multi-select filters — specialty, location, and language — derived dynamically from the loaded set, never a fixed list. Values OR within a filter and AND across filters. Automatically scoped to the current site via the Site Key field on each profile. Squared portraits with a chromatic brand bloom and a designed initials fallback. In production, practitioners are fetched at render time; the showcase uses static fixtures spanning medical, legal, and technology verticals.' },
@@ -2863,6 +2865,89 @@ function ComparisonTableShowcase() {
   )
 }
 
+// ─── Notification ─────────────────────────────────────────────────────────────
+
+const FRAUD_CONTENT = {
+  layout:   'band',
+  label:    'Security notice',
+  heading:  'Beware of fraudulent websites and callers.',
+  body:     'Länsförsäkringar will never ask you for your password, your BankID code or a card payment over the phone. If someone does, hang up and call your local office on the number printed on your card.',
+  ctaLabel: 'How we contact you',
+  ctaUrl:   { default: '#' },
+}
+
+const SERVICE_CONTENT = {
+  layout:   'band',
+  label:    'Service update',
+  heading:  'Online banking is unavailable Sunday 02:00–06:00.',
+  body:     'Scheduled maintenance. Cards, Swish and the app keep working as usual throughout the window.',
+  ctaLabel: 'See planned maintenance',
+  ctaUrl:   { default: '#' },
+}
+
+function NotificationShowcase() {
+  return (
+    <>
+      <BlockHeader slug="notification" />
+
+      <VariantGroup
+        label="Site preset"
+        note="Tone and frame left at Site preset — this is what an editor gets by default, and it resolves differently in each LF site (Skåne: accent + plate, Stockholm: brand + ring)."
+      />
+      <div className="px-md py-md lg:px-lg border-t border-fg/5">
+        <OT_NotificationBlock content={FRAUD_CONTENT as any} displaySettings={{}} />
+      </div>
+
+      <VariantGroup label="Tones" note="Per-placement overrides. Message and detail text stay on the fg tokens in every tone, so contrast never depends on the colour chosen." />
+      {(['accent', 'brand', 'warning', 'neutral'] as const).map(tone => (
+        <div key={tone} className="border-t border-fg/5">
+          <VariantLabel label={tone} />
+          <div className="px-md pb-md lg:px-lg">
+            <OT_NotificationBlock content={FRAUD_CONTENT as any} displaySettings={{ tone }} />
+          </div>
+        </div>
+      ))}
+
+      <VariantGroup label="Icon frames" note="Plate is a filled, hatched square; ring is an outlined circle with the icon in the tone colour." />
+      {(['plate', 'ring'] as const).map(frame => (
+        <div key={frame} className="border-t border-fg/5">
+          <VariantLabel label={frame} />
+          <div className="px-md pb-md lg:px-lg">
+            <OT_NotificationBlock content={FRAUD_CONTENT as any} displaySettings={{ frame, icon: 'shield' }} />
+          </div>
+        </div>
+      ))}
+
+      <VariantGroup label="Layout and density" />
+      <div className="border-t border-fg/5">
+        <VariantLabel label="stacked" note="Icon above centred text — for a standalone section rather than an in-column notice." />
+        <div className="px-md pb-md lg:px-lg">
+          <OT_NotificationBlock content={{ ...FRAUD_CONTENT, layout: 'stacked' } as any} displaySettings={{}} />
+        </div>
+      </div>
+      <div className="border-t border-fg/5">
+        <VariantLabel label="compact · dismissible" note="Smaller plate, message drops to body size, and the dismiss control sweeps then collapses the row." />
+        <div className="px-md pb-md lg:px-lg">
+          <OT_NotificationBlock
+            content={SERVICE_CONTENT as any}
+            displaySettings={{ density: 'compact', dismissible: 'on', icon: 'clock', tone: 'neutral' }}
+          />
+        </div>
+      </div>
+
+      <VariantGroup label="Message only" note="No label, detail or link — the shortest form the block supports." />
+      <div className="px-md pb-md lg:px-lg border-t border-fg/5">
+        <OT_NotificationBlock
+          content={{ heading: 'We never ask for your BankID code by phone or email.' } as any}
+          displaySettings={{}}
+        />
+      </div>
+
+      <div className="pb-xl" />
+    </>
+  )
+}
+
 export default async function ShowcaseBlockPage({ params }: Props) {
   const { block } = await params
 
@@ -2885,6 +2970,7 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'banner':            return <><BlockHeader slug="banner" /><BannerPlayground /></>
     case 'resource-library': return <ResourceLibraryShowcase />
     case 'callout':          return <><BlockHeader slug="callout" /><CalloutPlayground /></>
+    case 'notification':     return <NotificationShowcase />
     case 'divider':          return <><BlockHeader slug="divider" /><DividerPlayground /></>
     case 'event-listing':    return <EventListingShowcase />
     case 'practitioner-listing': return <PractitionerListingShowcase />

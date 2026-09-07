@@ -30,6 +30,7 @@ import { OT_ChartDefault }           from '@/cms/display-templates/OT_ChartDefau
 import { OT_BannerBlockDefault }     from '@/cms/display-templates/OT_BannerBlockDefault'
 import { OT_ResourceLibraryDefault } from '@/cms/display-templates/OT_ResourceLibraryDefault'
 import { OT_CalloutDefault }         from '@/cms/display-templates/OT_CalloutDefault'
+import { OT_NotificationDefault }    from '@/cms/display-templates/OT_NotificationDefault'
 import { OT_DividerBlockDefault }    from '@/cms/display-templates/OT_DividerBlockDefault'
 import { OT_EventListingDefault }    from '@/cms/display-templates/OT_EventListingDefault'
 import { OT_PractitionerListingDefault } from '@/cms/display-templates/OT_PractitionerListingDefault'
@@ -84,6 +85,7 @@ import { OT_ChartBlock }       from '@/cms/content-types/OT_ChartBlock'
 import { OT_BannerBlock }           from '@/cms/content-types/OT_BannerBlock'
 import { OT_ResourceLibraryBlock }  from '@/cms/content-types/OT_ResourceLibraryBlock'
 import { OT_CalloutBlock }          from '@/cms/content-types/OT_CalloutBlock'
+import { OT_NotificationBlock }     from '@/cms/content-types/OT_NotificationBlock'
 import { OT_DividerBlock }          from '@/cms/content-types/OT_DividerBlock'
 import { OT_EventListingBlock }     from '@/cms/content-types/OT_EventListingBlock'
 import { OT_PracticeArea }            from '@/cms/content-types/OT_PracticeArea'
@@ -149,6 +151,7 @@ import OT_ChartBlockAdapter      from '@/cms/components/OT_ChartBlock'
 import OT_BannerBlockAdapter           from '@/cms/components/OT_BannerBlock'
 import OT_ResourceLibraryBlockAdapter  from '@/cms/components/OT_ResourceLibraryBlock'
 import OT_CalloutBlockAdapter          from '@/cms/components/OT_CalloutBlock'
+import OT_NotificationBlockAdapter     from '@/cms/components/OT_NotificationBlock'
 import OT_DividerBlockAdapter          from '@/cms/components/OT_DividerBlock'
 import OT_EventListingBlockAdapter     from '@/cms/components/OT_EventListingBlock'
 import OT_PractitionerListingBlockAdapter from '@/cms/components/OT_PractitionerListingBlock'
@@ -270,6 +273,7 @@ initDisplayTemplateRegistry([
   OT_BannerBlockDefault,
   OT_ResourceLibraryDefault,
   OT_CalloutDefault,
+  OT_NotificationDefault,
   OT_DividerBlockDefault,
   OT_EventListingDefault,
   OT_PractitionerListingDefault,
@@ -324,6 +328,7 @@ initContentTypeRegistry([
   OT_BannerBlock,
   OT_ResourceLibraryBlock,
   OT_CalloutBlock,
+  OT_NotificationBlock,
   OT_DividerBlock,
   OT_EventListingBlock,
   OT_PracticeArea,
@@ -379,6 +384,7 @@ initReactComponentRegistry({
     OT_BannerBlock:           OT_BannerBlockAdapter,
     OT_ResourceLibraryBlock:  OT_ResourceLibraryBlockAdapter,
     OT_CalloutBlock:          OT_CalloutBlockAdapter,
+    OT_NotificationBlock:     OT_NotificationBlockAdapter,
     OT_DividerBlock:          OT_DividerBlockAdapter,
     OT_EventListingBlock:     OT_EventListingBlockAdapter,
     OT_PractitionerListingBlock: OT_PractitionerListingBlockAdapter,
