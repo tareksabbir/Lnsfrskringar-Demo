@@ -34,7 +34,7 @@ export const OT_NotificationBlock = contentType({
       displayName:  'Message',
       description:  'The advisory itself. One sentence.',
       isLocalized:  true,
-      maxLength:    120,
+      maxLength:    280,
       group:        'OT_Content',
       sortOrder:    20,
       indexingType: 'searchable',
