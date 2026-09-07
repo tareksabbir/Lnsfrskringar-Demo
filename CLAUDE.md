@@ -140,6 +140,15 @@ union and its mapper in `lib/blogComposition.ts`, the `SECTIONS_DOC` text in
 exists), and `scripts/emit_section_probe.mts`, which builds an article using
 every type so the CMS can be asked whether it accepts them.
 
+### Structured data
+
+Every page emits one JSON-LD `@graph` describing the page and its blocks. Read
+[`docs/structured-data.md`](docs/structured-data.md) before touching
+`lib/structured-data.ts`, the `<JsonLd>` calls in the page routes, or the two
+listing adapters that emit their own nodes. Adding a block that holds
+question/answer pairs, a video, a captioned image or a quotation means adding a
+case to `collectBlockSchema` — the page routes need no change.
+
 ### Adding a CMS-driven page route
 
 CMS **pages** are a separate flow from blocks (the block skill does not cover them). They render through

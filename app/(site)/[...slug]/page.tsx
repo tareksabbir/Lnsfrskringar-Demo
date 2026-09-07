@@ -30,7 +30,7 @@ import TopicHubPage            from '@/components/pages/TopicHubPage'
 import { DraftStateBanner }    from '@/components/preview/DraftStateBanner'
 import { ExternalPreviewLinkPanel } from '@/components/preview/ExternalPreviewLinkPanel'
 import { buildPageMetadata, type PageSeoFields } from '@/lib/metadata'
-import { buildJsonLd }         from '@/lib/structured-data'
+import { buildJsonLd, collectBlockSchema } from '@/lib/structured-data'
 import JsonLd                  from '@/components/seo/JsonLd'
 import type { Locale }         from '@/lib/i18n/config'
 
@@ -60,37 +60,10 @@ function toPathname(raw: string | null | undefined): string | null {
   }
 }
 
-// Recursively walks a Visual Builder composition tree and collects all
-// OT_AccordionBlock question/answer pairs. Used to populate FAQPage
-// JSON-LD when the editor sets schemaType = 'FAQPage' on the experience.
-//
-// Node shapes in the tree:
-//   CompositionComponentNode  → { __typename: 'CompositionComponentNode', component: { __typename, items, ... } }
-//   Structure nodes (section/row/column) → { nodes: [...children] }
-function extractAccordionFaqs(
-  nodes: any[],
-): Array<{ question: string; answer: string }> {
-  const faqs: Array<{ question: string; answer: string }> = []
-
-  function traverse(list: any[]) {
-    for (const node of list ?? []) {
-      if (
-        node.__typename === 'CompositionComponentNode' &&
-        node.component?.__typename === 'OT_AccordionBlock'
-      ) {
-        for (const item of node.component.items ?? []) {
-          const q = item.question as string | null | undefined
-          const a = item.answer   as string | null | undefined
-          if (q && a) faqs.push({ question: q, answer: a })
-        }
-      }
-      if (node.nodes?.length) traverse(node.nodes)
-    }
-  }
-
-  traverse(nodes)
-  return faqs
-}
+// Block-level structured data comes from collectBlockSchema() in
+// lib/structured-data.ts, which walks the same composition tree this route
+// already fetched. It replaced a walker that read OT_AccordionBlock alone —
+// see that file for what each block type contributes and what is left out.
 
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
@@ -368,8 +341,24 @@ async function CmsPage({ params, searchParams }: Props) {
         }
         // ───────────────────────────────────────────────────────────────────────
 
+        // An article without an author or a date is not eligible for an Article
+        // rich result, and every one of those facts is already on the page —
+        // pass them through rather than emitting a headline on its own.
         const blogJsonLd = buildJsonLd(
-          blogContent as PageSeoFields,
+          {
+            ...(blogContent as PageSeoFields),
+            schemaType: (blogContent as PageSeoFields).schemaType || 'BlogPosting',
+            seoTitle:   (blogContent as PageSeoFields).seoTitle || blogContent.headline,
+            article: {
+              authorName:    blogContent.authorRef?.name ?? draftAuthorName,
+              authorTitle:   blogContent.authorRef?.role ?? undefined,
+              datePublished: blogContent._metadata?.published ?? undefined,
+              image:         blogContent.featuredImage?.url?.default
+                             ?? (blogContent as PageSeoFields).ogImage?.url?.default
+                             ?? undefined,
+              section:       blogContent.topic ?? undefined,
+            },
+          } as PageSeoFields,
           settings ?? {},
           fullPageUrl,
         )
@@ -493,8 +482,24 @@ async function CmsPage({ params, searchParams }: Props) {
         : (contentKey ? await getEventPage(contentKey, locale) : null)
 
       if (eventContent) {
+        const event = eventContent as any
         const eventJsonLd = buildJsonLd(
-          { ...(eventContent as PageSeoFields), schemaType: (eventContent as PageSeoFields).schemaType || 'Event' },
+          {
+            ...(eventContent as PageSeoFields),
+            schemaType: (eventContent as PageSeoFields).schemaType || 'Event',
+            seoTitle:   (eventContent as PageSeoFields).seoTitle || event.title,
+            // startDate and a location are what Google requires of an Event;
+            // both live on the content type and neither was being emitted.
+            event: {
+              startDate:       event.startDate ?? undefined,
+              endDate:         event.endDate ?? undefined,
+              locationType:    event.locationType ?? undefined,
+              venueName:       event.venueName ?? undefined,
+              city:            event.city ?? undefined,
+              registrationUrl: event.registrationUrl?.default ?? undefined,
+              image:           event.featuredImage?.url?.default ?? undefined,
+            },
+          } as PageSeoFields,
           settings ?? {},
           fullPageUrl,
         )
@@ -517,8 +522,22 @@ async function CmsPage({ params, searchParams }: Props) {
         : (contentKey ? await getTopicHubPage(contentKey, locale) : null)
 
       if (hubContent) {
+        // A hub is a collection of content by definition — CollectionPage unless
+        // the editor said otherwise. TopicHubPage itself is a client component,
+        // so the JSON-LD is emitted here rather than inside it.
+        const hubJsonLd = buildJsonLd(
+          {
+            ...(hubContent as PageSeoFields),
+            schemaType: (hubContent as PageSeoFields).schemaType || 'CollectionPage',
+            seoTitle:   (hubContent as PageSeoFields).seoTitle || (hubContent as any).headerName,
+          } as PageSeoFields,
+          settings ?? {},
+          fullPageUrl,
+        )
+
         return (
           <>
+            <JsonLd data={hubJsonLd} />
             {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
             <TopicHubPage config={hubContent as any} />
           </>
@@ -551,9 +570,12 @@ async function CmsPage({ params, searchParams }: Props) {
     const practitioner = refKey ? await getPractitioner(refKey, locale) : null
 
     const primary = practitioner ? primaryArea(practitioner.practiceAreas) : null
+    const practitionerBlocks = collectBlockSchema(exp.composition.nodes, fullPageUrl)
     const personSeo: PageSeoFields = {
       ...(exp as PageSeoFields),
       schemaType: (exp as PageSeoFields).schemaType || 'Person',
+      faqItems:    practitionerBlocks.faqItems,
+      blockSchema: practitionerBlocks.nodes,
       person: practitioner
         ? {
             name:        practitionerName(practitioner, false),
@@ -580,14 +602,37 @@ async function CmsPage({ params, searchParams }: Props) {
     )
   }
 
-  // Always extract accordion items — buildJsonLd decides whether to emit them
-  // based on whether any are present, independent of schemaType.
-  const faqItems = exp?.composition?.nodes
-    ? extractAccordionFaqs(exp.composition.nodes)
-    : undefined
+  // Always collect block schema — buildJsonLd decides whether to emit each part
+  // based on what is present, independent of schemaType.
+  const blocks = exp?.composition?.nodes
+    ? collectBlockSchema(exp.composition.nodes, fullPageUrl)
+    : { faqItems: [], nodes: [] }
+
+  // Articles are BlankExperience documents under /blog/<slug> (see
+  // docs/blog-and-opal.md), so nothing on the content item says "this is an
+  // article" — the path does. Defaulting those to BlogPosting is what makes an
+  // Opal-written article eligible for an article rich result instead of being
+  // described as a generic page. An explicit schemaType still wins.
+  const segments  = path.split('/').filter(Boolean)
+  const blogAt    = segments.indexOf('blog')
+  const isArticle = blogAt !== -1 && blogAt < segments.length - 1
 
   const expJsonLd = buildJsonLd(
-    { ...(exp as PageSeoFields), faqItems } as PageSeoFields,
+    {
+      ...(exp as PageSeoFields),
+      ...(isArticle
+        ? {
+            schemaType: (exp as PageSeoFields).schemaType || 'BlogPosting',
+            article: {
+              datePublished: exp?._metadata?.published ?? undefined,
+              image:         (exp as PageSeoFields).ogImage?.url?.default ?? undefined,
+            },
+          }
+        : {}),
+      seoTitle:    (exp as PageSeoFields).seoTitle || exp?._metadata?.displayName || undefined,
+      faqItems:    blocks.faqItems,
+      blockSchema: blocks.nodes,
+    } as PageSeoFields,
     settings ?? {},
     fullPageUrl,
   )

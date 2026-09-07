@@ -1,10 +1,12 @@
 import { ContentProps } from '@optimizely/cms-sdk'
 import { getPreviewUtils } from '@optimizely/cms-sdk/react/server'
 import { OT_LocationListingBlock as OT_LocationListingBlockContentType } from '@/cms/content-types/OT_LocationListingBlock'
-import { getRequestLocale, getSiteKey } from '@/lib/optimizely'
+import { getRequestDomain, getRequestLocale, getSiteKey, getSiteSettings } from '@/lib/optimizely'
 import { getAllLocations } from '@/lib/locations'
 import { getLocationListingStyles } from '@/cms/styling/OT_LocationListingBlock.styling'
 import LocationListingBlock from '@/components/blocks/LocationListingBlock'
+import { buildLocationListJsonLd } from '@/lib/structured-data'
+import JsonLd from '@/components/seo/JsonLd'
 
 type Props = {
   content:          ContentProps<typeof OT_LocationListingBlockContentType>
@@ -22,15 +24,30 @@ export default async function OT_LocationListingBlockAdapter({
   const { pa } = getPreviewUtils(content)
 
   const styleOptions = getLocationListingStyles(content.defaultView ? { ...displaySettings, defaultView: content.defaultView } : displaySettings)
-  const [locale, siteKey] = await Promise.all([getRequestLocale(), getSiteKey()])
+  const [locale, siteKey, settings] = await Promise.all([
+    getRequestLocale(),
+    getSiteKey(),
+    getRequestDomain().then(domain => getSiteSettings(domain)),
+  ])
 
   const rawMax = content.maxItems ?? 0
   const limit  = Number.isInteger(rawMax) && rawMax >= 1 ? rawMax : 50
 
   const locations = await getAllLocations({ siteKey: siteKey ?? undefined, limit, locale })
 
+  // Block-level structured data. The branches are fetched here, so the
+  // page-level walk over the composition tree in lib/structured-data.ts sees
+  // only this block's configuration — an ItemList of LocalBusiness can be built
+  // nowhere but inside the adapter that has the records.
+  const jsonLd = buildLocationListJsonLd(locations, {
+    name:               content.heading ?? undefined,
+    origin:             (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '') || undefined,
+    parentOrganization: settings?.siteName ?? undefined,
+  })
+
   return (
     <div {...pa(content.__composition)} className="w-full">
+      {jsonLd && <JsonLd data={jsonLd} />}
       <LocationListingBlock
         heading={content.heading ?? undefined}
         subtext={content.subtext ?? undefined}

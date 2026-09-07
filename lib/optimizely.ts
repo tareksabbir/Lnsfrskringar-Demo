@@ -564,7 +564,47 @@ export async function getSiteSettings(domain = '', locale = DEFAULT_LOCALE): Pro
   // Single-site instance: the only ThemeManager is the answer regardless of host.
   if (items.length === 1) return items[0]
 
+  // Several ThemeManagers, and the request host matches none of them. This is
+  // localhost, a Vercel preview URL, or any host nobody registered — and it used
+  // to mean the site rendered the hardcoded fallback header and footer, which is
+  // exactly the "unbranded everywhere except the registered domain" failure the
+  // single-site case above was added to prevent.
+  //
+  // This deployment knows which site it is, even when the host does not say so
+  // — see getSiteDomain(). One repo serves one site here, so its own domain is
+  // an unambiguous answer where the request host is not.
+  const ownDomain = getSiteDomain()
+  if (ownDomain) {
+    const own = items.find((i: any) => i.frontEndDomain === ownDomain)
+    if (own) return own
+  }
+
   return null
+}
+
+/**
+ * The domain that identifies WHICH site this deployment serves — the value that
+ * matches a ThemeManager's `frontEndDomain` and an article's Graph `url.base`.
+ *
+ * This is deliberately not the host the request arrived on. On localhost and on
+ * every Vercel preview URL those differ, and the CMS only ever knows the
+ * registered production domain. It is also not simply NEXT_PUBLIC_SITE_URL,
+ * which is the host to *link to* and is set to localhost in local development —
+ * correct for canonical URLs, useless for identifying the site.
+ *
+ * So: NEXT_PUBLIC_SITE_DOMAIN when set, otherwise the host of
+ * NEXT_PUBLIC_SITE_URL (right in production, where the two agree), otherwise
+ * null, which every caller reads as "do not scope by site".
+ */
+export function getSiteDomain(): string | null {
+  const clean = (value: string) =>
+    value.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '') || null
+
+  const explicit = process.env.NEXT_PUBLIC_SITE_DOMAIN
+  if (explicit?.trim()) return clean(explicit)
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+  return siteUrl?.trim() ? clean(siteUrl) : null
 }
 
 /**

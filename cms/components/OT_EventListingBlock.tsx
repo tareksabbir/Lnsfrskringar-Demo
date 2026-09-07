@@ -5,6 +5,8 @@ import { getRequestLocale, getRequestBaseUrl } from '@/lib/optimizely'
 import { getAllEvents, getUpcomingEvents } from '@/lib/events'
 import { getEventListingStyles } from '@/cms/styling/OT_EventListingBlock.styling'
 import EventListingBlock from '@/components/blocks/EventListingBlock'
+import { buildEventListJsonLd } from '@/lib/structured-data'
+import JsonLd from '@/components/seo/JsonLd'
 
 type Props = {
   content:          ContentProps<typeof OT_EventListingBlockContentType>
@@ -43,8 +45,23 @@ export default async function OT_EventListingBlockAdapter({
       ? content.filterByType
       : null
 
+  // Block-level structured data. Like the location listing, the events are
+  // fetched here, so this is the only place that can describe them — the
+  // page-level walk in lib/structured-data.ts sees the block's config alone.
+  // The list is capped and type-filtered below in the UI; the schema describes
+  // what was fetched for this block.
+  const jsonLd = buildEventListJsonLd(
+    (filterByType ? events.filter(event => event.eventType === filterByType) : events)
+      .slice(0, maxItems ?? events.length),
+    {
+      name:   content.heading ?? undefined,
+      origin: (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '') || siteBaseUrl || undefined,
+    },
+  )
+
   return (
     <div {...pa(content.__composition)} className="w-full">
+      {jsonLd && <JsonLd data={jsonLd} />}
       <EventListingBlock
         heading={content.heading ?? undefined}
         subtext={content.subtext ?? undefined}

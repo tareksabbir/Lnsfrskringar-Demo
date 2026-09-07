@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getBlogIndex, type BlogIndexPost } from '@/lib/blogIndex'
-import { getRequestLocale } from '@/lib/optimizely'
+import { getRequestDomain, getRequestLocale, getSiteSettings } from '@/lib/optimizely'
+import { buildBlogIndexJsonLd } from '@/lib/structured-data'
+import JsonLd from '@/components/seo/JsonLd'
 
 /**
  * /blog — the index the articles were missing.
@@ -103,10 +105,21 @@ function ArticleCard({ post, locale }: { post: BlogIndexPost; locale: string }) 
 }
 
 export default async function BlogIndexPage() {
-  const [posts, locale] = await Promise.all([getBlogIndex(), getRequestLocale()])
+  const [posts, locale, settings] = await Promise.all([
+    getBlogIndex(),
+    getRequestLocale(),
+    getRequestDomain().then(domain => getSiteSettings(domain)),
+  ])
+
+  // A listing page's structured data is the list. Emitted only when there is
+  // something to list — a Blog node with an empty blogPost array is a claim
+  // that the site publishes nothing.
+  const siteUrl  = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
+  const jsonLd   = posts?.length ? buildBlogIndexJsonLd(posts, settings ?? {}, `${siteUrl}/blog`) : null
 
   return (
     <div className="mx-auto w-full max-w-[72rem] px-5 py-12 md:py-16">
+      {jsonLd && <JsonLd data={jsonLd} />}
       <header className="mb-10 max-w-[42rem]">
         <h1 className="text-hero font-bold text-brand">Blog</h1>
         <p className="mt-3 text-body text-fg-muted">
