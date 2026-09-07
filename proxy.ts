@@ -16,6 +16,7 @@
  *
  * What this proxy does:
  *   1. Guards /opti-admin/* routes with an env-var session cookie check.
+ *   1b. Applies CMS-managed redirects (UIExtensionRedirect — see lib/redirects.ts).
  *   2. Detects locale from URL prefix (/es/about → locale=es, path=/about)
  *   3. Strips the locale prefix via NextResponse.rewrite so the app router sees
  *      the clean path (/es/showcase → internally serves /showcase)
@@ -39,6 +40,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isSupportedLocale, DEFAULT_LOCALE } from '@/lib/i18n/config'
 import type { Locale } from '@/lib/i18n/config'
 import { verifySessionToken, SESSION_COOKIE } from '@/lib/admin/auth'
+import { resolveRedirect } from '@/lib/redirects'
 
 /** Header name used by next-intl server APIs (getLocale, getRequestConfig). */
 const LOCALE_HEADER = 'X-NEXT-INTL-LOCALE'
@@ -140,6 +142,25 @@ export default async function proxy(request: NextRequest) {
     if (cookieLocale && isSupportedLocale(cookieLocale)) {
       locale = cookieLocale as Locale
     }
+  }
+
+  // ── 1b. CMS-managed redirects ─────────────────────────────────────────────
+  // `UIExtensionRedirect` rules are inert data in the CMS until something acts
+  // on them; this is that something. Checked after locale detection so a rule
+  // written as /old also covers /sv/old, and after the admin guard so internal
+  // routes are never redirected. Rules are cached in lib/redirects.ts, and a
+  // Graph failure there resolves to "no redirect" rather than an error page.
+  const redirect = await resolveRedirect({
+    pathname,
+    internalPath,
+    localePrefix: internalPath === pathname ? '' : `/${firstSegment}`,
+    search:       request.nextUrl.search,
+  })
+  if (redirect) {
+    const target = redirect.location.startsWith('http')
+      ? redirect.location
+      : new URL(redirect.location, request.nextUrl.origin)
+    return setVisitorId(NextResponse.redirect(target, redirect.status))
   }
 
   // ── 2. Build request headers with locale injected ─────────────────────────

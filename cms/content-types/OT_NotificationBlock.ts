@@ -1,0 +1,67 @@
+import { contentType } from '@optimizely/cms-sdk'
+
+export const OT_NotificationBlock = contentType({
+  key:                  'OT_NotificationBlock',
+  displayName:          'Notification Block',
+  description:          'Security or service advisory — icon plate, label, message and an optional link. Colour and frame follow the site preset unless the display template overrides them, so the same block reads as each site\'s own notice.',
+  baseType:             '_component',
+  compositionBehaviors: ['elementEnabled', 'sectionEnabled'],
+  properties: {
+    layout: {
+      type:        'string',
+      format:      'selectOne',
+      displayName: 'Layout',
+      description: 'Band puts the icon beside the text; Stacked centres everything under it.',
+      enum: [
+        { value: 'band',    displayName: 'Band (Default)' },
+        { value: 'stacked', displayName: 'Stacked' },
+      ],
+      group:     'OT_Content',
+      sortOrder: 5,
+    },
+    label: {
+      type:         'string',
+      displayName:  'Label',
+      description:  'Short kicker above the message, e.g. "Security notice".',
+      isLocalized:  true,
+      maxLength:    40,
+      group:        'OT_Content',
+      sortOrder:    10,
+      indexingType: 'searchable',
+    },
+    heading: {
+      type:         'string',
+      displayName:  'Message',
+      description:  'The advisory itself. One sentence.',
+      isLocalized:  true,
+      maxLength:    280,
+      group:        'OT_Content',
+      sortOrder:    20,
+      indexingType: 'searchable',
+    },
+    body: {
+      type:         'string',
+      displayName:  'Detail',
+      description:  'Optional supporting sentence — what the organisation will and will not ask for.',
+      isLocalized:  true,
+      maxLength:    280,
+      group:        'OT_Content',
+      sortOrder:    30,
+      indexingType: 'searchable',
+    },
+    ctaLabel: {
+      type:        'string',
+      displayName: 'CTA Label',
+      isLocalized: true,
+      maxLength:   40,
+      group:       'OT_Content',
+      sortOrder:   40,
+    },
+    ctaUrl: {
+      type:        'url',
+      displayName: 'CTA URL',
+      group:       'OT_Content',
+      sortOrder:   50,
+    },
+  },
+})
