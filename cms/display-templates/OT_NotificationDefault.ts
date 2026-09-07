@@ -37,6 +37,20 @@ export const OT_NotificationDefault = displayTemplate({
       },
     },
 
+    // ── Layout ───────────────────────────────────────────────────────────────
+    // The component (NotificationBlockClient) has always supported both — this
+    // was just never exposed as an editable setting, so every placement fell
+    // back to 'band' (icon left, text left-aligned) with no way to center it.
+    layout: {
+      displayName: 'Layout',
+      editor:      'select',
+      sortOrder:   25,
+      choices: {
+        band:    { displayName: 'Band — icon beside text, left-aligned (Default)', sortOrder: 10 },
+        stacked: { displayName: 'Stacked — icon above text, centered',             sortOrder: 20 },
+      },
+    },
+
     // ── Density ──────────────────────────────────────────────────────────────
     density: {
       displayName: 'Density',
