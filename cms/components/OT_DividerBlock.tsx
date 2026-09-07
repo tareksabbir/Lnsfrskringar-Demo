@@ -26,6 +26,7 @@ export default function OT_DividerBlockAdapter({ content, displaySettings = {} }
       <DividerBlock
         label={content.label ?? undefined}
         styleOptions={styleOptions}
+        epiLabel={pa('label')}
       />
     </div>
   )

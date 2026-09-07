@@ -35,6 +35,7 @@ export default function OT_ButtonBlock({ content, displaySettings = {} }: Props)
         label={label}
         url={url}
         styleOptions={styleOptions}
+        epiLabel={pa('label')}
       />
     </div>
   )

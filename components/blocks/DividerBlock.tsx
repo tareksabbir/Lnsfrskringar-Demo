@@ -8,6 +8,8 @@ import type {
 
 export type DividerBlockProps = {
   label?:        string
+  /** data-epi-edit for `label`, from the adapter. Empty outside edit context. */
+  epiLabel?:     Record<string, string | undefined>
   styleOptions?: Partial<DividerStyleOptions>
 }
 
@@ -115,7 +117,7 @@ const BLEED_RADIAL_MASK = 'radial-gradient(ellipse 60% 100% at 50% 0%, black 0%,
 const BLEED_HEIGHT: Record<DividerWeight, string> = { slim: '60px', bold: '80px' }
 const BLEED_PEAK:   Record<DividerWeight, number> = { slim: 0.25, bold: 0.35 }
 
-export default function DividerBlock({ label, styleOptions = {} }: DividerBlockProps) {
+export default function DividerBlock({ label, epiLabel, styleOptions = {} }: DividerBlockProps) {
   const {
     style    = 'mark',
     space    = 'lg',
@@ -191,7 +193,7 @@ export default function DividerBlock({ label, styleOptions = {} }: DividerBlockP
           <span className="ot-divider-line flex-1" style={{ height: '1px', background: bg, transformOrigin: 'right' }} />
           <span className={cn('ot-divider-mark flex items-baseline', MARK_TEXT[tone])}>
             {trimmedLabel ? (
-              <span className="text-label tracking-label uppercase font-semibold">{trimmedLabel}</span>
+              <span className="text-label tracking-label uppercase font-semibold" {...epiLabel}>{trimmedLabel}</span>
             ) : (
               <span aria-hidden className="select-none" style={{ fontSize: '1.5rem', lineHeight: 1, opacity: 0.9 }}>
                 {glyph}

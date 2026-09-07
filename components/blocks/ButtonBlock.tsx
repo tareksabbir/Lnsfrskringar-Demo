@@ -22,6 +22,8 @@ export type ButtonBlockStyleOptions = {
 
 export type ButtonBlockProps = {
   label:         string;
+  /** data-epi-edit for `label`, from the adapter. Empty outside edit context. */
+  epiLabel?:     Record<string, string | undefined>;
   url?:          string;
   styleOptions?: ButtonBlockStyleOptions;
 };
@@ -36,6 +38,7 @@ const ALIGN_CLASS: Record<ButtonAlignment, string> = {
 
 export default function ButtonBlock({
   label,
+  epiLabel,
   url,
   styleOptions = {},
 }: ButtonBlockProps) {
@@ -71,7 +74,7 @@ export default function ButtonBlock({
         trailingIcon={trailingIcon}
         className={fullWidth ? "w-full" : undefined}
       >
-        {label}
+        <span {...epiLabel}>{label}</span>
       </Button>
     </div>
   );

@@ -51,6 +51,12 @@ export default function OT_FaqBlockAdapter({ content, displaySettings = {} }: Pr
         headline={content.headline ?? undefined}
         items={buildItems(content)}
         styleOptions={buildStyleOptions(displaySettings)}
+        // FaqAccordion is a client component, so `pa` cannot be handed over —
+        // the attributes are computed here instead. `questions` and `answers`
+        // are parallel arrays rendered as many rows, and data-epi-edit names a
+        // single property, so only the two scalar fields get an overlay. The
+        // rows still update via the refetch on save.
+        epi={{ eyebrow: pa('eyebrow'), headline: pa('headline') }}
       />
     </div>
   )

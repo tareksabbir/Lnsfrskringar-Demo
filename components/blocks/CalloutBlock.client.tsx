@@ -53,6 +53,7 @@ export default function CalloutBlockClient({
   body,
   ctaLabel,
   ctaUrl,
+  epi = {},
   styleOptions = {},
 }: CalloutBlockProps) {
   const {
@@ -182,7 +183,7 @@ export default function CalloutBlockClient({
         alignment === 'center' && !isBar ? 'self-center' : 'self-start',
       )}
     >
-      {ctaLabel}
+      <span {...epi.ctaLabel}>{ctaLabel}</span>
       <ArrowRight size={isBar ? 12 : 13} strokeWidth={2} aria-hidden />
     </a>
   ) : null
@@ -206,7 +207,7 @@ export default function CalloutBlockClient({
           {IconComp && (
             <IconComp size={18} strokeWidth={1.75} aria-hidden style={{ color: iconColor, flexShrink: 0 }} />
           )}
-          <p className={cn('text-[15px] font-semibold leading-snug', headingClass)}>{heading}</p>
+          <p className={cn('text-[15px] font-semibold leading-snug', headingClass)} {...epi.heading}>{heading}</p>
         </div>
         {/* Right: cta + dismiss */}
         {(ctaEl || dismissBtn) && (
@@ -241,15 +242,15 @@ export default function CalloutBlockClient({
   const innerContent = isCompactRow ? (
     // Compact single row: [heading] ·· [cta]
     <div className={cn('flex items-center gap-sm', alignment === 'center' && 'justify-center')}>
-      <p className={cn('text-body font-semibold leading-snug flex-1', headingClass)}>{heading}</p>
+      <p className={cn('text-body font-semibold leading-snug flex-1', headingClass)} {...epi.heading}>{heading}</p>
       {ctaEl && <div className="ml-auto pl-sm shrink-0">{ctaEl}</div>}
     </div>
   ) : (
     // Stacked: heading, body, cta
     <div className="flex flex-col gap-xs">
-      <p className={cn('text-body font-semibold leading-snug', headingClass, alignment === 'center' && 'text-center')}>{heading}</p>
+      <p className={cn('text-body font-semibold leading-snug', headingClass, alignment === 'center' && 'text-center')} {...epi.heading}>{heading}</p>
       {body && (
-        <p className={cn('text-body leading-body text-pretty', bodyClass, alignment === 'center' && 'text-center')}>
+        <p className={cn('text-body leading-body text-pretty', bodyClass, alignment === 'center' && 'text-center')} {...epi.body}>
           {body}
         </p>
       )}

@@ -38,6 +38,8 @@ export type FaqAccordionStyleOptions = {
 type Props = {
   eyebrow?: string
   headline?: string
+  /** Precomputed data-epi-edit attributes. Empty outside edit context. */
+  epi?: Partial<Record<'eyebrow' | 'headline', Record<string, string | undefined>>>
   items: FaqItem[]
   styleOptions?: FaqAccordionStyleOptions
 }
@@ -70,6 +72,7 @@ const headlineCva = cva(
 export default function FaqAccordion({
   eyebrow,
   headline,
+  epi = {},
   items,
   styleOptions = {},
 }: Props) {
@@ -141,11 +144,11 @@ export default function FaqAccordion({
     <section className={sectionCva({ color })}>
       <div className="mx-auto w-full max-w-4xl">
         {eyebrow && (
-          <p className="text-label font-semibold uppercase tracking-label text-brand mb-xs">
+          <p className="text-label font-semibold uppercase tracking-label text-brand mb-xs" {...epi.eyebrow}>
             {eyebrow}
           </p>
         )}
-        {headline && <h2 className={headlineCva({ color })}>{headline}</h2>}
+        {headline && <h2 className={headlineCva({ color })} {...epi.headline}>{headline}</h2>}
 
         {openMode === 'multiple' ? (
           <RadixAccordion.Root

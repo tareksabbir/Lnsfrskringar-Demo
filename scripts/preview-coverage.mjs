@@ -64,12 +64,16 @@ function propertiesOf(src) {
   return [...new Set(out)]
 }
 
-/** The group a property declares, if any — used to skip non-visual ones. */
-function groupOf(src, prop) {
+/** The declared body of one property, for inspecting its type/group. */
+function bodyOf(src, prop) {
   const re = new RegExp(`\\n {4}${prop}:\\s*\\{([\\s\\S]*?)\\n {4}\\},|\\n {4}${prop}:\\s*\\{([^\\n]*)\\},`)
   const m = src.match(re)
-  const body = (m?.[1] ?? m?.[2] ?? '')
-  return body.match(/group:\s*'([^']+)'/)?.[1] ?? null
+  return m?.[1] ?? m?.[2] ?? ''
+}
+
+/** The group a property declares, if any — used to skip non-visual ones. */
+function groupOf(src, prop) {
+  return bodyOf(src, prop).match(/group:\s*'([^']+)'/)?.[1] ?? null
 }
 
 /**
@@ -87,6 +91,11 @@ function groupOf(src, prop) {
  *
  * Returns all matches, since several adapters split a block across two modules.
  */
+/** True when a property is declared `type: 'array'`. */
+function isArrayProp(src, prop) {
+  return /type:\s*'array'/.test(bodyOf(src, prop))
+}
+
 function blocksFor(adapterSrc) {
   return [...adapterSrc.matchAll(/from\s+'@\/components\/blocks\/([\w./]+)'/g)]
     .map(m => m[1])
@@ -125,6 +134,16 @@ for (const file of readdirSync(CONTENT_TYPES).sort()) {
 
   const props = propertiesOf(ctSrc).filter(p => {
     if (NON_VISUAL_NAMES.has(p)) return false
+    // An array property renders as N elements. data-epi-edit names ONE
+    // property and the CMS patches the element whose content is that property,
+    // so there is nothing for it to point at. These update through the refetch
+    // on save like any structural change. Counting them as missing would put a
+    // ceiling on the metric and make it useless as a signal.
+    if (isArrayProp(ctSrc, p)) return false
+    // A URL is not rendered text. data-epi-edit marks an element whose CONTENT
+    // is the property; a href has no such element, and it is edited in the
+    // property panel like any other non-textual field.
+    if (/url$/i.test(p)) return false
     const g = groupOf(ctSrc, p)
     return !(g && NON_VISUAL_GROUPS.has(g))
   })

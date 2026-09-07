@@ -28,6 +28,16 @@ export default function OT_CalloutBlockAdapter({ content, displaySettings = {} }
         ctaLabel={content.ctaLabel ?? undefined}
         ctaUrl={typeof ctaUrl === 'string' ? ctaUrl : undefined}
         styleOptions={styleOptions}
+        // CalloutBlock renders through a client component, and `pa` is a
+        // function — it cannot cross the server/client boundary. So the
+        // attributes are computed here and passed as plain objects, the same
+        // shape LaserSignature already takes. Outside edit context each of
+        // these is `{}`, so nothing reaches the DOM in normal rendering.
+        epi={{
+          heading:  pa('heading'),
+          body:     pa('body'),
+          ctaLabel: pa('ctaLabel'),
+        }}
       />
     </div>
   )
