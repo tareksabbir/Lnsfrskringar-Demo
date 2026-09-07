@@ -48,7 +48,7 @@ const COMPONENT_FRAGMENT = `
     headline
     headingLevel
     headerEffect
-    body { html }
+    body { html json }
   }
   ${ELEMENT_FRAGMENT}
 `
