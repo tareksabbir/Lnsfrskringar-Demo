@@ -46,13 +46,19 @@ export function RenderExperienceComposition({ nodes }: { nodes: ExperienceNode[]
           )
         }
 
-        // CompositionStructureNode from here on. A plain layout node
-        // (section/step/row/column with no content of its own) still comes
-        // back with `component: { __typename: "_Component" }` — Graph's
-        // generic placeholder, not a real block — so it must be excluded
-        // here or every row/column would try to render as "a component".
+        // CompositionStructureNode from here on. A plain layout node with no
+        // content of its own still comes back with a `component`, but a
+        // generic Graph BASE-TYPE placeholder — `_Component` for a row/column,
+        // `_Section` for a plain section (BlankSection), and so on for any
+        // other base type. Every real, renderable content type in this schema
+        // is namespaced (`OT_...`, `OptiForms...`) and never starts with `_`,
+        // so that prefix is what distinguishes "this node has an actual block"
+        // from "this is just a layout wrapper" — checking one literal name
+        // (as the first version of this file did) missed every other base
+        // type and misrendered plain sections as if OptimizelyComponent could
+        // resolve "_Section".
         const typename = node.component?.__typename
-        const hasRealComponent = !!typename && typename !== '_Component'
+        const hasRealComponent = !!typename && !typename.startsWith('_')
 
         if (typename === 'OptiFormsContainerData') {
           return (
