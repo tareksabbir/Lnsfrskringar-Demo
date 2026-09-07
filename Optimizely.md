@@ -982,3 +982,30 @@ A parameter declared `list` in the manifest can arrive as a **string containing*
 ### `auth_requirements` in an Opal manifest means an identity provider
 
 The values are providers whose credentials Opal resolves for the user — `google`, `microsoft`, Opti ID. There is no `bearer` provider, and inventing one makes Opal reject the whole manifest at registration. A registry's Bearer Token is a separate mechanism that Opal simply puts in the `Authorization` header; declare nothing for it.
+
+### Live preview is three pieces, and two of them are silent when missing
+
+`communicationinjector.js` (the CMS bridge), `NextPreviewComponent` (refetch on save), and `OnPageEdit` (patch the DOM immediately). A page with two of them is not two-thirds live — it looks like it works and simply never updates. `components/preview/PreviewBridge.tsx` renders all three together so they cannot drift; every preview route uses it.
+
+### `pa()` has two shapes and they do different jobs
+
+```ts
+pa(node)        // → data-epi-block-id   the block is SELECTABLE in the Outline
+pa('headline')  // → data-epi-edit       the property has an OVERLAY and is
+                //                        patched in place when the editor types
+```
+
+The second has to be spread onto the element that renders that property, so it is per property, per block. `yarn preview:coverage` counts it and prints what is missing.
+
+A **client** component cannot receive `pa` — it is a function, and functions do not cross the server/client boundary. The adapter computes the attributes and passes plain objects instead (`epi={{ heading: pa('heading') }}`).
+
+### Not every property can carry `data-epi-edit`
+
+The attribute marks an element whose **content** is the property. These cannot:
+
+- **Attributes** — alt text, input placeholders, an iframe title.
+- **Configuration** — enums, booleans, numbers, ids, layout and colour settings.
+- **Arrays** — N elements behind one property name.
+- **Computed values** — `firstName` + `lastName` render as one display name; patching one would replace the whole composite.
+
+All still update through the refetch. `scripts/preview-coverage.mjs` encodes these rules, mostly from the declared type rather than a name list.
