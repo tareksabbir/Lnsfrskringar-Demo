@@ -25,7 +25,7 @@ type Props = {
  * composition and a page's, and it is why the page renderer cannot be reused.
  */
 
-const ELEMENT_FRAGMENT = `
+export const ELEMENT_FRAGMENT = `
   __typename
   ... on OptiFormsTextboxElement   { Label SubmissionFieldName Placeholder Tooltip PredefinedValue AutoComplete Validators }
   ... on OptiFormsTextareaElement  { Label SubmissionFieldName Placeholder Tooltip PredefinedValue AutoComplete Validators }
@@ -86,7 +86,7 @@ export type FormData = {
 }
 
 /** Collect every component node, depth first, so document order is preserved. */
-function flattenElements(node: any, out: Array<{ key: string; component: any }> = []) {
+export function flattenElements(node: any, out: Array<{ key: string; component: any }> = []) {
   if (node?.component?.__typename) out.push({ key: node.key, component: node.component })
   for (const child of node?.nodes ?? []) flattenElements(child, out)
   return out
