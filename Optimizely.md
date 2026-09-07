@@ -740,6 +740,75 @@ Do not:
 
 If editors report form preview issues or the forms service does not render in the preview iframe, the root cause is the Forms service configuration (webhook endpoints, form IDs, or site permissions) — not the Next.js application code.
 
+### Putting a form container onto a page over REST
+
+A form container's own composition root is a **section** with `layoutType: 'form'`:
+
+```json
+{ "id": "<form key, dashed>", "displayName": "LF contact form",
+  "nodeType": "section", "layoutType": "form",
+  "component": { "contentType": "OptiFormsContainerData", "properties": { … } } }
+```
+
+That exact node **cannot** be copied into an experience. The API answers:
+
+```
+A section with layout type 'form' cannot be embedded in an experience, it must be referenced.
+```
+
+"Referenced" is not a field. There is no `reference`, `contentReference`, `contentLink`,
+`contentId`, `contentKey`, `sectionKey`, `formKey`, `key`, `target`, `source`, `nodeSubType`
+or any of two dozen other names — every one answers *"The field 'X' does not exist on type
+'CompositionNode'."* The whole valid field set is:
+
+```
+id  nodeType  layoutType  displayName  displaySettings  component  nodes
+```
+
+The reference is the **component node** itself. `OptiFormsContainerData` is `sectionEnabled`,
+and the outline rule is *"Only sections or section enabled components are allowed within an
+outline"* — so a bare component node at the experience root **is** the legal reference:
+
+```json
+{ "nodeType": "component", "id": "<form key, dashed>",
+  "displayName": "LF contact form", "layoutType": "form",
+  "displaySettings": { "displayTemplate": "OT_LandingSection",
+    "settings": { "gridWidth": "narrow", "verticalSpacing": "medium",
+                  "backgroundColor": "canvas", "sectionOverlap": "none",
+                  "entranceAnimation": "none" } },
+  "component": { "contentType": "OptiFormsContainerData" } }
+```
+
+`id` is the form's key **with dashes**. Give it a `displayName` — without one the node stores
+fine and renders fine but has nothing for the Visual Builder Outline to label. Omit `properties`
+from `component`: the values live on the form container, and re-posting them here would fork them.
+
+Three surrounding rules that cost a rebuild each:
+
+- The experience root needs `layoutType: 'outline'`. Omitting it fails with
+  *"The layout type '' is not of the required type 'outline'."*
+- The node-type discriminator ignores `nodeType` when there is no `component` and no `nodes`.
+  A node carrying only `id` is read as a component and rejected for the missing `component`.
+- Validation **short-circuits on the first unknown field**, so a payload with twenty candidate
+  field names reports exactly one. Probe by removing the reported field and re-posting in a
+  loop — that is how the valid set above was established.
+
+### `POST /v1/content` — the create payload is nested
+
+Creating content is not the same shape as creating a version. `displayName`, `routeSegment`,
+`locale` and `composition` are **not** fields on `NewContent`; they go inside `initialVersion`:
+
+```json
+{ "key": "<32 hex, no dashes>", "contentType": "BlankExperience", "container": "<parent key>",
+  "initialVersion": { "displayName": "Contact form", "routeSegment": "contact-form",
+                      "locale": "en", "composition": { … } } }
+```
+
+`status` is rejected inside `initialVersion` (*"Status cannot be assigned when creating a new
+content item"*) — the item is created as a draft and published with
+`POST /v1/content/{key}/versions/{v}:publish`. The 201 response body is empty, so read the new
+version number from `GET /v1/content/{key}/versions` rather than from the response.
+
 ---
 
 ## Adding a new CMS block — checklist
