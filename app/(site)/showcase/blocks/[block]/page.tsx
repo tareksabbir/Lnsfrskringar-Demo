@@ -53,6 +53,7 @@ import TabsPlayground        from '../tabs-playground'
 import BannerPlayground      from '../banner-playground'
 import DisclosurePlayground  from '../disclosure-playground'
 import CalloutPlayground      from '../callout-playground'
+import ContactFormPlayground from '../contact-form-playground'
 import ButtonPlayground       from '../button-playground'
 import TrustRailPlayground    from '../trust-rail-playground'
 import TokenManagerPlayground from '../token-manager-playground'
@@ -63,7 +64,7 @@ const BLOCK_SLUGS = [
   'hero', 'card', 'primary-text', 'quote', 'rich-text',
   'image', 'video', 'stat', 'feature-grid', 'trust-rail',
   'accordion', 'tabs', 'blog-feed', 'button', 'chart', 'banner', 'resource-library',
-  'callout', 'divider', 'event-listing', 'practitioner-listing', 'location-listing',
+  'callout', 'contact-form', 'divider', 'event-listing', 'practitioner-listing', 'location-listing',
   'content-recommendations', 'product-recommendations',
   'comparison-table',
   'disclosure',
@@ -90,6 +91,7 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'chart':        { label: 'ChartBlock',          cmsKey: 'OT_ChartBlock',       description: 'CMS-driven data visualization block. Five chart types: line, area, bar, bar stacked, and radial gauge. Four color variants, five series color palettes, fully responsive via Recharts.' },
   'banner':           { label: 'BannerBlock',          cmsKey: 'OT_BannerBlock',          description: 'Full-bleed background image with layered content: eyebrow, headline, optional body, and up to two CTAs. Two overlay modes: scrim (color overlay over the image) and glass (content inside a frosted panel). Three color variants, two alignment options, two height sizes, and two image blend modes.' },
   'resource-library': { label: 'ResourceLibraryBlock', cmsKey: 'OT_ResourceLibraryBlock', description: 'DAM-connected asset download list. The editor pastes a DAM Folder ID (ParentFolderGuid); the block fetches all assets in that folder via Optimizely Graph and renders them as a dense list or card grid with Lucide file-type iconography and native download links.' },
+  'contact-form':     { label: 'ContactForm',           cmsKey: 'OT_ContactForm',           description: 'A contact form that actually submits, to /api/contact. This instance has no Optimizely Forms add-on, so the form is ours: the labels are CMS properties, the four fields are fixed in the component. Submissions are rate-limited, held in Vercel KV for thirty days and read in Opti-Admin — never emailed, never written into the content tree.' },
   'callout':          { label: 'CalloutBlock',          cmsKey: 'OT_CalloutBlock',          description: 'Compact semantic inline notification. Six intent types: neutral, info, success, warning, danger, brand. Three variants: filled, bordered, bar. Dismissible with a two-phase kinetic exit — content sweeps right and fades, then the container height collapses.' },
   'divider':          { label: 'DividerBlock',          cmsKey: 'OT_DividerBlock',          description: 'Structural section divider that opens deliberate breathing room between stacked sections. Three treatments: mark (a hairline broken by an editable label or an editorial ornament), glow (a precise luminous rule — a chromatic line of light with a soft bloom above and below), and bleed (atmospheric luminance — an elliptical light seam rising from the boundary). One Tone control spans all three — neutral, brand, accent, spectrum, aurora — plus editor-controlled spacing, weight, and an optional draw-in reveal that rides the shared scroll observer.' },
   'event-listing':    { label: 'EventListingBlock',     cmsKey: 'OT_EventListingBlock',     description: 'CMS-driven listing of Event Pages with three toggleable views: card grid, list (calendar-style date blocks), and a monthly calendar with day agenda. A segmented icon control switches views; type-filter chips and a past-events toggle refine the set. Works across technology, healthcare, legal, and financial events on both canvas and surface grounds. In production, events are fetched at render time from published Event Pages; the showcase uses static fixtures.' },
@@ -2885,6 +2887,7 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'banner':            return <><BlockHeader slug="banner" /><BannerPlayground /></>
     case 'resource-library': return <ResourceLibraryShowcase />
     case 'callout':          return <><BlockHeader slug="callout" /><CalloutPlayground /></>
+    case 'contact-form':     return <><BlockHeader slug="contact-form" /><ContactFormPlayground /></>
     case 'divider':          return <><BlockHeader slug="divider" /><DividerPlayground /></>
     case 'event-listing':    return <EventListingShowcase />
     case 'practitioner-listing': return <PractitionerListingShowcase />

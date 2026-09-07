@@ -12,6 +12,7 @@ import {
   Users,
   FlaskConical,
   ClipboardList,
+  Mail,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -41,6 +42,12 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'CMP',
     items: [
       { href: '/opti-admin/work-requests', label: 'Work Requests', icon: ClipboardList },
+    ],
+  },
+  {
+    label: 'Site',
+    items: [
+      { href: '/opti-admin/contact', label: 'Contact messages', icon: Mail },
     ],
   },
   {

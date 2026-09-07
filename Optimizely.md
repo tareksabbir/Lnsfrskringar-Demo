@@ -1009,3 +1009,22 @@ The attribute marks an element whose **content** is the property. These cannot:
 - **Computed values** — `firstName` + `lastName` render as one display name; patching one would replace the whole composite.
 
 All still update through the refetch. `scripts/preview-coverage.mjs` encodes these rules, mostly from the declared type rather than a name list.
+
+### This instance has no Optimizely Forms — check before reaching for OptiForms
+
+The twelve `OptiForms*` types in this repo are registered behind `NEXT_PUBLIC_OPTIFORMS_ENABLED` and deliberately never pushed. Turning that flag on without the add-on makes every page query fail with `HTTP 400: 9 errors in the GraphQL query`, because the types exist in the SDK registry and not in Graph.
+
+Verified against `lans01saas`: of 85 content types and the entire Graph schema, nothing Forms-related exists — the only match for "Form" is this repo's own `OT_QuoteForm`. Forms is a separate add-on and has to be provisioned on the instance.
+
+`OT_ContactForm` is the answer in the meantime: an ordinary block posting to `/api/contact`. See `docs/contact-form.md`.
+
+### `POST /v1/contenttypes` works when `yarn cms:push` will not
+
+The CLI's manifest import currently rejects every content type on this instance (`The property 'items' is not allowed when content type has ElementEnabled`), which blocks adding a new one. The REST API has no such rule — `POST /v1/contenttypes` with a single type returns 201.
+
+Two details cost a round trip each:
+
+- The property field is **`isLocalized`**, not `localized`. The wrong name is a 400 naming the field, which is at least honest.
+- Copy the shape from an existing type first: `GET /v1/contenttypes/OT_CalloutBlock` shows exactly what the API stores, including the fields the SDK's TypeScript helper hides.
+
+Push the matching TypeScript definition into `cms/content-types/` at the same time, or the repo and the CMS drift and the next `cms:pull` looks like a change.
