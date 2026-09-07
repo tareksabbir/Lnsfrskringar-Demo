@@ -94,7 +94,15 @@ function flattenElements(node: any, out: Array<{ key: string; component: any }> 
 
 async function fetchForm(key: string): Promise<FormData | null> {
   try {
-    const data = await getClient().request(FORM_QUERY, { key }) as any
+    // request()'s 4th param is `cache`, defaulting to true — unlike the page's
+    // own composition fetch (getPreviewContent(..., { cache: false })), this is
+    // a SEPARATE query the adapter issues itself, so it was never covered by that
+    // bypass. An editor building a form in Visual Builder would add an element,
+    // see the page-level preview refetch correctly, and still see "This form
+    // could not be loaded" — the empty/earlier result stayed cached under this
+    // query's own key. Forms change rarely enough that always-fresh is worth
+    // more here than the cache would save.
+    const data = await getClient().request(FORM_QUERY, { key }, undefined, false) as any
     const item = data?.OptiFormsContainerData?.items?.[0]
     if (!item) return null
     return {
