@@ -1028,3 +1028,26 @@ Two details cost a round trip each:
 - Copy the shape from an existing type first: `GET /v1/contenttypes/OT_CalloutBlock` shows exactly what the API stores, including the fields the SDK's TypeScript helper hides.
 
 Push the matching TypeScript definition into `cms/content-types/` at the same time, or the repo and the CMS drift and the next `cms:pull` looks like a change.
+
+### Forms: what a form actually looks like, and what REST will not do
+
+Activating Forms (Settings → Forms Settings → Activate, irreversible) installs twelve `OptiForms*` content types with `source: _server`. They are the CMS's, not this repo's — the files in `cms/content-types/` exist only so the SDK generates a query asking for the right fields, and must be regenerated from `GET /v1/contenttypes/{key}` after any Forms upgrade.
+
+**The composition is different.** A page is `section → row → column → component`. A form is:
+
+```
+composition → step → row → column → component
+```
+
+`step`, not `section`, and the container node carries `layoutType: "form"`. That is why the page renderer cannot be reused for a form body.
+
+**`SubmissionFieldName` is the key each answer arrives under.** It is easy to miss — the element also has a `Label` — and using the content key instead submits a GUID.
+
+**What REST will do:** create the twelve types' definitions, create a form container with its full composition (`POST /v1/content` with `layoutType: "form"`), and set the container's own properties — but those go at `initialVersion.properties`, NOT inside `composition.component.properties`, which the CMS silently drops.
+
+**What REST would not do, in this instance's testing:**
+
+- **Persist `Validators`.** `{ name, message }` and `{ RequiredValidator: … }` return 201 and are then dropped on read; `{ type, message }` is rejected with *"Error message of \"\" is required"*, an error that names the element's Label and so reads like a missing label. Set required in the CMS UI and read the stored shape back rather than guessing.
+- **Reference a form container from an experience.** `component._metadata`, a node-level `key`, and a node-level `id` are each rejected by the schema. The documented flow is to drag the container into the experience in Visual Builder, and that is the reliable route.
+
+**A form created over REST has a null `SubmitUrl`.** That field is the entire submission mechanism — POST the values to it — so a form without one cannot send. Opening and saving the form once in the CMS appears to be what mints it.

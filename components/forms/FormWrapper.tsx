@@ -17,12 +17,23 @@ export default function FormWrapper({ children, title, description, submitUrl, c
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+
+    // No SubmitUrl means the CMS has not minted a submission endpoint for this
+    // form. Reporting success here would be a lie: the visitor is told their
+    // message was received and it went nowhere. Say what is actually wrong.
+    if (!submitUrl) {
+      console.error(
+        '[forms] this form has no SubmitUrl. Open it in the CMS and save it once '
+        + 'so the submission endpoint is created.',
+      )
+      setStatus('error')
+      return
+    }
+
     setStatus('submitting')
     try {
-      if (submitUrl) {
-        const res = await fetch(submitUrl, { method: 'POST', body: new FormData(e.currentTarget) })
-        if (!res.ok) throw new Error('Submission failed')
-      }
+      const res = await fetch(submitUrl, { method: 'POST', body: new FormData(e.currentTarget) })
+      if (!res.ok) throw new Error(`Submission failed: ${res.status}`)
       setStatus('submitted')
     } catch {
       setStatus('error')

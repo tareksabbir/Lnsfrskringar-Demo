@@ -1,181 +1,148 @@
-import { getPreviewUtils, OptimizelyGridSection, OptimizelyComponent } from '@optimizely/cms-sdk/react/server'
+import { getPreviewUtils, OptimizelyComponent } from '@optimizely/cms-sdk/react/server'
 import FormWrapper from '@/components/forms/FormWrapper'
 import { getClient } from '@/lib/optimizely'
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 type Props = {
   content: any
   displaySettings?: Record<string, string | boolean>
 }
 
-const widthClasses: Record<string, string> = {
-  narrow:  'max-w-3xl w-full mx-auto',
-  default: 'max-w-4xl w-full mx-auto',
-  wide:    'max-w-6xl w-full mx-auto',
-  full:    'w-full px-md lg:px-lg',
-}
+/**
+ * Renders an Optimizely Forms container.
+ *
+ * ── The query below is verified, not assumed ────────────────────────────────
+ * An earlier version asked for `SingleChoice`, `Step`, `Feed` and a `Validators`
+ * on the range element — none of which exist on this instance's schema — and
+ * read the elements out of `composition.grids`, which is not the shape Graph
+ * returns. Every field here was checked against the live schema, and the walk
+ * below matches what a real form actually returns:
+ *
+ *     composition → step → row → column → component
+ *
+ * `step`, not `section`. That is the one structural difference between a form's
+ * composition and a page's, and it is why the page renderer cannot be reused.
+ */
 
-const spacingClasses: Record<string, string> = {
-  none:   'py-0',
-  small:  'py-md',
-  medium: 'py-lg',
-  large:  'py-xl',
-}
-
-const bgClasses: Record<string, string> = {
-  none:    '',
-  canvas:  'bg-canvas',
-  surface: 'bg-surface',
-}
-
-// Fragment for form element component data — matches the element types registered in the registry.
-// This is queried against OptiFormsContainerData.composition.grids[].compositionComponentNodes
-// since the form's internal composition uses "grids" (not VB "nodes @recursive").
-const FORM_ELEMENTS_FRAGMENT = `
+const ELEMENT_FRAGMENT = `
   __typename
-  _metadata { key }
-  ... on OptiFormsTextboxElement    { Label Placeholder Tooltip PredefinedValue Validators AutoComplete }
-  ... on OptiFormsTextareaElement   { Label Placeholder Tooltip PredefinedValue Validators }
-  ... on OptiFormsChoiceElement     { Label Tooltip AllowMultiSelect SingleChoice Validators }
-  ... on OptiFormsNumberElement     { Label Placeholder Tooltip PredefinedValue Validators }
-  ... on OptiFormsRangeElement      { Label Tooltip Min Max Step PredefinedValue Validators }
-  ... on OptiFormsSelectionElement  { Label Tooltip PredefinedValue Feed Validators }
-  ... on OptiFormsSubmitElement     { Label Tooltip }
-  ... on OptiFormsResetElement      { Label Tooltip }
-  ... on OptiFormsUrlElement        { Label Placeholder Tooltip PredefinedValue Validators AutoComplete }
+  ... on OptiFormsTextboxElement   { Label SubmissionFieldName Placeholder Tooltip PredefinedValue AutoComplete Validators }
+  ... on OptiFormsTextareaElement  { Label SubmissionFieldName Placeholder Tooltip PredefinedValue AutoComplete Validators }
+  ... on OptiFormsNumberElement    { Label SubmissionFieldName Placeholder Tooltip PredefinedValue AutoComplete Validators }
+  ... on OptiFormsUrlElement       { Label SubmissionFieldName Placeholder Tooltip PredefinedValue Validators }
+  ... on OptiFormsChoiceElement    { Label SubmissionFieldName Tooltip Options AllowMultiSelect Validators }
+  ... on OptiFormsSelectionElement { Label SubmissionFieldName Placeholder Tooltip Options AllowMultiSelect AutoComplete Validators }
+  ... on OptiFormsRangeElement     { Label SubmissionFieldName Tooltip PredefinedValue Min Max Increment }
+  ... on OptiFormsSubmitElement    { Label Tooltip }
+  ... on OptiFormsResetElement     { Label Tooltip }
 `
 
-// Fetch the form's title, submit metadata, and element composition via Optimizely Content Graph.
-// OptiFormsContainerData is a _section type — its internal elements live in composition.grids,
-// not in the VB-page composition.nodes @recursive. This fetch is the bridge.
-//
-// Schema reference: each grid in composition.grids[] represents a form row and exposes
-// compositionComponentNode with the element data directly.
-async function fetchFormData(contentKey: string): Promise<{
-  title: string | undefined
-  description: string | undefined
-  submitUrl: string | undefined
-  confirmationMessage: string | undefined
-  elementNodes: any[]
-} | null> {
-  try {
-    const data = await getClient().request(
-      `query GetFormData($key: String!) {
-        OptiFormsContainerData(
-          where: { _metadata: { key: { eq: $key } } }
-          limit: 1
-        ) {
-          items {
-            Title
-            Description
-            SubmitUrl { default }
-            SubmitConfirmationMessage
-            composition {
-              grids {
-                compositionType
-                compositionComponentNode {
-                  ${FORM_ELEMENTS_FRAGMENT}
+const FORM_QUERY = `
+  query GetForm($key: String!) {
+    OptiFormsContainerData(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
+      items {
+        Title
+        Description
+        SubmitConfirmationMessage
+        SubmitUrl { default }
+        composition {
+          ... on CompositionStructureNode {
+            nodes {
+              ... on CompositionStructureNode {
+                key nodeType displayName
+                nodes {
+                  ... on CompositionStructureNode {
+                    key nodeType
+                    nodes {
+                      ... on CompositionStructureNode {
+                        key nodeType
+                        nodes {
+                          ... on CompositionComponentNode {
+                            key
+                            component { ${ELEMENT_FRAGMENT} }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
           }
         }
-      }`,
-      { key: contentKey },
-    )
+      }
+    }
+  }
+`
 
+type FormData = {
+  title?: string
+  description?: string
+  submitUrl?: string
+  confirmationMessage?: string
+  /** Flattened in document order — the row/column grid is not reproduced. */
+  elements: Array<{ key: string; component: any }>
+}
+
+/** Collect every component node, depth first, so document order is preserved. */
+function flattenElements(node: any, out: Array<{ key: string; component: any }> = []) {
+  if (node?.component?.__typename) out.push({ key: node.key, component: node.component })
+  for (const child of node?.nodes ?? []) flattenElements(child, out)
+  return out
+}
+
+async function fetchForm(key: string): Promise<FormData | null> {
+  try {
+    const data = await getClient().request(FORM_QUERY, { key }) as any
     const item = data?.OptiFormsContainerData?.items?.[0]
     if (!item) return null
-
-    // Flatten grids into element nodes — each grid is a form row with one element
-    const elementNodes: any[] = (item.composition?.grids ?? [])
-      .map((g: any) => g.compositionComponentNode)
-      .filter((n: any) => n?.__typename)
-
     return {
       title:               item.Title ?? undefined,
       description:         item.Description ?? undefined,
       submitUrl:           item.SubmitUrl?.default ?? undefined,
       confirmationMessage: item.SubmitConfirmationMessage ?? undefined,
-      elementNodes,
+      elements:            flattenElements(item.composition),
     }
-  } catch {
+  } catch (err) {
+    // Loud: a form that silently renders empty looks like an authoring mistake
+    // and sends someone into the CMS to look for a problem that is in the query.
+    console.error('[forms] could not load the form container:', err)
     return null
   }
 }
 
-export default async function OptiFormsContainerDataAdapter({ content, displaySettings = {} }: Props) {
+export default async function OptiFormsContainerDataAdapter({ content }: Props) {
   const { pa } = getPreviewUtils(content)
 
-  const width   = String(displaySettings.contentWidth      ?? 'default')
-  const spacing = String(displaySettings.verticalSpacing   ?? 'large')
-  const bg      = String(displaySettings.backgroundColor   ?? 'none')
+  const key = content._metadata?.key
+  const form = key ? await fetchForm(key) : null
 
-  const widthClass   = widthClasses[width]    ?? widthClasses.default
-  const spacingClass = spacingClasses[spacing] ?? spacingClasses.large
-  const bgClass      = bgClasses[bg]           ?? ''
-
-  // VB-page nodes (populated when composition system inlines the form section's child nodes)
-  const compositionNodes: any[] = (
-    Array.isArray(content.nodes)               ? content.nodes :
-    Array.isArray(content.__composition?.nodes)? content.__composition.nodes :
-    []
-  )
-
-  // Form metadata from content object (available when rendered as a typed section)
-  let title               = content.Title              ?? undefined
-  let description         = content.Description        ?? undefined
-  let submitUrl           = content.SubmitUrl?.default ?? undefined
-  let confirmationMessage = content.SubmitConfirmationMessage ?? undefined
-
-  // Element nodes from the grids fetch (used when compositionNodes is empty)
-  let elementNodes: any[] = []
-
-  if (compositionNodes.length === 0 && content._metadata?.key) {
-    const fetched = await fetchFormData(content._metadata.key)
-    if (fetched) {
-      title               = title               ?? fetched.title
-      description         = description         ?? fetched.description
-      submitUrl           = submitUrl           ?? fetched.submitUrl
-      confirmationMessage = confirmationMessage ?? fetched.confirmationMessage
-      elementNodes        = fetched.elementNodes
-    }
+  if (!form) {
+    return (
+      <div className="w-full border border-fg/15 bg-surface p-lg" {...pa(content)}>
+        <p className="text-body text-fg-muted">This form could not be loaded.</p>
+      </div>
+    )
   }
 
   return (
-    <section className={`vb:section flex flex-col w-full ${bgClass}`} {...pa(content)}>
-      <div className={`flex flex-col flex-1 ${widthClass} ${spacingClass}`}>
-        <FormWrapper
-          title={title}
-          description={description}
-          submitUrl={submitUrl}
-          confirmationMessage={confirmationMessage}
-        >
-          {compositionNodes.length > 0 ? (
-            // Standard VB composition path — form elements provided by the page's composition
-            <OptimizelyGridSection nodes={compositionNodes} />
-          ) : elementNodes.length > 0 ? (
-            // Forms-grids path — elements fetched directly from OptiFormsContainerData.composition.grids
-            <div className="flex flex-col gap-md">
-              {elementNodes.map((node: any) => (
-                <OptimizelyComponent
-                  key={node._metadata?.key ?? node.__typename}
-                  content={{ ...node, __composition: { key: node._metadata?.key } }}
-                />
-              ))}
-            </div>
-          ) : (
-            // Empty state — no form elements configured or form key unavailable
-            <div className="flex flex-col gap-sm">
-              <p className="text-label font-medium text-fg-muted/40 tracking-label uppercase">
-                No form elements configured
-              </p>
-              <p className="text-[11px] text-fg-muted/30 leading-snug max-w-[30ch]">
-                Add form elements in the CMS Forms editor to display them here.
-              </p>
-            </div>
-          )}
-        </FormWrapper>
-      </div>
-    </section>
+    <div className="w-full" {...pa(content)}>
+      <FormWrapper
+        title={form.title}
+        description={form.description}
+        submitUrl={form.submitUrl}
+        confirmationMessage={form.confirmationMessage}
+      >
+        <div className="flex flex-col gap-md">
+          {form.elements.map(({ key: k, component }) => (
+            <OptimizelyComponent
+              key={k}
+              content={{ ...component, __composition: { key: k } }}
+            />
+          ))}
+        </div>
+      </FormWrapper>
+    </div>
   )
 }
