@@ -72,10 +72,24 @@ function groupOf(src, prop) {
   return body.match(/group:\s*'([^']+)'/)?.[1] ?? null
 }
 
-/** Which block component an adapter renders, from its imports. */
-function blockFor(adapterSrc) {
-  const m = adapterSrc.match(/import\s+(\w+)\s+from\s+'@\/components\/blocks\/(\w+)'/)
-  return m?.[2] ?? null
+/**
+ * Every block component an adapter imports.
+ *
+ * Matched on the module path alone, not on the import clause. An earlier
+ * version required the default import's identifier to be followed directly by
+ * `from`, which missed
+ *
+ *     import QuoteBlock, { type QuoteStyleOptions } from '@/components/blocks/QuoteBlock'
+ *
+ * and reported OT_QuoteBlock as 0/3 while the component was calling
+ * pa('quote') three times. A coverage tool that under-reports is worse than
+ * none: it sends you to rewrite files that were already finished.
+ *
+ * Returns all matches, since several adapters split a block across two modules.
+ */
+function blocksFor(adapterSrc) {
+  return [...adapterSrc.matchAll(/from\s+'@\/components\/blocks\/([\w./]+)'/g)]
+    .map(m => m[1])
 }
 
 const rows = []
@@ -99,8 +113,10 @@ for (const file of readdirSync(CONTENT_TYPES).sort()) {
   if (!existsSync(adapterPath)) continue
   const adapterSrc = read(adapterPath)
 
-  const blockName = blockFor(adapterSrc)
-  const blockSrc = blockName ? read(join(BLOCKS, `${blockName}.tsx`)) : ''
+  const blockNames = blocksFor(adapterSrc)
+  const blockSrc = blockNames
+    .map(n => read(join(BLOCKS, `${n}.tsx`)) || read(join(BLOCKS, `${n}.client.tsx`)))
+    .join('\n')
   const haystack = adapterSrc + '\n' + blockSrc
 
   const edited = new Set(
@@ -120,7 +136,7 @@ for (const file of readdirSync(CONTENT_TYPES).sort()) {
 
   rows.push({
     contentType: key,
-    block: blockName ?? '(none)',
+    block: blockNames.join(", ") || "(none)",
     total: props.length,
     covered: covered.length,
     missing,
