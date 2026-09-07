@@ -1048,6 +1048,22 @@ composition → step → row → column → component
 **What REST would not do, in this instance's testing:**
 
 - **Persist `Validators`.** `{ name, message }` and `{ RequiredValidator: … }` return 201 and are then dropped on read; `{ type, message }` is rejected with *"Error message of \"\" is required"*, an error that names the element's Label and so reads like a missing label. Set required in the CMS UI and read the stored shape back rather than guessing.
-- **Reference a form container from an experience.** `component._metadata`, a node-level `key`, and a node-level `id` are each rejected by the schema. The documented flow is to drag the container into the experience in Visual Builder, and that is the reliable route.
+- **Persist `Validators`** — see below.
+
+**Referencing a form container from an experience** is possible over REST, but only in one shape. The CMS says so plainly if you embed it inline:
+
+> A section with layout type 'form' cannot be embedded in an experience, it must be referenced.
+
+A reference is a **component** node carrying the form's id — a DASHED guid — and its content type, with no inner nodes:
+
+```json
+{
+  "nodeType": "component",
+  "id": "f408a2d2-f3c7-45fe-85e7-8416d3c66344",
+  "component": { "contentType": "OptiFormsContainerData" }
+}
+```
+
+Not `nodeType: "section"`, even though the form's own root is a section: the API infers a node with an `id` to be a component and answers *"is of type 'component' but does not have the required 'component' property"* for anything else. `component._metadata`, a node-level `key`, and the field names `reference`, `contentReference`, `contentLink`, `link`, `sharedContent` and `referenceKey` are all rejected — the last six with "does not exist on type 'CompositionNode'", which is a quick way to probe what the schema will take.
 
 **A form created over REST has a null `SubmitUrl`.** That field is the entire submission mechanism — POST the values to it — so a form without one cannot send. Opening and saving the form once in the CMS appears to be what mints it.
