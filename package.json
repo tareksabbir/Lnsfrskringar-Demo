@@ -11,7 +11,8 @@
     "cms:push": "node scripts/cms-push.mjs",
     "cms:push:dry": "node scripts/cms-push.mjs --dryRun",
     "cms:push:bootstrap": "node scripts/cms-push.mjs --ignore-circular-dependency",
-    "cms:pull": "node --env-file=.env.$(git branch --show-current | tr / -) node_modules/@optimizely/cms-cli/bin/run.js config pull"
+    "cms:pull": "node --env-file=.env.$(git branch --show-current | tr / -) node_modules/@optimizely/cms-cli/bin/run.js config pull",
+    "preview:coverage": "node scripts/preview-coverage.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
