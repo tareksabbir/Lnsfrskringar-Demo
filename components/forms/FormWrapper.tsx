@@ -18,13 +18,15 @@ export default function FormWrapper({ children, title, description, submitUrl, c
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
-    // No SubmitUrl means the CMS has not minted a submission endpoint for this
-    // form. Reporting success here would be a lie: the visitor is told their
-    // message was received and it went nowhere. Say what is actually wrong.
+    // Optimizely Forms does not mint an endpoint — SubmitUrl is authored, and
+    // the receiver behind it is ours (`app/api/form-submit/route.ts`). Empty
+    // means nobody filled it in. Reporting success here would be a lie: the
+    // visitor is told their message was received and it went nowhere.
     if (!submitUrl) {
       console.error(
-        '[forms] this form has no SubmitUrl. Open it in the CMS and save it once '
-        + 'so the submission endpoint is created.',
+        '[forms] this form has no SubmitUrl. Set it in the CMS on the form block: '
+        + 'Edit → Properties → Submit URL → More → Edit Link → External link, '
+        + 'pointing at <site>/api/form-submit.',
       )
       setStatus('error')
       return
