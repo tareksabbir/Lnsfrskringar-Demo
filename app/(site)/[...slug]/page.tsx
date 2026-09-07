@@ -19,7 +19,7 @@ import { getPractitioner } from '@/lib/practitioners'
 import { practitionerName, primaryArea, bioPreview } from '@/lib/practitionerFormat'
 import PractitionerHeader from '@/components/practitioner/PractitionerHeader'
 import { withAppContext }       from '@optimizely/cms-sdk/react/server'
-import { NextPreviewComponent } from '@optimizely/cms-sdk/react/nextjs'
+import { PreviewBridge } from '@/components/preview/PreviewBridge'
 import type { PreviewParams }  from '@optimizely/cms-sdk'
 import { CompositionRenderer } from '@/lib/CompositionRenderer'
 import { resolveContentVariant } from '@/lib/fx'
@@ -27,7 +27,6 @@ import BlogPage                from '@/components/pages/BlogPage'
 import CampaignPage            from '@/components/pages/CampaignPage'
 import EventPage               from '@/components/pages/EventPage'
 import TopicHubPage            from '@/components/pages/TopicHubPage'
-import Script                  from 'next/script'
 import { DraftStateBanner }    from '@/components/preview/DraftStateBanner'
 import { ExternalPreviewLinkPanel } from '@/components/preview/ExternalPreviewLinkPanel'
 import { buildPageMetadata, type PageSeoFields } from '@/lib/metadata'
@@ -378,10 +377,7 @@ async function CmsPage({ params, searchParams }: Props) {
         return (
           <>
             <JsonLd data={blogJsonLd} />
-            {inPreview && cmsUrl && (
-              <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-            )}
-            {inPreview && <NextPreviewComponent />}
+            {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
 
             {/* External reviewer's draft-state banner */}
             {isExternalPreview && (
@@ -465,10 +461,7 @@ async function CmsPage({ params, searchParams }: Props) {
       return (
         <>
           <JsonLd data={campaignJsonLd} />
-          {inPreview && cmsUrl && (
-            <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-          )}
-          {inPreview && <NextPreviewComponent />}
+          {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
 
           {isExternalPreview && (
             <DraftStateBanner
@@ -509,10 +502,7 @@ async function CmsPage({ params, searchParams }: Props) {
         return (
           <>
             <JsonLd data={eventJsonLd} />
-            {inPreview && cmsUrl && (
-              <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-            )}
-            {inPreview && <NextPreviewComponent />}
+            {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
             <EventPage content={eventContent as any} />
           </>
         )
@@ -529,10 +519,7 @@ async function CmsPage({ params, searchParams }: Props) {
       if (hubContent) {
         return (
           <>
-            {inPreview && cmsUrl && (
-              <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-            )}
-            {inPreview && <NextPreviewComponent />}
+            {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
             <TopicHubPage config={hubContent as any} />
           </>
         )
@@ -581,10 +568,7 @@ async function CmsPage({ params, searchParams }: Props) {
     return (
       <>
         <JsonLd data={practitionerJsonLd} />
-        {inPreview && cmsUrl && (
-          <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-        )}
-        {inPreview && <NextPreviewComponent />}
+        {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
         {practitioner && (
           <PractitionerHeader
             practitioner={practitioner}
@@ -611,10 +595,7 @@ async function CmsPage({ params, searchParams }: Props) {
   return (
     <>
       <JsonLd data={expJsonLd} />
-      {inPreview && cmsUrl && (
-        <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-      )}
-      {inPreview && <NextPreviewComponent />}
+      {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
       <CompositionRenderer nodes={exp.composition.nodes} />
     </>
   )

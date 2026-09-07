@@ -8,10 +8,9 @@ import {
   setRequestContext,
 } from '@/lib/optimizely'
 import { withAppContext } from '@optimizely/cms-sdk/react/server'
-import { NextPreviewComponent } from '@optimizely/cms-sdk/react/nextjs'
+import { PreviewBridge } from '@/components/preview/PreviewBridge'
 import type { PreviewParams } from '@optimizely/cms-sdk'
 import { CompositionRenderer } from '@/lib/CompositionRenderer'
-import Script from 'next/script'
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -120,10 +119,7 @@ async function HomePage({ searchParams }: Props) {
 
   return (
     <>
-      {inPreview && cmsUrl && (
-        <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-      )}
-      {inPreview && <NextPreviewComponent />}
+      {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
       <CompositionRenderer nodes={exp.composition.nodes} />
     </>
   )

@@ -1,18 +1,20 @@
-import Script from 'next/script'
-import OnPageEditBridge from './OnPageEditBridge'
+import { PreviewBridge } from '@/components/preview/PreviewBridge'
 
 export const dynamic  = 'force-dynamic'
 export const revalidate = 0
 
+/**
+ * Wraps the single-block draft route. The bridge is shared with the slug route
+ * and /preview so the three preview pieces cannot drift apart between them —
+ * this layout used to carry its own copy of the injector, which is how it ended
+ * up as the only place OnPageEdit was mounted.
+ */
 export default function DraftLayout({ children }: { children: React.ReactNode }) {
-  const cmsUrl = (
-    process.env.NEXT_PUBLIC_CMS_URL ?? process.env.OPTIMIZELY_CMS_URL ?? ''
-  ).replace(/\/$/, '')
+  const cmsUrl = process.env.NEXT_PUBLIC_CMS_URL ?? process.env.OPTIMIZELY_CMS_URL ?? ''
 
   return (
     <>
-      {cmsUrl && <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />}
-      <OnPageEditBridge />
+      <PreviewBridge cmsUrl={cmsUrl} />
       {children}
     </>
   )

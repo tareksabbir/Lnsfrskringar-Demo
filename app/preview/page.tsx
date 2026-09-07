@@ -4,7 +4,7 @@ import {
   OptimizelyComponent,
   withAppContext,
 } from '@optimizely/cms-sdk/react/server'
-import { NextPreviewComponent } from '@optimizely/cms-sdk/react/nextjs'
+import { PreviewBridge } from '@/components/preview/PreviewBridge'
 import { getClient, getRequestBaseUrl, getSiteSettings, getRequestDomain, getRequestLocale } from '@/lib/optimizely'
 import { resolveNavbarStyle } from '@/lib/theme-axes'
 import { CompositionRenderer } from '@/lib/CompositionRenderer'
@@ -13,7 +13,6 @@ import PractitionerHeader from '@/components/practitioner/PractitionerHeader'
 import Header from '@/components/layout/Header'
 import SplitHeader from '@/components/layout/SplitHeader'
 import Footer from '@/components/layout/Footer'
-import Script from 'next/script'
 import { redirect } from 'next/navigation'
 import { ExternalPreviewLinkPanel } from '@/components/preview/ExternalPreviewLinkPanel'
 
@@ -272,14 +271,7 @@ async function PreviewPage({ searchParams }: Props) {
 
   return (
     <>
-      {cmsUrl && (
-        <Script
-          src={`${cmsUrl}/util/javascript/communicationinjector.js`}
-          strategy="afterInteractive"
-          id="optimizely-communication-injector"
-        />
-      )}
-      <NextPreviewComponent />
+      <PreviewBridge cmsUrl={cmsUrl} />
 
       {/* CMS-side external preview link — above all site chrome */}
       {externalPreviewUrl && (
