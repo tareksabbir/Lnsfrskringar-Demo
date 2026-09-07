@@ -25,9 +25,36 @@ export type PageSeoFields = {
   schemaType?:       string | null
   noIndex?:          boolean | null
   customSchemaJson?: string | null
-  /** Extracted at render time when schemaType === 'FAQPage' — populated by
-   *  traversing the composition tree for OT_AccordionBlock items. */
+  /** Question/answer pairs found in the composition tree (OT_AccordionBlock and
+   *  OT_FaqBlock) by collectBlockSchema() — drives the FAQPage JSON-LD node
+   *  whatever the page's own schemaType is. */
   faqItems?:         Array<{ question: string; answer: string }> | null
+  /** schema.org nodes for the blocks on the page, from collectBlockSchema(). */
+  blockSchema?:      Array<Record<string, unknown>> | null
+  /** Overrides the breadcrumb trail JSON-LD derives from the URL. */
+  breadcrumbTrail?:  Array<{ name: string; url?: string }> | null
+  /** Populated for article-shaped pages (schemaType 'Article'/'BlogPosting') —
+   *  the properties Google asks for beyond headline and description. */
+  article?: {
+    authorName?:    string
+    authorTitle?:   string
+    authorUrl?:     string
+    datePublished?: string
+    dateModified?:  string
+    image?:         string
+    section?:       string
+  } | null
+  /** Populated for OT_EventPage (schemaType 'Event') — dates and place, without
+   *  which an Event node is not eligible for a rich result. */
+  event?: {
+    startDate?:       string
+    endDate?:         string
+    locationType?:    string
+    venueName?:       string
+    city?:            string
+    registrationUrl?: string
+    image?:           string
+  } | null
   /** Populated for OT_PractitionerPage (schemaType 'Person') — drives the
    *  Person JSON-LD node. Built from the referenced practitioner record. */
   person?: {

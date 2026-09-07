@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { getClient, getRequestLocale } from '@/lib/optimizely'
+import { getClient, getRequestLocale, getSiteDomain } from '@/lib/optimizely'
 
 /**
  * Listing data for /blog.
@@ -71,6 +71,31 @@ export type BlogIndexResult = BlogIndexPost[] | null
 /** Articles live under this segment. The index page itself is excluded. */
 const BLOG_SEGMENT = 'blog'
 
+/**
+ * Does this article belong to the site being served?
+ *
+ * The comment above explains why `url.base` is not a Graph filter, and that
+ * still holds — but it cannot be ignored either, now that this CMS instance
+ * hosts two sites. Both LF demos query the same Graph, so Stockholm's articles
+ * were listed on Skåne's index under paths that 404 there, and vice versa.
+ *
+ * The comparison runs in JS, on hostname only, against this deployment's own
+ * NEXT_PUBLIC_SITE_URL rather than the request host: Graph stores the site's
+ * registered production base, so matching the request host would empty the
+ * index on localhost and on every Vercel preview URL. With the variable unset,
+ * nothing is filtered — the old behaviour, and the right one for a single-site
+ * instance.
+ */
+function belongsToThisSite(base: unknown, ownHost: string | null): boolean {
+  if (!ownHost) return true
+  if (typeof base !== 'string' || !base.trim()) return false
+  try {
+    return new URL(base).host === ownHost
+  } catch {
+    return false
+  }
+}
+
 /** Normalise whatever Graph hands back into a leading-slash pathname. */
 function pathOf(raw: unknown): string | null {
   if (typeof raw !== 'string' || !raw.trim()) return null
@@ -119,6 +144,8 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
   const seen = new Set<string>()
   const posts: BlogIndexPost[] = []
   const rejected: string[] = []
+  const ownHost = getSiteDomain()
+  let otherSite = 0
 
   for (const raw of items) {
     const item = raw as {
@@ -126,7 +153,7 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
         key?: string
         published?: string | null
         displayName?: string | null
-        url?: { default?: string | null } | null
+        url?: { default?: string | null; base?: string | null } | null
       } | null
       seoDescription?: string | null
       ogImage?: { url?: { default?: string | null } | null } | null
@@ -135,6 +162,11 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
     const path = pathOf(item._metadata?.url?.default)
     if (!path || !isArticlePath(path)) {
       if (path) rejected.push(path)
+      continue
+    }
+
+    if (!belongsToThisSite(item._metadata?.url?.base, ownHost)) {
+      otherSite++
       continue
     }
 
@@ -158,7 +190,9 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
   // diagnosis.
   if (posts.length === 0 && items.length > 0) {
     console.warn(
-      `[blog-index] ${items.length} experiences returned, none under "/${BLOG_SEGMENT}/". `
+      `[blog-index] ${items.length} experiences returned, none under "/${BLOG_SEGMENT}/" for `
+      + `${ownHost ?? 'this site'}. `
+      + (otherSite ? `${otherSite} article(s) belong to another site on this instance. ` : '')
       + (rejected.length
         ? `Paths seen: ${rejected.slice(0, 15).join(', ')}`
         : 'None of them carried a _metadata.url.default at all.'),

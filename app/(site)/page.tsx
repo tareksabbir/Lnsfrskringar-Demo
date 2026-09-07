@@ -4,13 +4,18 @@ import {
   getClient,
   getLocalizedContentByPath,
   getRequestBaseUrl,
+  getRequestDomain,
   getRequestLocale,
+  getSiteSettings,
   setRequestContext,
 } from '@/lib/optimizely'
 import { withAppContext } from '@optimizely/cms-sdk/react/server'
 import { PreviewBridge } from '@/components/preview/PreviewBridge'
 import type { PreviewParams } from '@optimizely/cms-sdk'
 import { CompositionRenderer } from '@/lib/CompositionRenderer'
+import { buildJsonLd, collectBlockSchema } from '@/lib/structured-data'
+import type { PageSeoFields } from '@/lib/metadata'
+import JsonLd from '@/components/seo/JsonLd'
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -117,8 +122,29 @@ async function HomePage({ searchParams }: Props) {
     )
   }
 
+  // Structured data. The home page carried none — it renders the same kind of
+  // composition as every other page but sat outside the JSON-LD wiring in
+  // [...slug], so the site's most linked-to URL described itself to crawlers
+  // with nothing at all.
+  const siteOrigin  = process.env.NEXT_PUBLIC_SITE_URL ?? baseUrl
+  const fullPageUrl = `${(siteOrigin ?? '').replace(/\/$/, '')}/`
+  const settings    = await getSiteSettings(await getRequestDomain(), locale)
+  const blocks      = collectBlockSchema(exp.composition.nodes, fullPageUrl)
+
+  const homeJsonLd = buildJsonLd(
+    {
+      ...(exp as PageSeoFields),
+      seoTitle:    (exp as PageSeoFields).seoTitle || settings?.siteName || undefined,
+      faqItems:    blocks.faqItems,
+      blockSchema: blocks.nodes,
+    } as PageSeoFields,
+    settings ?? {},
+    fullPageUrl,
+  )
+
   return (
     <>
+      <JsonLd data={homeJsonLd} />
       {inPreview && <PreviewBridge cmsUrl={cmsUrl} />}
       <CompositionRenderer nodes={exp.composition.nodes} />
     </>

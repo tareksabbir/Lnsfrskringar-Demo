@@ -7,6 +7,30 @@ the CMS shape, the two tools, the section vocabulary, and the setup.
 - **Live index:** https://lnsfrskringar-demo.vercel.app/blog
 - **CMS location:** Root > Blog (`1330a97ad221400d8048329cda2ca918`)
 
+### Two sites, one instance
+
+This CMS instance serves both LF demos, and each has its own Blog folder **inside
+its own site tree** — Stockholm's under LF Stockholm Home, Skåne's under LF Skåne
+Home (`ad32494bb9ff48af82fd4ee569045028`). That placement is what gives an article
+the right `url.base` in Graph, and therefore the right public URL.
+
+Two consequences, both learned by getting them wrong:
+
+- `CMS_BLOG_CONTAINER_KEY` is **per deployment** and must point at that site's
+  folder. Point it at the other site's folder and the article is created
+  successfully, at a URL that 404s on the site that made it. Moving one afterwards
+  is `PATCH /v1/content/{key}` with `{"container": "<folder key>"}` and a
+  `application/merge-patch+json` content type — a 204 and the URL follows.
+- The `/blog` index filters on `url.base` in JS, against `NEXT_PUBLIC_SITE_DOMAIN`
+  (see `lib/blogIndex.ts`). Without that filter each site listed the other's
+  articles under paths that do not resolve there. The filter compares hostnames
+  only and falls open when the variable is unset.
+
+Beware the shell, too: `CMS_BLOG_CONTAINER_KEY` exported in the terminal that
+starts `yarn dev` **overrides `.env.local`**, and the article lands in whichever
+folder that stale value names. The endpoint reports the `container` it wrote to in
+its response for exactly this reason — read it.
+
 ---
 
 ## How an article is stored
