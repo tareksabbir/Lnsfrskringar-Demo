@@ -76,7 +76,7 @@ const FORM_QUERY = `
   }
 `
 
-type FormData = {
+export type FormData = {
   title?: string
   description?: string
   submitUrl?: string
@@ -92,7 +92,21 @@ function flattenElements(node: any, out: Array<{ key: string; component: any }> 
   return out
 }
 
-async function fetchForm(key: string): Promise<FormData | null> {
+/**
+ * Fetches one form container by its CMS content key.
+ *
+ * Exported so a code route can call this directly with a hardcoded/env key,
+ * bypassing composition entirely — see `app/(site)/contact/page.tsx`. That
+ * bypass exists because a form PLACED ON A PAGE is stored as a reference
+ * (Optimizely rejects embedding a layoutType:'form' section inline), and the
+ * reference shows up in Graph as a structural node whose OWN `component`
+ * field (carrying this key) is only reachable with a query shape this app's
+ * auto-generated page/composition query does not produce — so the composition
+ * adapter below (`OptiFormsContainerDataAdapter`) never receives a usable
+ * `_metadata.key` for a REFERENCED form, only a form placed directly at an
+ * experience root. Fetching by a known key sidesteps that gap completely.
+ */
+export async function fetchForm(key: string): Promise<FormData | null> {
   try {
     // request()'s 4th param is `cache`, defaulting to true — unlike the page's
     // own composition fetch (getPreviewContent(..., { cache: false })), this is
@@ -120,6 +134,31 @@ async function fetchForm(key: string): Promise<FormData | null> {
   }
 }
 
+/**
+ * Pure rendering for a fetched form — no composition, no preview attrs. Used
+ * both by the composition adapter below and by any code route that fetched
+ * a `FormData` directly with `fetchForm()`.
+ */
+export function RenderOptiForm({ form }: { form: FormData }) {
+  return (
+    <FormWrapper
+      title={form.title}
+      description={form.description}
+      submitUrl={form.submitUrl}
+      confirmationMessage={form.confirmationMessage}
+    >
+      <div className="flex flex-col gap-md">
+        {form.elements.map(({ key: k, component }) => (
+          <OptimizelyComponent
+            key={k}
+            content={{ ...component, __composition: { key: k } }}
+          />
+        ))}
+      </div>
+    </FormWrapper>
+  )
+}
+
 export default async function OptiFormsContainerDataAdapter({ content }: Props) {
   const { pa } = getPreviewUtils(content)
 
@@ -136,21 +175,7 @@ export default async function OptiFormsContainerDataAdapter({ content }: Props) 
 
   return (
     <div className="w-full" {...pa(content)}>
-      <FormWrapper
-        title={form.title}
-        description={form.description}
-        submitUrl={form.submitUrl}
-        confirmationMessage={form.confirmationMessage}
-      >
-        <div className="flex flex-col gap-md">
-          {form.elements.map(({ key: k, component }) => (
-            <OptimizelyComponent
-              key={k}
-              content={{ ...component, __composition: { key: k } }}
-            />
-          ))}
-        </div>
-      </FormWrapper>
+      <RenderOptiForm form={form} />
     </div>
   )
 }
