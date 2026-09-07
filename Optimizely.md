@@ -496,6 +496,60 @@ if (inPreview && hasPreviewToken) { /* getPreviewContent */ }
 
 `app/(site)/page.tsx` (the home route) carries the same branch for the same reason — Visual Builder lands there whenever the experience resolves to `/` or `/en/`.
 
+### CMS-managed redirects (`UIExtensionRedirect`)
+
+The Optimizely Workbench extension creates a **Redirect** content type
+(`UIExtensionRedirect`, base type `_component`) and drops one content item per rule
+into a *UI Extension Redirects* folder. Every property is a string — `fromPath`,
+`toUrl`, `statusCode`, `enabled`, `notes` — including the two that look like other
+types.
+
+**The CMS does not act on these items.** They are inert data; a rule only redirects
+anything because `proxy.ts` asks for the table via `lib/redirects.ts` and answers
+with `NextResponse.redirect`. A front end that never reads the type sees editors
+create rule after rule with no effect anywhere.
+
+How the runtime reads a rule:
+
+- Matching ignores case and trailing slashes on both sides, and a `fromPath`
+  written as a full URL contributes only its path.
+- `enabled` is off only for the literal string `"false"`; a blank or missing value
+  counts as on.
+- A `statusCode` outside 301/302/307/308 falls back to **302** rather than failing.
+- The incoming query string carries over unless the destination has its own.
+- A rule written as `/old` also fires for `/sv/old`, and a relative destination
+  keeps the locale prefix (`/sv/old` → `/sv/new`). A destination the editor already
+  wrote with a prefix (`/sv/spara`) is left alone, so this never doubles up.
+- Chains collapse to one hop (`/a` → `/b` → `/c` sends the browser straight to
+  `/c`), and a cycle or a chain over five hops is dropped instead of handed to the
+  browser as a loop.
+- `fromPath: "/"` is ignored — a rule that redirects the home page away takes the
+  whole site down.
+
+Two things that make a correct rule look broken:
+
+- **Graph indexing lag is the usual answer.** A newly published rule was measured
+  at roughly **10–15 minutes** before the public single-key query returned it — the
+  item is in the CMS, `/v1/content/{folder}/items` lists it, and Graph still
+  answers `total: 0`. Under Graph basic auth the document shows up earlier, as
+  `Draft`, which makes it look like a publish problem rather than a lag. Republishing
+  does not speed this up; waiting does.
+- **`limit` above 100 is rejected outright** (`INVALID_ARG_ERROR` → HTTP 400), so
+  the table is fetched in pages of 100. Ask for 1000 in one query and every
+  redirect silently stops working, because the whole fetch throws.
+
+The table is cached in module scope for `REDIRECTS_TTL_MS` (default 60s), so allow
+up to a minute after indexing. A Graph failure reuses the previous table and, absent
+one, resolves to "no redirect" — redirects never take the site down.
+
+Redirects do **not** apply to paths the proxy does not match: `/api/*`, `/preview`,
+`/_next/*` and static file extensions (see the matcher in `proxy.ts`). `/opti-admin/*`
+is answered by the admin guard before the redirect check.
+
+**Both LF sites share one CMS instance and the type has no site or host field, so
+every rule applies to both sites.** Scope with site-specific paths, or give each site
+its own instance.
+
 ### Draft entry points (`app/api/draft/`)
 
 There are two draft API routes:
