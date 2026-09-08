@@ -820,15 +820,30 @@ from "the experiment isn't running".
 
 Two independent causes, both fixed:
 
-**1. The CMS's `previewUrl` can arrive without the preview parameters.** The
-SDK's `NextPreviewComponent` follows `eventData.previewUrl` verbatim on every
-`contentSaved`. `ver` is what selects the variation, so a previewUrl missing it
-navigates the iframe to the original. `components/preview/PreviewNavigator.tsx`
-replaces it: parameters **present** in the incoming URL always win (a real
-variation switch sends a different `ver` and must be honoured), and only
-**absent** ones are backfilled from the URL on screen. It also refuses
-cross-origin previewUrls and logs `from → to` on every navigation, because
-preview navigation is invisible when it misbehaves.
+**1. The page navigates itself back to the original.** Measured in Visual
+Builder by listening for the injector's `postMessage` traffic while switching to
+`WinterCampaign`:
+
+```
+12:32:14  /site/load  url = /?…ver=194   the variation, rendered fine
+12:32:20  /site/load  url = /?…ver=187   six seconds later, the original
+```
+
+Nothing was saved in between. The CMS emits `contentSaved` carrying a previewUrl
+for the ORIGINAL, and the SDK's `NextPreviewComponent` follows
+`eventData.previewUrl` verbatim — so the iframe leaves the variation, and the
+editor then syncs its Variations dropdown to whatever the page reports. That is
+the "snaps back to Original" the editor sees; the CMS is following the page, not
+the other way round.
+
+`components/preview/PreviewNavigator.tsx` replaces it and **never follows a
+version downgrade**: for the same content key, a target `ver` lower than the one
+on screen is ignored and the page refreshes in place. A real save always produces
+a higher version, and a deliberate switch to Original does not come through this
+path at all — the CMS sets the iframe's `src` directly. It also backfills preview
+parameters that the incoming URL omits (present ones always win), refuses
+cross-origin previewUrls, and logs `from → to`, because preview navigation is
+invisible when it misbehaves.
 
 **2. `/api/draft/[...slug]` gave up after one Graph query.** The version this
 route resolves is always the freshest thing in the system, and Graph lags a few
