@@ -207,12 +207,14 @@ async function CmsPage({ params, searchParams }: Props) {
       ver:           sp_str('ver'),
       loc:           previewLocale,
     }
-    // Retry up to 3 times — Content Graph can lag 5–30s behind a save, so the
-    // first attempt may find the key not yet indexed. Short backoff covers this
-    // without making the editor wait noticeably on the happy path.
+    // Content Graph can lag 5–30s behind a save, so the first attempt may find
+    // the version not yet indexed. Same ladder as /api/draft and the home route
+    // — a content variation is the newest version in the system the moment an
+    // editor switches to it, which is exactly when the lag bites.
+    const RETRY_DELAYS_MS = [0, 500, 1200, 2500]
     exp = null
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 600))
+    for (const delay of RETRY_DELAYS_MS) {
+      if (delay) await new Promise(r => setTimeout(r, delay))
       try {
         exp = await getClient().getPreviewContent(previewParams, { cache: false })
         break

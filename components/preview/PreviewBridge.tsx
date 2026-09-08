@@ -1,5 +1,5 @@
 import Script from 'next/script'
-import { NextPreviewComponent } from '@optimizely/cms-sdk/react/nextjs'
+import PreviewNavigator from '@/components/preview/PreviewNavigator'
 import OnPageEdit from '@/components/draft/OnPageEdit'
 
 /**
@@ -11,9 +11,11 @@ import OnPageEdit from '@/components/draft/OnPageEdit'
  *   1. communicationinjector.js — the CMS's bridge script. It creates
  *      `window.epi` and dispatches `contentSaved` into this iframe. Without it
  *      nothing arrives at all.
- *   2. NextPreviewComponent — the SDK's handler. Refetches from Graph with a
+ *   2. PreviewNavigator — handles `contentSaved`: refetches from Graph with a
  *      fresh preview token and rerenders. This is the correct path and the
- *      source of truth.
+ *      source of truth. It replaces the SDK's `NextPreviewComponent`, which
+ *      follows the CMS's previewUrl verbatim and so can drop the `ver` that
+ *      selects a content variation — see that file for why.
  *   3. OnPageEdit — patches changed string properties into the DOM immediately,
  *      so a keystroke shows up before the round trip lands.
  *
@@ -34,7 +36,7 @@ export function PreviewBridge({ cmsUrl }: { cmsUrl?: string | null }) {
   return (
     <>
       {base && <Script src={`${base}/util/javascript/communicationinjector.js`} />}
-      <NextPreviewComponent />
+      <PreviewNavigator />
       <OnPageEdit />
     </>
   )

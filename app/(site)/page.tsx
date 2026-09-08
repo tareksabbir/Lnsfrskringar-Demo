@@ -76,15 +76,19 @@ async function HomePage({ searchParams }: Props) {
     // which renders fine but carries no editing attributes — so VB shows the
     // page and nothing is selectable. Silently swallowing that made it look
     // like a Visual Builder problem instead of a failed preview fetch.
+    // Same ladder as /api/draft — ~4.2s total rather than ~1.8s. A variation is
+    // the newest version in the system the moment an editor switches to it, so
+    // this is exactly when Graph is most likely to still be catching up.
+    const RETRY_DELAYS_MS = [0, 500, 1200, 2500]
     exp = null
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 600))
+    for (const [attempt, delay] of RETRY_DELAYS_MS.entries()) {
+      if (delay) await new Promise(r => setTimeout(r, delay))
       try {
         exp = await getClient().getPreviewContent(previewParams, { cache: false })
         break
       } catch (err) {
         console.error(
-          `[home] preview fetch failed (attempt ${attempt + 1}/3) — ` +
+          `[home] preview fetch failed (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length}) — ` +
           `key=${previewParams.key} ver=${previewParams.ver} loc=${previewParams.loc}:`,
           err,
         )

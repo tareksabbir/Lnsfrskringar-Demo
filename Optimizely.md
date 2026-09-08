@@ -816,6 +816,27 @@ from "the experiment isn't running".
 
 `Original` and `off` are treated as "no variation".
 
+### "The variation won't stick — it snaps back to Original"
+
+Two independent causes, both fixed:
+
+**1. The CMS's `previewUrl` can arrive without the preview parameters.** The
+SDK's `NextPreviewComponent` follows `eventData.previewUrl` verbatim on every
+`contentSaved`. `ver` is what selects the variation, so a previewUrl missing it
+navigates the iframe to the original. `components/preview/PreviewNavigator.tsx`
+replaces it: parameters **present** in the incoming URL always win (a real
+variation switch sends a different `ver` and must be honoured), and only
+**absent** ones are backfilled from the URL on screen. It also refuses
+cross-origin previewUrls and logs `from → to` on every navigation, because
+preview navigation is invisible when it misbehaves.
+
+**2. `/api/draft/[...slug]` gave up after one Graph query.** The version this
+route resolves is always the freshest thing in the system, and Graph lags a few
+seconds behind a write — so an ordinary lag became a 404, and the editor reads a
+404 as "this version does not exist". It now retries on `[0, 500, 1200, 2500]`ms.
+The page routes retry on the same ladder; they never got the chance, because the
+redirect from this route is what sends the browser to them.
+
 ### Nothing is bound yet on this instance
 
 `BlankExperience.FxFlagKey` is null on every page, including the one that has the
