@@ -265,6 +265,16 @@ export async function getLocalizedContentByPath(
   // fetch that variation instead of the original. `include: 'SOME'` +
   // `includeOriginal: false` returns only the named variation (or nothing if it
   // doesn't exist — callers fall back to the already-fetched default).
+  //
+  // Graph excludes every row with a non-null `variation` unless a query opts in
+  // — that is the documented default, and it is why this argument exists at all.
+  // Optimizely's own example passes `includeOriginal: true`; this passes false
+  // deliberately, because the one caller already holds the original and only
+  // needs to know whether the named variation exists. With `true`, a miss comes
+  // back as the original and the caller cannot tell the two cases apart.
+  //
+  // `variationSlug` is used VERBATIM. Graph matches the variation field exactly,
+  // so any case-folding here silently serves the original.
   const variation: GraphVariationInput | undefined = variationSlug
     ? { include: 'SOME', value: [variationSlug], includeOriginal: false }
     : undefined

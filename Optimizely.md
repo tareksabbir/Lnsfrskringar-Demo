@@ -766,6 +766,65 @@ Run **`yarn cms:push`** after any change to a content type or display template. 
 
 ---
 
+## Content variations
+
+A variation is **not separate content**. It is another *version* of the same key,
+carrying a value in `_metadata.variation`:
+
+```
+v194  published  loc=en  variation='WinterCampaign'
+v187  published  loc=en  variation=null            ← original
+```
+
+Both resolve to the same URL. Only the version number tells them apart.
+
+### Graph hides variations unless a query asks for them
+
+This is the rule everything else follows from, and it is verified against this
+instance, not assumed:
+
+```
+key + version=194 + variation:{include:ALL}   → total 1
+key + version=194 + (no variation argument)   → total 0
+```
+
+So a query that does not pass `variation:` can never see a variation. The three
+documented shapes are `include: ALL` (everything), `include: SOME` with
+`value: [names]` (named ones), and `include: NONE` (originals only).
+
+Where this codebase opts in:
+
+- `previewFilter` inside the SDK sends `include: 'ALL'` — so Visual Builder
+  preview resolves a variation from its version number.
+- `app/api/draft/[...slug]/route.ts` sends `include: 'ALL'`.
+- `getLocalizedContentByPath(..., variationSlug)` sends `include: 'SOME'`.
+
+### The FX → CMS integration has two halves, and the name must match exactly
+
+Optimizely's integration splits the job: Feature Experimentation decides which
+arm a visitor is in, and a **String flag variable named `cms-saas-content-variation`**
+carries the CMS variation name. The FX variation *key* is not that name — keys
+are auto-generated slugs, while CMS variation names must begin with a letter and
+be alphanumeric. The docs require the variable's value and the CMS variation name
+to match **exactly, case-sensitively**.
+
+`resolveContentVariant` reads the variable, falls back to the variation key when
+the variable is absent (and warns), and passes the result through unchanged. It
+previously lowercased it, which meant `WinterCampaign` was queried as
+`wintercampaign`, matched nothing, and served the original — indistinguishable
+from "the experiment isn't running".
+
+`Original` and `off` are treated as "no variation".
+
+### Nothing is bound yet on this instance
+
+`BlankExperience.FxFlagKey` is null on every page, including the one that has the
+`WinterCampaign` variation. The resolver only runs when an experience names a
+flag, so until that field is set the variation exists in the CMS and is never
+served on the site. Setting it is an editorial step, not a code change.
+
+---
+
 ## OptiForm elements — separate service, not the CMS SDK
 
 The `OptiFormsChoiceElement`, `OptiFormsTextboxElement`, `OptiFormsNumberElement`, and related types that appear in `cms/registry.ts` and `cms/content-types/` are **Optimizely Forms** — a hosted form service that is separate from the Optimizely SaaS CMS SDK. They are registered in the content type registry purely so the SDK can include them in GraphQL composition fragments for forms editors place in Visual Builder, but they are **not authored through the four-layer block pattern**, and they are deliberately never pushed (`optimizely.config.mjs` excludes the globs).

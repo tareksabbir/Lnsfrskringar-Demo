@@ -107,10 +107,33 @@ export async function resolveVariant(
 }
 
 /**
+ * The String flag variable Optimizely's CMS (SaaS) ↔ FX integration specifies.
+ *
+ * Its value — not the FX variation key — is the CMS variation name. The two are
+ * separate on purpose: FX variation KEYS are auto-generated slugs, while CMS
+ * variation names must start with a letter and be alphanumeric, and the docs
+ * require the two to match *exactly, case-sensitively*. Reading the key and
+ * hoping it matches works only by coincidence.
+ *
+ * See "Configure the Optimizely CMS (SaaS) integration" in the FX docs.
+ */
+const CONTENT_VARIATION_VARIABLE = 'cms-saas-content-variation'
+
+/**
+ * Values that mean "no variation — serve the original". `Original` is the
+ * default the integration docs tell you to give the variable; `off` is what a
+ * flag's control arm is commonly keyed as here.
+ */
+const NO_VARIATION = /^(original|off)$/i
+
+/**
  * Resolve a CMS content variation via FX.
  *
- * The FX variation key IS the CMS variation slug (lowercased). A "control"/"off"
- * variation (or a disabled flag) maps to null → serve the default experience.
+ * Returns the CMS variation name to fetch, or null → serve the default
+ * experience. The name is passed through UNCHANGED: Graph matches the
+ * `variation` field exactly, so `WinterCampaign` lowercased to
+ * `wintercampaign` matches nothing and silently serves the original — a bug
+ * that looks exactly like "the experiment isn't running".
  *
  * @param opts.flagKey  per-experience flag (BlankExperience.FxFlagKey)
  * @param opts.sdkKey   FX SDK key (from OT_ThemeManager.featureExperimentationSdkKey)
@@ -145,13 +168,35 @@ export async function resolveContentVariant(
     await attachSegments(userContext, ':Content')
     const decision = userContext.decide(flagKey)
 
-    // Enabled + a real (non-"off") variation key → use it as the CMS slug.
     const raw = decision.variationKey
+    const variables = (decision.variables ?? {}) as Record<string, unknown>
+
+    // The documented source is the variable. The variation key is a fallback for
+    // flags configured before the variable was added — it only ever matches when
+    // someone named the FX variation key identically to the CMS variation.
+    const fromVariable = variables[CONTENT_VARIATION_VARIABLE]
+    const candidate = (typeof fromVariable === 'string' ? fromVariable : raw ?? '').trim()
+
     const contentVariation =
-      decision.enabled && raw && raw.toLowerCase() !== 'off' ? raw.toLowerCase() : null
+      decision.enabled && candidate && !NO_VARIATION.test(candidate) ? candidate : null
 
     if (DEV) {
-      console.log('[FX:Content] Decision:', { flagKey, userId, enabled: decision.enabled, fxVariationKey: raw, contentVariation, reasons: decision.reasons })
+      console.log('[FX:Content] Decision:', {
+        flagKey, userId, enabled: decision.enabled, fxVariationKey: raw,
+        [CONTENT_VARIATION_VARIABLE]: fromVariable, contentVariation, reasons: decision.reasons,
+      })
+    }
+
+    // A flag that decided but carries no variable is the most common
+    // misconfiguration: the flag exists, the rule runs, and nothing ever
+    // changes on the page. Say so once, loudly, rather than serving the
+    // original in silence.
+    if (decision.enabled && typeof fromVariable !== 'string') {
+      console.warn(
+        `[FX:Content] flag '${flagKey}' has no '${CONTENT_VARIATION_VARIABLE}' string variable — `
+        + `falling back to the FX variation key '${raw}'. Add the variable in Feature `
+        + `Experimentation and set it to the CMS variation name, exactly.`,
+      )
     }
 
     return {
@@ -160,7 +205,7 @@ export async function resolveContentVariant(
       flagKey: decision.flagKey,
       userId,
       fxVariationKey: raw,
-      variables: (decision.variables ?? {}) as Record<string, unknown>,
+      variables,
       reasons: decision.reasons,
     }
   } catch (error) {
