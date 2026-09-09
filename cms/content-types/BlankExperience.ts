@@ -97,7 +97,7 @@ export const BlankExperience = contentType({
       type: 'string',
       maxLength: 100,
       displayName: 'FX Content Experiment Flag Key',
-      description: 'Optimizely Feature Experimentation flag key controlling which CMS variation of this page is served. The FX variation key must match the CMS variation slug (lowercased) — e.g. FX variation "hero_alt" ↔ CMS variation "hero_alt". Leave blank to always serve the default content.',
+      description: 'Optimizely Feature Experimentation flag key controlling which CMS variation of this page is served. The flag needs a string variable named "cms-saas-content-variation" whose value is the CMS variation name, matched EXACTLY and case-sensitively — e.g. variable value "WinterCampaign" ↔ CMS variation "WinterCampaign". Values "Original" and "off" mean serve the default. Leave blank to always serve the default content.',
       group: 'OT_Integrations',
       sortOrder: 90,
     },

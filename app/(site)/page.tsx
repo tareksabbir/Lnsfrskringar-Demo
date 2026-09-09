@@ -12,6 +12,7 @@ import {
 import { withAppContext } from '@optimizely/cms-sdk/react/server'
 import { PreviewBridge } from '@/components/preview/PreviewBridge'
 import type { PreviewParams } from '@optimizely/cms-sdk'
+import { resolveContentVariant } from '@/lib/fx'
 import { CompositionRenderer } from '@/lib/CompositionRenderer'
 import { buildJsonLd, collectBlockSchema } from '@/lib/structured-data'
 import type { PageSeoFields } from '@/lib/metadata'
@@ -104,15 +105,50 @@ async function HomePage({ searchParams }: Props) {
   }
 
   // Published lookup — also the fallback when a preview fetch came back empty.
+  // The path that actually resolved is remembered: the FX branch below has to
+  // re-fetch the same content by path to ask for a variation of it, and '/' is
+  // not always the path Graph indexed this page at.
+  let resolvedPath: string | null = null
   if (!exp?.composition?.nodes) {
     // Try root, then the common CMS home slugs.
     for (const path of ['/', '/home', '/base-home']) {
       exp = await getLocalizedContentByPath(path, locale, baseUrl)
-      if (exp?.composition?.nodes) break
+      if (exp?.composition?.nodes) {
+        resolvedPath = path
+        break
+      }
     }
   }
 
   if (!exp?.composition?.nodes) notFound()
+
+  // Site settings: needed by the FX branch below and by buildJsonLd further
+  // down. getSiteSettings is React cache()-wrapped, so this is one round trip
+  // however many times it is called in a render.
+  const settings = await getSiteSettings(await getRequestDomain(), locale)
+
+  // ── FX content experiment ──────────────────────────────────────────────────
+  // The catch-all route has had this since it was written; the home route did
+  // not, so an experiment bound to the home page could never run — and the home
+  // page is exactly where the content variations on this instance live.
+  //
+  // Never in preview: Visual Builder asks for a specific version, and bucketing
+  // the editor into a variation would show them content they did not select.
+  if (!inPreview && resolvedPath && exp?.FxFlagKey) {
+    const decision = await resolveContentVariant({
+      flagKey: exp.FxFlagKey,
+      sdkKey:  settings?.featureExperimentationSdkKey,
+      locale,
+    })
+    if (decision.contentVariation) {
+      const variant = await getLocalizedContentByPath(
+        resolvedPath, locale, baseUrl, decision.contentVariation,
+      )
+      // A miss leaves the default in place rather than blanking the page: the
+      // variation may simply not exist for this locale.
+      if (variant?.composition?.nodes) exp = variant
+    }
+  }
 
   // One line that says whether Visual Builder will be able to select anything.
   // `pa()` emits data-epi-block-id only when __context.edit is true, and
@@ -132,7 +168,6 @@ async function HomePage({ searchParams }: Props) {
   // with nothing at all.
   const siteOrigin  = process.env.NEXT_PUBLIC_SITE_URL ?? baseUrl
   const fullPageUrl = `${(siteOrigin ?? '').replace(/\/$/, '')}/`
-  const settings    = await getSiteSettings(await getRequestDomain(), locale)
   const blocks      = collectBlockSchema(exp.composition.nodes, fullPageUrl)
 
   const homeJsonLd = buildJsonLd(

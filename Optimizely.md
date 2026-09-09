@@ -852,6 +852,21 @@ seconds behind a write — so an ordinary lag became a 404, and the editor reads
 The page routes retry on the same ladder; they never got the chance, because the
 redirect from this route is what sends the browser to them.
 
+### Updating one content-type property over REST
+
+`yarn cms:push` is all-or-nothing and drags every other type along with it. To
+change a single property — a description, say — use a **merge patch**:
+
+```
+PATCH /v1/contenttypes/{key}
+Content-Type: application/merge-patch+json      ← the only accepted media type
+body: the full content type, minus created/lastModified/lastModifiedBy
+```
+
+`PUT` answers 405, plain `application/json` on PATCH answers 415, and
+`application/json-patch+json` answers 415 too. A successful patch returns **204**
+with an empty body, so read the type back if you want to confirm it landed.
+
 ### Nothing is bound yet on this instance
 
 `BlankExperience.FxFlagKey` is null on every page, including the one that has the
