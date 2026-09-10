@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PreviewComponent } from '@optimizely/cms-sdk/react/client'
 
@@ -33,6 +34,28 @@ const trimSlash = (p: string) => p.replace(/\/$/, '') || '/'
 
 export default function PreviewNavigator() {
   const router = useRouter()
+
+  // ── TEMPORARY DIAGNOSTIC — variation "renders then reverts to Original" ──
+  // Captures every raw `optimizely:cms:contentSaved` in the CAPTURE phase, i.e.
+  // BEFORE the SDK's 300ms handler and before any navigation. One reproduction
+  // then answers the only open question: is the ~6s revert a contentSaved we
+  // follow (→ fixable in this file), or a shell iframe rewrite (→ no event fires
+  // and the frame is simply replaced)?
+  // Reproduce with DevTools "Preserve log" ON, switch to a variation, wait for
+  // the snap-back, then read the console. Remove this block once diagnosed.
+  useEffect(() => {
+    const onRaw = (e: Event) => {
+      const d = (e as CustomEvent).detail ?? {}
+      console.log('[preview:diag] raw contentSaved', {
+        now_url: window.location.href,
+        previewUrl: d.previewUrl,
+        contentLink: d.contentLink,
+      })
+    }
+    window.addEventListener('optimizely:cms:contentSaved', onRaw, true)
+    console.log('[preview:diag] PreviewNavigator mounted at', window.location.href)
+    return () => window.removeEventListener('optimizely:cms:contentSaved', onRaw, true)
+  }, [])
 
   return (
     <PreviewComponent
@@ -80,6 +103,7 @@ export default function PreviewNavigator() {
           trimSlash(target.pathname) === trimSlash(here.pathname) && target.search === here.search
 
         console.log('[preview] contentSaved →', {
+          incoming: rawUrl, // raw previewUrl from the CMS, before param backfill
           from: here.pathname + here.search,
           to: target.pathname + target.search,
           action: isSameUrl ? 'refresh' : 'navigate',
