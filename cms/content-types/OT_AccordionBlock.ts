@@ -17,14 +17,16 @@ export const OT_AccordionBlock = contentType({
   displayName:          'Accordion Block',
   description:          'Expandable FAQ section with headline and collapsible question/answer items.',
   baseType:             '_component',
-  /* `sectionEnabled` alone made this block unplaceable on this CMS instance.
-   * A section node's component must have baseType `_section` (BlankSection);
-   * a `_component` offered there is rejected with "The component type is not
-   * based on section base type." And without `elementEnabled` a column rejects
-   * it too — "Only element enabled components are allowed within an section."
-   * So the block existed, rendered, and could never be added to a page.
-   * elementEnabled is what actually lets an editor place it. */
-  compositionBehaviors: ['elementEnabled', 'sectionEnabled'],
+  /* `elementEnabled` was tried here to make the block placeable in a column,
+   * but the CMS rejects it outright: "The property 'items' is not allowed
+   * when content type has ElementEnabled" — elementEnabled types may not hold
+   * a component array. That constraint is why OT_FaqBlock exists (parallel
+   * scalar arrays instead of a component array) and is the type actually used
+   * for placement; see its header comment and lib/blogComposition.ts. This
+   * type keeps `items` as component-array data and is reached only via
+   * existing composition data / direct reference, never placed fresh, so it
+   * stays `sectionEnabled` only. */
+  compositionBehaviors: ['sectionEnabled'],
   properties: {
     eyebrow: {
       type:        'string',
