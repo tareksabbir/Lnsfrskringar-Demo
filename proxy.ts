@@ -150,7 +150,17 @@ export default async function proxy(request: NextRequest) {
   // written as /old also covers /sv/old, and after the admin guard so internal
   // routes are never redirected. Rules are cached in lib/redirects.ts, and a
   // Graph failure there resolves to "no redirect" rather than an error page.
-  const redirect = await resolveRedirect({
+  //
+  // Skipped entirely for a CMS preview/edit request. Visual Builder renders a
+  // page (including a content variation being authored) at its real published
+  // path with `preview_token`/`key`/`ver`/`ctx` as query params — the matcher
+  // above only excludes the literal `/preview` route, not query strings on the
+  // catch-all route, so without this check a `fromPath` rule matching that
+  // page silently redirects the editor's iframe away mid-edit (before the
+  // preview params ever reach the page component), which looks exactly like
+  // "the variant kicks you back to the original page."
+  const isCmsPreview = request.nextUrl.searchParams.has('preview_token')
+  const redirect = isCmsPreview ? null : await resolveRedirect({
     pathname,
     internalPath,
     localePrefix: internalPath === pathname ? '' : `/${firstSegment}`,
