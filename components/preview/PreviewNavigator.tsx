@@ -55,39 +55,19 @@ export default function PreviewNavigator() {
           return
         }
 
-        // ── Never follow a version downgrade ────────────────────────────────
+        // ── Why there is no "don't go backwards" rule here ──────────────────
         //
-        // Measured in Visual Builder, switching to a content variation:
+        // An earlier version refused to follow a `contentSaved` whose `ver` was
+        // lower than the one on screen, on the theory that a save always makes a
+        // higher version and so a lower one meant "the CMS is dragging us back to
+        // the original". Measurement killed it: on LF Stockholm Home the original
+        // sits at ver=229 while the `copychange` variation is ver=226. Version
+        // numbers are allocated per content item, not per variation, so ordering
+        // says nothing about which is the variation.
         //
-        //   12:32:14  /site/load  url = /?…ver=194   the variation, loaded fine
-        //   12:32:20  /site/load  url = /?…ver=187   six seconds later, the original
-        //
-        // Nothing was saved in between. The CMS emits `contentSaved` carrying a
-        // previewUrl for the ORIGINAL, and following it navigates the iframe off
-        // the variation — the editor then syncs its Variations dropdown to what
-        // the page reports, so the selection appears to "snap back to Original".
-        //
-        // A real save always produces a HIGHER version number, so the invariant
-        // is: for the same content, never move backwards. A deliberate switch to
-        // an older version (picking Original in the dropdown) does not come
-        // through here at all — the CMS sets the iframe's src directly.
-        const sameContent = target.searchParams.get('key') === here.searchParams.get('key')
-        const currentVer = Number(here.searchParams.get('ver'))
-        const targetVer = Number(target.searchParams.get('ver'))
-        if (
-          sameContent
-          && Number.isFinite(currentVer)
-          && Number.isFinite(targetVer)
-          && targetVer < currentVer
-        ) {
-          console.warn(
-            `[preview] ignoring contentSaved pointing at an older version `
-            + `(showing ${currentVer}, asked for ${targetVer}) — refreshing in place instead`,
-          )
-          router.refresh()
-          return
-        }
-
+        // The revert is also not ours to prevent: the CMS replaces the iframe's
+        // `src` attribute, which no client-side handler in the frame can veto.
+        // See Optimizely.md → Content variations.
         for (const param of PREVIEW_PARAMS) {
           if (target.searchParams.has(param)) continue
           const current = here.searchParams.get(param)

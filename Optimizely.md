@@ -820,32 +820,48 @@ from "the experiment isn't running".
 
 Two independent causes, both fixed:
 
-**1. The page navigates itself back to the original.** Measured in Visual
-Builder by listening for the injector's `postMessage` traffic while switching to
-`WinterCampaign`:
+**The revert is the CMS shell's, and no front-end change stops it.** After the
+variation preview loads, the **iframe's `src` attribute itself** is rewritten to
+the original's version — client-side routing inside the frame cannot do that, so
+the parent shell is doing it. `variation-selector-widget.js` publishes a context
+change whose redirect URL carries `?id=…&variation=…`, but sampling
+`window.location.href` on the shell every 500 ms across a switch shows the query
+string never arrives, so the forced context reload resolves back to the original.
+
+Two heuristics were tried against this and both are disproven — do not
+reintroduce them:
+
+- *"Never follow a `contentSaved` pointing at a lower version."* Version numbers
+  are allocated per content item, not per variation: on LF Stockholm Home the
+  original is ver=229 while the `copychange` variation is ver=226. Ordering says
+  nothing about which is which.
+- *"The page navigates itself."* `/site/load` fires on any load of the frame,
+  including one the shell caused, so it is not evidence of a `router.push`.
+
+What the front end *does* get right, verified live: a variation preview renders
+fully, with edit context, for both a published variation (Skåne `WinterCampaign`,
+144 `data-epi-block-id`) and a draft one (Stockholm `copychange`, ver=226, 144
+block ids, 62 edit attributes, no 404). The failure is entirely CMS-side.
+
+The `postMessage` timeline, kept because it is what the support ticket rests on:
 
 ```
 12:32:14  /site/load  url = /?…ver=194   the variation, rendered fine
 12:32:20  /site/load  url = /?…ver=187   six seconds later, the original
 ```
 
-Nothing was saved in between. The CMS emits `contentSaved` carrying a previewUrl
-for the ORIGINAL, and the SDK's `NextPreviewComponent` follows
-`eventData.previewUrl` verbatim — so the iframe leaves the variation, and the
-editor then syncs its Variations dropdown to whatever the page reports. That is
-the "snaps back to Original" the editor sees; the CMS is following the page, not
-the other way round.
+Nothing was saved in between.
 
-`components/preview/PreviewNavigator.tsx` replaces it and **never follows a
-version downgrade**: for the same content key, a target `ver` lower than the one
-on screen is ignored and the page refreshes in place. A real save always produces
-a higher version, and a deliberate switch to Original does not come through this
-path at all — the CMS sets the iframe's `src` directly. It also backfills preview
-parameters that the incoming URL omits (present ones always win), refuses
-cross-origin previewUrls, and logs `from → to`, because preview navigation is
-invisible when it misbehaves.
+`components/preview/PreviewNavigator.tsx` still replaces the SDK's
+`NextPreviewComponent`, but for the narrower reasons that survived measurement:
+it backfills preview parameters the incoming URL omits (present ones always
+win), refuses cross-origin previewUrls, and logs `from → to`, because preview
+navigation is invisible when it misbehaves. It does **not** try to veto the
+revert — it cannot.
 
-**2. `/api/draft/[...slug]` gave up after one Graph query.** The version this
+### Two fixes that stand on their own
+
+**`/api/draft/[...slug]` gave up after one Graph query.** The version this
 route resolves is always the freshest thing in the system, and Graph lags a few
 seconds behind a write — so an ordinary lag became a 404, and the editor reads a
 404 as "this version does not exist". It now retries on `[0, 500, 1200, 2500]`ms.

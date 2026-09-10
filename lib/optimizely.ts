@@ -279,6 +279,17 @@ export async function getLocalizedContentByPath(
     ? { include: 'SOME', value: [variationSlug], includeOriginal: false }
     : undefined
 
+  /**
+   * True when an item is what the caller actually asked for.
+   *
+   * Used on the fallback paths below, which cannot pass `variation` to Graph.
+   * Without it those paths return the ORIGINAL and look like a successful
+   * variant fetch — the caller serves default content believing it served the
+   * variant. A miss must read as a miss.
+   */
+  const matchesRequestedVariation = (item: any): boolean =>
+    !variationSlug || item?._metadata?.variation === variationSlug
+
   // ── Default locale ────────────────────────────────────────────────────────
   //
   // The front end serves the default locale without a URL prefix ('/about'),
@@ -336,10 +347,18 @@ export async function getLocalizedContentByPath(
   // Fetch the English version first to get the content key, then ask for
   // that key's translation in the requested locale.
   // `??` would not do here: a miss comes back as an empty array, not null.
-  const hostScoped = await withGraphResilience(() => getClient().getContentByPath(path, { host }))
+  // Every lookup from here down carries `variation` too. Graph excludes
+  // variation rows unless a query opts in, so a fallback that omits the
+  // argument cannot return a variation — it returns the ORIGINAL and looks like
+  // a successful fetch. The caller then serves the default while believing it
+  // served the variant, which is indistinguishable from "the experiment isn't
+  // running". Steps 2 and 3 used to do exactly that.
+  const hostScoped = await withGraphResilience(() =>
+    getClient().getContentByPath(path, { host, variation }),
+  )
   const defaultResults = hostScoped?.length
     ? hostScoped
-    : await withGraphResilience(() => getClient().getContentByPath(path, {}))
+    : await withGraphResilience(() => getClient().getContentByPath(path, { variation }))
   if (!defaultResults?.length) return null
 
   const defaultContent = pickByLocale(defaultResults, DEFAULT_LOCALE) ?? defaultResults[0]
@@ -348,18 +367,23 @@ export async function getLocalizedContentByPath(
   if (contentKey) {
     try {
       // getItems with a locale-bearing GraphReference fetches that locale's version.
+      // Its options type has no `variation` field, so this call cannot ask for one
+      // — hence the guard below rather than a wider argument.
       const localizedItems = await withGraphResilience(() => getClient().getItems({ key: contentKey, locale }))
       const localized = (localizedItems ?? []).find(
         (r: any) => (r._metadata?.locale ?? '').toLowerCase() === locale.toLowerCase(),
       )
-      if (localized) return localized
+      if (localized && matchesRequestedVariation(localized)) return localized
     } catch {
       // getItems may throw for non-page content types — fall through to English.
     }
   }
 
   // ── Fallback: English content ──────────────────────────────────────────────
-  return defaultContent
+  // Guarded for the same reason: returning the original here while the caller
+  // asked for a variation is a silent substitution, and the caller has no way to
+  // tell it apart from a successful variant fetch.
+  return matchesRequestedVariation(defaultContent) ? defaultContent : null
 }
 
 // ── cms:// link resolution helpers ───────────────────────────────────────────
