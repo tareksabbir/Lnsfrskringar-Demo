@@ -31,6 +31,7 @@ import { DraftStateBanner }    from '@/components/preview/DraftStateBanner'
 import { ExternalPreviewLinkPanel } from '@/components/preview/ExternalPreviewLinkPanel'
 import { buildPageMetadata, type PageSeoFields } from '@/lib/metadata'
 import { buildJsonLd, collectBlockSchema } from '@/lib/structured-data'
+import { getBreadcrumbTrail }  from '@/lib/ancestors'
 import JsonLd                  from '@/components/seo/JsonLd'
 import type { Locale }         from '@/lib/i18n/config'
 
@@ -619,9 +620,17 @@ async function CmsPage({ params, searchParams }: Props) {
   const blogAt    = segments.indexOf('blog')
   const isArticle = blogAt !== -1 && blogAt < segments.length - 1
 
+  // Breadcrumbs from the content tree rather than from the URL string. Null
+  // when Graph cannot answer, which leaves buildJsonLd's URL-derived fallback
+  // in place — see lib/ancestors.ts.
+  const breadcrumbTrail = inPreview
+    ? null
+    : await getBreadcrumbTrail(exp?._metadata?.key ?? '', locale, siteOrigin)
+
   const expJsonLd = buildJsonLd(
     {
       ...(exp as PageSeoFields),
+      ...(breadcrumbTrail ? { breadcrumbTrail } : {}),
       ...(isArticle
         ? {
             schemaType: (exp as PageSeoFields).schemaType || 'BlogPosting',

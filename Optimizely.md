@@ -766,6 +766,56 @@ Run **`yarn cms:push`** after any change to a content type or display template. 
 
 ---
 
+## Content tree layout
+
+Optimizely's guidance is not to hang content directly off the Content Root, and
+to use folders for anything that needs grouping but not a URL. This instance now
+follows it:
+
+```
+Root
+├─ LF Stockholm Shared   (SysContentFolder)  footer, site settings, logo
+├─ LF Skåne Shared       (SysContentFolder)  footer, site settings
+├─ LF Stockholm Home     (start page)  →  Blog / Product / Contact Us
+├─ LF Skåne Home         (start page)  →  Blog / How much can I borrow?
+└─ LF Skåne Home(2)      (draft spare)
+```
+
+Eight components previously sat at Root: two footers, two ThemeManagers, a logo,
+a text block and two form containers. Moving them is safe because nothing
+resolves them by path — `THEME_QUERY` and the footer query both ask Graph for a
+**type**, globally, and join by key. Blocks have no URL, so moving one changes
+no address.
+
+`Blog` and `Product` stay `_Page` rather than folders on purpose: both have a
+real index at `/blog/` and `/product/`, which a folder could not serve.
+
+### Moving content over REST
+
+```
+PATCH /v1/content/{key}
+Content-Type: application/merge-patch+json      ← the only accepted media type
+body: {"container": "<new container key>"}
+→ 204
+```
+
+Creating a folder is an ordinary create with `contentType: "SysContentFolder"`.
+Listing a container's children is `GET /v1/content/{key}/items` — `GET
+/v1/content?container=…` answers 405, and `/children` answers 404.
+
+### Breadcrumbs come from the tree, not the URL
+
+`buildJsonLd` accepts a `breadcrumbTrail` and falls back to
+`deriveBreadcrumbTrail`, which splits the page URL and title-cases each segment.
+That invents crumbs for path segments that are not pages, prettifies slugs
+instead of using display names, and changes silently when a route segment is
+renamed. `lib/ancestors.ts` asks Graph instead (`getPath` returns ancestors
+ordered top-most first), drops `_Folder` entries, and returns null on failure so
+the URL-derived trail still covers the error case. Wired into the catch-all
+route; skipped in preview, where the URL is a preview URL.
+
+---
+
 ## Content variations
 
 A variation is **not separate content**. It is another *version* of the same key,
