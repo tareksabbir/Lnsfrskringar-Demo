@@ -1,9 +1,8 @@
 /**
  * next-intl routing configuration.
  *
- * This is the single source of truth for supported locales and the default
- * locale. The list intentionally mirrors SUPPORTED_LOCALES in lib/i18n/config.ts
- * — keep them in sync when adding a new language.
+ * Supported locales and the default locale are imported from
+ * lib/i18n/config.ts so proxy and next-intl cannot drift apart.
  *
  * localePrefix: 'as-needed'
  *   Default locale (English) uses no URL prefix → /about
@@ -12,18 +11,19 @@
  *   English URLs are never broken.
  *
  * Adding a new language:
- *   1. Add the locale code to the `locales` array below.
- *   2. Add the same code to SUPPORTED_LOCALES in lib/i18n/config.ts.
+ *   1. Add the locale code to SUPPORTED_LOCALES in lib/i18n/config.ts.
+ *   2. Add its display name to LOCALE_META in the same file.
  *   3. Optionally add a message file at lib/i18n/messages/<locale>.json.
  *   4. Publish content in the new language in Optimizely CMS.
  *   The language switcher updates automatically via getEnabledLanguages().
  */
 
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/lib/i18n/config'
 import { defineRouting } from 'next-intl/routing'
 
 export const routing = defineRouting({
-  locales: ['en', 'es', 'fr', 'de'] as const,
-  defaultLocale: 'en',
+  locales: SUPPORTED_LOCALES,
+  defaultLocale: DEFAULT_LOCALE,
 
   // Default locale uses no URL prefix; all others are prefixed.
   localePrefix: 'as-needed',

@@ -62,7 +62,7 @@ async function HomePage({ searchParams }: Props) {
     const previewParams: PreviewParams = {
       preview_token: sp_str('preview_token'),
       key:           sp_str('key'),
-      ctx:           'edit',
+      ctx:           sp_str('ctx') === 'preview' || sp_str('ext_preview') === '1' ? 'preview' : 'edit',
       ver:           sp_str('ver'),
       loc:           previewLocale,
     }

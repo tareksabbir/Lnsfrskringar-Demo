@@ -1,3 +1,4 @@
+import { graphSiteOrigins } from '@/lib/contentScope'
 import { cache } from 'react'
 import { headers } from 'next/headers'
 import { config, getClient as _getClient } from '@optimizely/cms-sdk'
@@ -259,7 +260,8 @@ export async function getLocalizedContentByPath(
   variationSlug?: string | null,
 ): Promise<any | null> {
   await setRequestContext(locale)
-  const host = baseUrl || undefined
+  const hosts = graphSiteOrigins(baseUrl)
+  if (!hosts.length) return null
 
   // When an FX content experiment buckets the visitor into a CMS variation,
   // fetch that variation instead of the original. `include: 'SOME'` +
@@ -301,25 +303,10 @@ export async function getLocalizedContentByPath(
   // which read ThemeManager directly) still renders. Falling back to the
   // prefixed path keeps the front end working against either arrangement.
   //
-  // Each attempt is also retried WITHOUT the host filter. Graph gives a content
-  // item one canonical url.base, chosen from the application's hosts, so on an
-  // application with more than one host every request from the other hosts finds
-  // nothing and 404s — with the header and footer still rendering, because they
-  // read ThemeManager directly. That is exactly what happened here: the
-  // application lists both the production domain and localhost:3000 as primary
-  // hosts, the locale binding sits on localhost, so English resolved to
-  // "https://localhost:3000/" and the deployed site 404'd on every page.
-  //
-  // On a single-application instance the host filter buys nothing anyway — there
-  // is no second site whose content could be confused for this one — so dropping
-  // it is a fallback rather than a compromise.
+  // Resolve against this deployment's CMS authorities, including local/preview
+  // requests. A miss must not broaden the query to other applications.
   if (locale === DEFAULT_LOCALE) {
-    const attempts = [
-      { p: path,                  h: host      },
-      { p: path,                  h: undefined },
-      { p: `/${locale}${path}`,   h: host      },
-      { p: `/${locale}${path}`,   h: undefined },
-    ]
+    const attempts = [path, `/${locale}${path}`].flatMap(p => hosts.map(h => ({ p, h })))
     for (const { p, h } of attempts) {
       const results = await withGraphResilience(() =>
         getClient().getContentByPath(p, { host: h, variation }),
@@ -331,8 +318,8 @@ export async function getLocalizedContentByPath(
 
   // ── Non-default locale: step 1 — locale-prefixed path ─────────────────────
   // Content Graph stores translated pages at /<locale><path>. Host-filtered
-  // first, then unfiltered, for the multi-host reason described above.
-  for (const h of [host, undefined]) {
+  // lookups stay scoped to the configured application authorities.
+  for (const h of hosts) {
     const prefixedResults = await withGraphResilience(() =>
       getClient().getContentByPath(`/${locale}${path}`, { host: h, variation }),
     )
@@ -353,15 +340,12 @@ export async function getLocalizedContentByPath(
   // a successful fetch. The caller then serves the default while believing it
   // served the variant, which is indistinguishable from "the experiment isn't
   // running". Steps 2 and 3 used to do exactly that.
-  const hostScoped = await withGraphResilience(() =>
-    getClient().getContentByPath(path, { host, variation }),
+  const defaultContent = await getLocalizedContentByPath(
+    path, DEFAULT_LOCALE, baseUrl, variationSlug,
   )
-  const defaultResults = hostScoped?.length
-    ? hostScoped
-    : await withGraphResilience(() => getClient().getContentByPath(path, { variation }))
-  if (!defaultResults?.length) return null
+  await setRequestContext(locale)
+  if (!defaultContent) return null
 
-  const defaultContent = pickByLocale(defaultResults, DEFAULT_LOCALE) ?? defaultResults[0]
   const contentKey = defaultContent?._metadata?.key as string | undefined
 
   if (contentKey) {

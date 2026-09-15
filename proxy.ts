@@ -104,25 +104,8 @@ export default async function proxy(request: NextRequest) {
     return res
   }
 
-  // ── Admin route protection ────────────────────────────────────────────────
-  // All /opti-admin/* routes require a valid session cookie, except the login
-  // page itself. The session token is SHA-256(OPTI_ADMIN_USER:OPTI_ADMIN_PASSWORD)
-  // so changing either env var immediately invalidates all sessions.
-  if (pathname.startsWith('/opti-admin')) {
-    if (pathname !== '/opti-admin/login') {
-      const session = request.cookies.get(SESSION_COOKIE)?.value
-      if (!session) {
-        return redirectToLogin(request, pathname)
-      }
-      if (!await verifySessionToken(session)) {
-        return redirectToLogin(request, pathname)
-      }
-    }
-    return setVisitorId(NextResponse.next())
-  }
-
   // ── 1. Detect locale from URL prefix ──────────────────────────────────────
-  // Check whether the first path segment is a supported non-default locale.
+  // Check whether the first path segment is a supported locale.
   // e.g. /es/showcase → firstSegment='es'  → locale='es', internalPath='/showcase'
   //      /fr/         → firstSegment='fr'  → locale='fr', internalPath='/'
   //      /showcase    → firstSegment='showcase' → not a locale, no change
@@ -130,7 +113,7 @@ export default async function proxy(request: NextRequest) {
   let locale: Locale = DEFAULT_LOCALE
   let internalPath   = pathname
 
-  if (firstSegment && isSupportedLocale(firstSegment) && firstSegment !== DEFAULT_LOCALE) {
+  if (firstSegment && isSupportedLocale(firstSegment)) {
     locale       = firstSegment as Locale
     internalPath = pathname.slice(`/${firstSegment}`.length) || '/'
   } else {
@@ -142,6 +125,33 @@ export default async function proxy(request: NextRequest) {
     if (cookieLocale && isSupportedLocale(cookieLocale)) {
       locale = cookieLocale as Locale
     }
+  }
+
+  // Guard the normalized destination, including locale-prefixed admin URLs.
+  const adminPath = internalPath.replace(/\/+$/, '') || '/'
+  if (adminPath === '/opti-admin' || adminPath.startsWith('/opti-admin/')) {
+    if (adminPath !== '/opti-admin/login') {
+      const session = request.cookies.get(SESSION_COOKIE)?.value
+      if (!session || !await verifySessionToken(session)) {
+        return setVisitorId(redirectToLogin(request, adminPath))
+      }
+    }
+    if (internalPath !== pathname) {
+      const target = request.nextUrl.clone()
+      target.pathname = adminPath
+      return setVisitorId(NextResponse.redirect(target))
+    }
+    return setVisitorId(NextResponse.next())
+  }
+
+  // Public English URLs have no prefix. Preview URLs are rewritten below so
+  // CMS navigation preserves its URL and all version/context parameters.
+  if (firstSegment === DEFAULT_LOCALE && !request.nextUrl.searchParams.has('preview_token')) {
+    const target = request.nextUrl.clone()
+    target.pathname = internalPath
+    const response = NextResponse.redirect(target, 308)
+    response.cookies.set(LOCALE_COOKIE, DEFAULT_LOCALE, { path: '/', sameSite: 'lax' })
+    return setVisitorId(response)
   }
 
   // ── 1b. CMS-managed redirects ─────────────────────────────────────────────

@@ -21,10 +21,11 @@ Two consequences, both learned by getting them wrong:
   successfully, at a URL that 404s on the site that made it. Moving one afterwards
   is `PATCH /v1/content/{key}` with `{"container": "<folder key>"}` and a
   `application/merge-patch+json` content type — a 204 and the URL follows.
-- The `/blog` index filters on `url.base` in JS, against `NEXT_PUBLIC_SITE_DOMAIN`
-  (see `lib/blogIndex.ts`). Without that filter each site listed the other's
-  articles under paths that do not resolve there. The filter compares hostnames
-  only and falls open when the variable is unset.
+- The `/blog` index identifies articles by `CMS_BLOG_CONTAINER_KEY` in their
+  container ancestry, including nested folders. It filters `url.base` through
+  the shared application-origin configuration in `lib/contentScope.ts`.
+  It does not fall open when site identity is missing. See
+  [CMS routing configuration](cms-routing.md).
 
 Beware the shell, too: `CMS_BLOG_CONTAINER_KEY` exported in the terminal that
 starts `yarn dev` **overrides `.env.local`**, and the article lands in whichever
@@ -64,16 +65,13 @@ appears the moment someone publishes it.
 The trade-off is stated in the file: **this index is not editable in Visual
 Builder.** The articles it links to still are.
 
-`lib/blogIndex.ts` asks Graph for nothing unproven — every field is copied from
-the site-search query, which runs against the live index. It deliberately does
-not request `noIndex`, `orderBy`, or `url { hierarchical }`, and does not scope
-by `url.base`; sorting and the `/blog/` path filter run in JS where they cannot
-fail. The reasoning is in the file, and it is the same reasoning that would have
-prevented the empty-sitemap bug.
-
-One detail that cost a round trip: Graph returns paths with the default locale
-prefix (`/en/blog/…`), so the filter looks for a `blog` segment anywhere in the
-path rather than requiring the path to start with `/blog/`.
+`lib/blogIndex.ts` queries published `BlankExperience` items for the active
+locale in batches of 100, ordered by key for pagination. It reads
+`_metadata.path`, `container` and `url.base` to identify articles in the correct
+folder and application, then sorts posts by publication date for display.
+Membership does not depend on a literal `blog` URL segment, so folder renames
+and nested folders continue to work. The query was checked against the live
+Graph schema during the September 2026 routing audit.
 
 ---
 

@@ -47,6 +47,7 @@ every CMS-driven route 404s.
 | `yarn dev` | Dev server |
 | `yarn build` | Production build |
 | `yarn lint` | ESLint |
+| `node --test tests/routing.test.cjs` | Routing, hierarchy and site-isolation regression checks |
 | `yarn lint:tokens` | Flag hard-coded colors that should be design tokens |
 | `yarn cms:push` | Push content types / display templates to the CMS |
 | `yarn cms:pull` | Pull the CMS content-type config back down |
@@ -79,6 +80,8 @@ CMP_CLIENT_ID=                  # Optimizely CMP / DAM — asset lookups
 CMP_CLIENT_SECRET=
 
 NEXT_PUBLIC_SITE_URL=           # canonical origin, no trailing slash
+NEXT_PUBLIC_SITE_DOMAIN=        # CMS site identity when different from local origin
+CMS_GRAPH_SITE_ORIGINS=         # comma-separated exact Graph url.base origins
 NEXT_PUBLIC_OPTIFORMS_ENABLED=  # 'true' only on instances that have Forms
 
 OPAL_TOOL_SECRET=               # bearer token for /api/opal/dam-images and
@@ -200,8 +203,8 @@ The sequence LF asked for, and where it actually stands:
 | **CMS ↔ DAM** — single source of truth for assets | ✅ Done |
 | **Visual Builder** — section + block editing | ✅ Done |
 | **CMP ↔ CMS/DAM** | 🟡 Asset half live; webhooks wired and verified, campaign planning not |
-| **Forms ↔ CMS** | ⬜ Content types registered behind `NEXT_PUBLIC_OPTIFORMS_ENABLED` |
-| **CMS ↔ Experimentation** | ⬜ Not started |
+| **Forms ↔ CMS** | Implementation includes gated types, submission endpoint and KV storage; instance enablement requires verification |
+| **CMS ↔ Experimentation** | Feature Experimentation variant resolution and tracking implemented; live experiment outcomes not verified by this audit |
 | **Opal** in an editorial workflow | ✅ Two tools + a skill; Opal writes an article into the Blog folder as a draft |
 | **Micro frontend** proof point | ⬜ Not started |
 | **Databricks-native analytics** | ⬜ Not started |
@@ -213,17 +216,15 @@ The sequence LF asked for, and where it actually stands:
 
 Each of these cost real time, so they are written down rather than rediscovered.
 
-- **Locale prefix.** The front end declares four locales (`en`, `es`, `fr`, `de`
-  in `i18n/routing.ts`), but what matters here is the **CMS instance**: several
-  locales are enabled on it and none is marked default, so Graph indexes English
-  at `/en/` rather than `/`, and every request for `/` returned 404 while the
-  header and footer still rendered — they read ThemeManager directly, so it
-  looked like a routing bug. `getLocalizedContentByPath` tries the bare path,
-  then the prefixed one.
-- **`frontEndDomain` must match the deployed host.** ThemeManager is matched by
-  host; when it held `localhost:3000` the header and footer fell back to their
-  hardcoded defaults on Vercel while the page body rendered normally. A single
-  ThemeManager now resolves on any host, which also covers preview URLs.
+- **Hostname and locale mapping.** Supported frontend locales are `en`, `es`,
+  `fr`, `de`, `sv`, defined once in `lib/i18n/config.ts`. English public URLs
+  omit `/en`; other locales retain their prefix. Graph URL prefixes depend on
+  the application's hostname–locale mapping, not just the frontend locale list.
+- **Local development needs a CMS site identity.** Stockholm and Skåne share
+  the CMS. Set `NEXT_PUBLIC_SITE_DOMAIN` and the applicable
+  `CMS_GRAPH_SITE_ORIGINS`; published page lookup never falls back to an
+  unscoped query. See [the routing guide](docs/cms-routing.md) for the verified
+  Stockholm values and the distinction between public origin and Graph origin.
 - **`POST /versions` creates a version from the payload alone.** Send a partial
   property set and everything you omitted is blanked. Always re-post all
   properties. `displayName` is required, and the response body is empty — the
@@ -260,6 +261,7 @@ Each of these cost real time, so they are written down rather than rediscovered.
 |---|---|
 | [`PRODUCT.md`](PRODUCT.md) | Product purpose, users, brand voice |
 | [`DESIGN.md`](DESIGN.md) | Color strategy, typography, elevation, motion |
+| [`docs/cms-routing.md`](docs/cms-routing.md) | Hostname configuration, locales, preview context, hierarchy and verification |
 | [`Optimizely.md`](Optimizely.md) | CMS integration patterns, page types, Graph queries, and the full gotcha list |
 | [`CLAUDE.md`](CLAUDE.md) | Repo conventions and the block-authoring workflow |
 | [`docs/blog-and-opal.md`](docs/blog-and-opal.md) | The blog, both Opal tools, the section vocabulary, setup and verification |

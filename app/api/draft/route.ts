@@ -6,7 +6,9 @@ export async function GET(request: Request) {
 
   const preview_token = searchParams.get('preview_token')
   const key           = searchParams.get('key')         ?? ''
-  const ctx           = searchParams.get('ctx')         ?? '/'
+  const legacyCtx = searchParams.get('ctx') ?? ''
+  const path = searchParams.get('path') ?? (legacyCtx.startsWith('/') ? legacyCtx : '/')
+  const ctx = legacyCtx === 'preview' || searchParams.get('ext_preview') === '1' ? 'preview' : 'edit'
   const ver           = searchParams.get('ver')         ?? ''
   const loc           = searchParams.get('loc')         ?? ''
   // ext_preview=1 marks a link shared externally (outside the CMS editor).
@@ -21,11 +23,12 @@ export async function GET(request: Request) {
   dm.enable()
 
   // Forward all preview params to the target page so it can call getPreviewContent
-  const target = new URL(ctx, request.url)
+  const target = new URL(path, request.url)
   target.searchParams.set('preview_token', preview_token)
   target.searchParams.set('key', key)
   target.searchParams.set('ver', ver)
   target.searchParams.set('loc', loc)
+  target.searchParams.set('ctx', ctx)
   if (extPreview) target.searchParams.set('ext_preview', extPreview)
 
   redirect(target.pathname + target.search)

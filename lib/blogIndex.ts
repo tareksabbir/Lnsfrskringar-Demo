@@ -1,49 +1,19 @@
 import { cache } from 'react'
-import { getClient, getRequestLocale, getSiteDomain } from '@/lib/optimizely'
+import { getClient, getRequestLocale } from '@/lib/optimizely'
+import { belongsToSite, blogContainerKey } from '@/lib/contentScope'
 
-/**
- * Listing data for /blog.
- *
- * Deliberately NOT lib/blogFeed.ts. That one queries OT_BlogPage, and the
- * articles this site actually publishes — the ones the Opal tool and
- * lib/blogComposition.ts create — are BlankExperience documents, because they
- * are composition pages that must stay editable in Visual Builder. A feed
- * pointed at OT_BlogPage renders an empty list against this content, which is
- * exactly what would have happened had we dropped OT_BlogFeedBlock onto a page.
- *
- * ── On the shape of the query ────────────────────────────────────────────────
- * Every field below is copied from buildBlankExperienceQuery in
- * app/api/search/route.ts, which is exercised by the site search and therefore
- * known to survive Graph. Nothing speculative is asked for:
- *
- *   - No `noIndex`. It is declared on the content type, but app/sitemap.ts asks
- *     for it and returns an empty sitemap in production, so it is a prime
- *     suspect for a field the CMS knows and Graph has not indexed. One unknown
- *     field fails the WHOLE document, and an empty blog index is not worth that
- *     risk. Draft/unpublished pages are excluded by Graph already.
- *   - No `orderBy` and no `url { hierarchical }`. Both appear elsewhere in this
- *     repo in code paths that swallow their own errors, so neither is actually
- *     proven. Sorting and path filtering happen in JS below, where they cannot
- *     fail.
- *   - No site scoping on `url.base`. The search route builds that filter as
- *     `https://${domain}` from the ThemeManager, while getRequestBaseUrl()
- *     returns the request's own scheme — http on localhost. Mismatch there
- *     yields zero rows and no error, which is precisely how /sitemap.xml came
- *     to serve an empty urlset. This instance hosts one site, and the
- *     `/blog/` path filter below already scopes the result, so the domain
- *     clause bought nothing and could silently cost everything.
- *
- * Loosen this once someone can run the query against Graph and watch it work.
- */
-
+// BlankExperience articles are identified by their ancestor key, not by an
+// editable URL segment. Renaming or nesting the Blog folder keeps its identity.
 const BLOG_INDEX_QUERY = `
-  query GetBlogIndex($locale: String!, $limit: Int!) {
+  query GetBlogIndex($locale: String!, $limit: Int!, $skip: Int!) {
     BlankExperience(
-      where: { _metadata: { locale: { eq: $locale } } }
+      where: { _metadata: { locale: { eq: $locale } status: { eq: "Published" } } }
       limit: $limit
+      skip: $skip
+      orderBy: { _metadata: { key: ASC } }
     ) {
       items {
-        _metadata { key published displayName url { default base } }
+        _metadata { key path container published displayName url { default base } }
         seoDescription
         ogImage { url { default } }
       }
@@ -68,74 +38,33 @@ export type BlogIndexPost = {
  */
 export type BlogIndexResult = BlogIndexPost[] | null
 
-/** Articles live under this segment. The index page itself is excluded. */
-const BLOG_SEGMENT = 'blog'
-
-/**
- * Does this article belong to the site being served?
- *
- * The comment above explains why `url.base` is not a Graph filter, and that
- * still holds — but it cannot be ignored either, now that this CMS instance
- * hosts two sites. Both LF demos query the same Graph, so Stockholm's articles
- * were listed on Skåne's index under paths that 404 there, and vice versa.
- *
- * The comparison runs in JS, on hostname only, against this deployment's own
- * NEXT_PUBLIC_SITE_URL rather than the request host: Graph stores the site's
- * registered production base, so matching the request host would empty the
- * index on localhost and on every Vercel preview URL. With the variable unset,
- * nothing is filtered — the old behaviour, and the right one for a single-site
- * instance.
- */
-function belongsToThisSite(base: unknown, ownHost: string | null): boolean {
-  if (!ownHost) return true
-  if (typeof base !== 'string' || !base.trim()) return false
-  try {
-    return new URL(base).host === ownHost
-  } catch {
-    return false
+type BlogItem = {
+  _metadata?: {
+    key?: string
+    path?: string[]
+    container?: string
+    published?: string | null
+    displayName?: string | null
+    url?: { default?: string | null; base?: string | null }
   }
+  seoDescription?: string | null
+  ogImage?: { url?: { default?: string | null } }
 }
 
-/** Normalise whatever Graph hands back into a leading-slash pathname. */
-function pathOf(raw: unknown): string | null {
-  if (typeof raw !== 'string' || !raw.trim()) return null
-  const trimmed = raw.trim()
-  try {
-    const p = trimmed.startsWith('http') ? new URL(trimmed).pathname : trimmed
-    return p.startsWith('/') ? p : `/${p}`
-  } catch {
-    return null
-  }
-}
-
-/**
- * Is this path a blog ARTICLE — i.e. `blog` followed by at least one more
- * segment?
- *
- * Deliberately tolerant about what comes before `blog`. Graph returns
- * `url.default` with a locale prefix on this instance (`/en/blog/…`), and a
- * plain `startsWith('/blog/')` silently matched nothing — the index rendered
- * "No articles have been published yet" over a blog that had an article in it.
- * Rather than hard-code which prefixes are allowed, find the `blog` segment
- * wherever it sits and require something after it. That also excludes the index
- * itself, whose path ends at `blog`.
- */
-function isArticlePath(path: string): boolean {
-  const segments = path.split('/').filter(Boolean)
-  const i = segments.indexOf(BLOG_SEGMENT)
-  return i !== -1 && i < segments.length - 1
-}
+const normalizeKey = (key: string) => key.replace(/-/g, '').toLowerCase()
 
 export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogIndexResult> {
   const locale = await getRequestLocale()
-
-  let items: unknown[]
+  const root = normalizeKey(blogContainerKey())
+  const items: BlogItem[] = []
   try {
-    const data = await getClient().request(BLOG_INDEX_QUERY, {
-      locale,
-      limit: 100,
-    }) as { BlankExperience?: { items?: unknown[] } }
-    items = data?.BlankExperience?.items ?? []
+    for (let skip = 0; ; skip += 100) {
+      const data = await getClient().request(BLOG_INDEX_QUERY, { locale, limit: 100, skip }) as
+        { BlankExperience?: { items?: BlogItem[] } }
+      const batch = data?.BlankExperience?.items ?? []
+      items.push(...batch)
+      if (batch.length < 100) break
+    }
   } catch (err) {
     console.error('[blog-index] Graph query failed:', err)
     return null
@@ -143,60 +72,30 @@ export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogInd
 
   const seen = new Set<string>()
   const posts: BlogIndexPost[] = []
-  const rejected: string[] = []
-  const ownHost = getSiteDomain()
-  let otherSite = 0
-
-  for (const raw of items) {
-    const item = raw as {
-      _metadata?: {
-        key?: string
-        published?: string | null
-        displayName?: string | null
-        url?: { default?: string | null; base?: string | null } | null
-      } | null
-      seoDescription?: string | null
-      ogImage?: { url?: { default?: string | null } | null } | null
-    }
-
-    const path = pathOf(item._metadata?.url?.default)
-    if (!path || !isArticlePath(path)) {
-      if (path) rejected.push(path)
-      continue
-    }
-
-    if (!belongsToThisSite(item._metadata?.url?.base, ownHost)) {
-      otherSite++
-      continue
-    }
-
-    const key = item._metadata?.key
-    if (!key || seen.has(key)) continue
+  for (const item of items) {
+    const meta = item._metadata
+    const key = meta?.key
+    if (!key || normalizeKey(key) === root || seen.has(key)) continue
+    const ancestors = [...(meta?.path ?? []), meta?.container ?? '']
+    if (!ancestors.some(key => normalizeKey(key) === root)) continue
+    if (!belongsToSite(meta?.url?.base)) continue
+    const raw = meta?.url?.default
+    if (!raw) continue
+    let path: string
+    try {
+      const url = new URL(raw, meta?.url?.base ?? undefined)
+      if (!['http:', 'https:'].includes(url.protocol) || !belongsToSite(url.origin)) continue
+      path = url.pathname
+    } catch { continue }
     seen.add(key)
-
     posts.push({
       key,
-      title:       item._metadata?.displayName?.trim() || 'Untitled article',
-      description: item.seoDescription?.trim() || null,
+      title: meta?.displayName?.trim() || 'Untitled article',
+      description: item.seoDescription ?? null,
       path,
-      published:   item._metadata?.published ?? null,
-      imageUrl:    item.ogImage?.url?.default ?? null,
+      published: meta?.published ?? null,
+      imageUrl: item.ogImage?.url?.default ?? null,
     })
-  }
-
-  // If Graph answered but nothing looked like an article, say what it DID
-  // return. "No articles have been published yet" over a blog that has one is
-  // the same silent-empty failure as the sitemap, and the paths are the whole
-  // diagnosis.
-  if (posts.length === 0 && items.length > 0) {
-    console.warn(
-      `[blog-index] ${items.length} experiences returned, none under "/${BLOG_SEGMENT}/" for `
-      + `${ownHost ?? 'this site'}. `
-      + (otherSite ? `${otherSite} article(s) belong to another site on this instance. ` : '')
-      + (rejected.length
-        ? `Paths seen: ${rejected.slice(0, 15).join(', ')}`
-        : 'None of them carried a _metadata.url.default at all.'),
-    )
   }
 
   // Newest first. Anything without a date sorts last rather than to the top —

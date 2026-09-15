@@ -1,7 +1,7 @@
 /**
  * i18n configuration for Site Accelerator
  *
- * Four stock locales. Locale is detected from the URL prefix (/fr/, /de/, /es/).
+ * Supported CMS locales. Locale is detected from the URL prefix (/fr/, /de/, /es/).
  * The default locale (English) has no prefix — existing URLs are unaffected.
  * Non-default locales are prefixed: /fr/about, /de/about, /es/about.
  *
@@ -12,7 +12,7 @@
  * for these four locales.
  */
 
-export const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de'] as const
+export const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'sv'] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE: Locale = 'en'
 
@@ -22,6 +22,7 @@ export const LOCALE_META: Record<Locale, { native: string; code: string }> = {
   es: { native: 'Español',  code: 'ES' },
   fr: { native: 'Français', code: 'FR' },
   de: { native: 'Deutsch',  code: 'DE' },
+  sv: { native: 'Svenska', code: 'SV' },
 }
 
 /** Returns true if value is a supported locale. */

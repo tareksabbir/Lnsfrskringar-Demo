@@ -204,7 +204,7 @@ async function CmsPage({ params, searchParams }: Props) {
     const previewParams: PreviewParams = {
       preview_token: sp_str('preview_token'),
       key:           sp_str('key'),
-      ctx:           'edit',
+      ctx:           sp_str('ctx') === 'preview' || sp_str('ext_preview') === '1' ? 'preview' : 'edit',
       ver:           sp_str('ver'),
       loc:           previewLocale,
     }
@@ -303,7 +303,7 @@ async function CmsPage({ params, searchParams }: Props) {
         // (the reviewer followed the shareable URL, not the CMS editor's own
         // preview frame). Without this flag, inPreview means CMS edit mode.
         const isExternalPreview = inPreview && sp_str('ext_preview') === '1'
-        const isCmsEdit         = inPreview && !!sp_str('preview_token') && !isExternalPreview
+        const isCmsEdit         = inPreview && !!sp_str('preview_token') && !isExternalPreview && sp_str('ctx') !== 'preview'
 
         // ── Author name for the draft banner ────────────────────────────────────
         // In preview mode blogContent comes from getPreviewContent which returns
@@ -335,7 +335,8 @@ async function CmsPage({ params, searchParams }: Props) {
             key:           sp_str('key'),
             ver:           sp_str('ver'),
             loc:           sp_str('loc') || locale,
-            ctx:           contentSlug,
+            path:          contentSlug,
+            ctx:           'preview',
             ext_preview:   '1',
           })
           if (baseUrl) {
@@ -423,7 +424,7 @@ async function CmsPage({ params, searchParams }: Props) {
       // Require an actual preview_token so a stale draft-mode cookie on the
       // public site never triggers editor-only UI (ExternalPreviewLinkPanel).
       const isExternalPreview = inPreview && sp_str('ext_preview') === '1'
-      const isCmsEdit         = inPreview && !!sp_str('preview_token') && !isExternalPreview
+      const isCmsEdit         = inPreview && !!sp_str('preview_token') && !isExternalPreview && sp_str('ctx') !== 'preview'
 
       let externalPreviewUrl: string | null = null
       if (isCmsEdit && campaignContent.enableExternalPreview === true) {
@@ -436,7 +437,8 @@ async function CmsPage({ params, searchParams }: Props) {
           key:           sp_str('key'),
           ver:           sp_str('ver'),
           loc:           sp_str('loc') || locale,
-          ctx:           contentSlug,
+          path:          contentSlug,
+          ctx:           'preview',
           ext_preview:   '1',
         })
         if (baseUrl) {
@@ -556,7 +558,7 @@ async function CmsPage({ params, searchParams }: Props) {
         key:           sp_str('key'),
         ver:           sp_str('ver'),
         loc:           sp_str('loc') || locale,
-        ctx:           'edit',
+        ctx:           sp_str('ctx') === 'preview' || sp_str('ext_preview') === '1' ? 'preview' : 'edit',
       })
       redirect(`/preview?${qs}`)
     }

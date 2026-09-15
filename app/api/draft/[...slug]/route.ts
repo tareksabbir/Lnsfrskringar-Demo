@@ -30,12 +30,19 @@ function toPath(raw: string | null | undefined): string | null {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ slug: string[] }> },
+) {
   const { searchParams } = new URL(request.url)
 
   const preview_token = searchParams.get('preview_token')
   const key           = searchParams.get('key')
   const ver           = searchParams.get('ver')
+  const { slug } = await context.params
+  // CMS templates use /api/draft/{context}; also accept query-based formats.
+  const requestedContext = searchParams.get('ctx') ?? slug[0]
+  const ctx = requestedContext === 'preview' ? 'preview' : 'edit'
   const loc           = searchParams.get('loc')
 
   if (!preview_token || !key || !ver || !loc) {
@@ -97,7 +104,7 @@ export async function GET(request: Request) {
   ;(await draftMode()).enable()
 
   // Passed through to the target page so it can call getPreviewContent
-  const qs = new URLSearchParams({ preview_token, key, ver, loc })
+  const qs = new URLSearchParams({ preview_token, key, ver, loc, ctx })
 
   if (types.includes('_Experience')) {
     const path = toPath(item._metadata?.url?.default)
@@ -108,7 +115,7 @@ export async function GET(request: Request) {
   // _Component covers both shared blocks and contentassets-backed blocks.
   // Route to the unified /preview page so it handles the same way as experiences.
   if (types.includes('_Component')) {
-    const blockQs = new URLSearchParams({ preview_token: preview_token!, key: key!, ver: ver!, loc: loc!, ctx: 'edit' })
+    const blockQs = new URLSearchParams({ preview_token: preview_token!, key: key!, ver: ver!, loc: loc!, ctx })
     redirect(`/preview?${blockQs}`)
   }
 

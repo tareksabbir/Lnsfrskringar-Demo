@@ -25,11 +25,11 @@ Every layer has a specific responsibility and they must all stay in sync.
 |---|---|---|
 | `OPTIMIZELY_GRAPH_SINGLE_KEY` | `lib/optimizely.ts` | Single-key for all public Graph queries |
 | `OPTIMIZELY_CMS_URL` | Preview routes, layout | Base URL of the CMS instance (e.g. `https://app-xyz.cms.optimizely.com`) |
-| `OPTIMIZELY_CMS_CLIENT_ID` | `cms-cli` only | OAuth client for pushing content type definitions |
-| `OPTIMIZELY_CMS_CLIENT_SECRET` | `cms-cli` only | OAuth client secret |
+| `OPTIMIZELY_CMS_CLIENT_ID` | CLI and server-side CMS writers | OAuth client for schema sync and content writes |
+| `OPTIMIZELY_CMS_CLIENT_SECRET` | CLI and server-side CMS writers | OAuth client secret |
 | `NEXT_PUBLIC_OPTIFORMS_ENABLED` | `cms/registry.ts` | `'true'` registers the OptiForms content types, display template, and adapters. Leave unset on any instance without Optimizely Forms — see the OptiForms section below |
 
-`OPTIMIZELY_GRAPH_SINGLE_KEY` is the only key required at runtime for the front end. The CLI credentials are only needed when running `yarn cms:push` to sync content type definitions to the CMS. The CLI does not load `.env` files itself — the `cms:push` wrapper resolves `.env.<branch>`, falling back to `.env.local`, and passes it in.
+`OPTIMIZELY_GRAPH_SINGLE_KEY` is the only key required at runtime for the front end. CMS credentials are needed for schema sync and runtime content-writing integrations such as Opal and CMP. The CLI does not load `.env` files itself — the `cms:push` wrapper resolves `.env.<branch>`, falling back to `.env.local`, and passes it in.
 
 ---
 
@@ -49,7 +49,7 @@ These imports run once on server startup. Nothing else in the app needs to call 
 Calls `config({ apiKey })` from `@optimizely/cms-sdk` exactly once (guarded by an `initialized` flag). Exports:
 
 - `getClient()` — returns the initialized Graph client; used everywhere content is fetched
-- `getSiteSettings(domain, locale)` — fetches the `OT_ThemeManager` instance whose `frontEndDomain` matches `domain` **exactly**. If nothing matches, it falls back to the single ThemeManager only when exactly one exists; with several, an unmatched host returns `null` and the caller renders its default tokens. The asymmetry is deliberate: on a multi-site instance serving the wrong brand is worse than serving none, but one ThemeManager is unambiguously the site's theme. That fallback is also the only thing that makes deployed hosts work — `frontEndDomain` typically holds `localhost:3000`, and Vercel preview URLs carry a fresh hash per deployment, so they can never be registered in advance. The underlying fetch is wrapped in React `cache()` (keyed by locale) so Header, Footer, and layout all share a single Graph round-trip per request.
+- `getSiteSettings(domain, locale)` — matches the request domain, falls back to the only ThemeManager when exactly one exists, or uses this deployment's configured `getSiteDomain()` on a shared instance. Returns null if no matching site can be identified. React `cache()` deduplicates lookups per render.
 - `getSiteKey(locale)` — the matched ThemeManager's `frontEndDomain`, used as the site filter for records that have no URL of their own (`OT_PractitionerProfile`, `OT_LocationProfile`) on a shared CMS instance
 - `buildThemeCSS(settings)` — converts ThemeManager color values and theme axes into inline CSS custom property overrides
 - `getLocalizedContentByPath(path, locale, baseUrl?, variationSlug?)` — the locale-aware page/experience lookup used by both the home route and the catch-all (see **Locales and i18n** below)
@@ -413,13 +413,21 @@ Any function that calls `getClient()` and is called from multiple server compone
 
 ## Locales and i18n
 
-Four locales ship: `en` (default), `es`, `fr`, `de`. They are declared in two places that must stay in sync — `i18n/routing.ts` (next-intl's `defineRouting`, the middleware's source of truth) and `SUPPORTED_LOCALES` / `DEFAULT_LOCALE` in `lib/i18n/config.ts` (what the Graph layer reads). `localePrefix: 'as-needed'` means the default locale has no URL prefix (`/about`) and every other locale is prefixed (`/fr/about`).
+Five locales are routable: `en` (default), `es`, `fr`, `de`, `sv`.
+`lib/i18n/config.ts` defines the list; `i18n/routing.ts` imports it.
+The custom Next.js proxy rewrites non-default locale prefixes and injects the
+locale header. Public `/en/...` requests redirect to the unprefixed URL;
+preview requests retain their query parameters and use an internal rewrite.
+Swedish static UI messages currently fall back to English.
 
-### The gotcha that looks like a routing bug
+### Hostname and language mapping
 
-Content Graph indexes content at an **unprefixed** path only when the CMS instance treats that locale as its default. On an instance with several locales enabled and **none marked default**, every locale gets a prefix — English included. English content is then indexed at `/en/about`, the unprefixed lookup for `/about` returns nothing, and the page 404s.
-
-The symptom is misleading: the header and footer still render, because they read ThemeManager directly and never touch the page path. So a whole site 404s while its chrome looks healthy, which reads as a routing or middleware fault rather than a locale one. Check the CMS's default-language setting first.
+Optimizely derives `url.base` and language prefixes from application hostnames.
+A hostname mapped to English can index English without `/en/`. A general host
+can index the other locales with language prefixes. See
+[the routing guide](docs/cms-routing.md) for verified Stockholm settings.
+Published lookups use `CMS_GRAPH_SITE_ORIGINS` when supplied, otherwise the
+configured site domain/public origin. They never drop the host filter.
 
 ### `getLocalizedContentByPath(path, locale, baseUrl?, variationSlug?)`
 
@@ -431,7 +439,7 @@ All page lookups go through this function rather than `getContentByPath` directl
 
 **Non-default locale — three steps:**
 1. `/<locale><path>` — the common case, where the slug is identical across locales (`/about` → `/es/about`).
-2. If nothing: fetch the English version at `path` to get its `_metadata.key`, then `getItems({ key, locale })` for that key's translation. This covers pages whose **slug changes per locale** (`/ui-testing2/` in English → `/fr/polished-landing/` in French), which step 1 can never find.
+2. If nothing: reuse the default-locale lookup (bare path and `/en` path) to get its `_metadata.key`, then `getItems({ key, locale })` for that key's translation. This covers pages whose **slug changes per locale** (`/ui-testing2/` in English → `/fr/polished-landing/` in French), which step 1 can never find.
 3. If still nothing: return the English content as a fallback, so the page renders rather than 404s.
 
 When several results come back, `pickByLocale` prefers an exact locale match (allowing `xx-YY` region variants either way), then the default locale, then the first item.
@@ -471,6 +479,17 @@ Requested widths are clamped to `CMP_MAX_WIDTH = 5000`. The clamp is load-bearin
 ---
 
 ## Routing
+
+Configuration, hierarchy and verification details are maintained in
+[docs/cms-routing.md](docs/cms-routing.md). Relevant environment variables are
+`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SITE_DOMAIN`, `CMS_GRAPH_SITE_ORIGINS`,
+and `CMS_BLOG_CONTAINER_KEY`.
+
+Admin session checks run after locale normalization; the dashboard also checks
+its session server-side. Thus `/sv/opti-admin` cannot bypass login protection.
+CMS preview mode is read from `ctx` or `/api/draft/{context}` and preserved
+through redirects. External preview links use separate `path` and `ctx`
+parameters; legacy links with a path in `ctx` remain supported.
 
 ### Site routes (`app/(site)/`)
 

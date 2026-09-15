@@ -73,14 +73,14 @@ export const getBreadcrumbTrail = cache(async (
       if (!name) return []
       // Folders exist to organise the tree, not to be visited. A crumb for one
       // would point at a URL with nothing behind it.
-      if (m?.types?.includes('_Folder')) return []
+      if (m?.types?.some(type => type === '_Folder' || type === 'OT_FolderPage')) return []
       return [{ name, url: absolute(origin, m?.url?.default ?? m?.url?.hierarchical) }]
     })
 
-    // A single crumb is just the page itself; buildJsonLd already skips trails
-    // shorter than two, and returning one here would suppress the URL-derived
-    // fallback for no gain.
-    return crumbs.length > 1 ? crumbs : null
+    // Preserve a successfully resolved (even short) trail. Returning null here
+    // would recreate excluded folder links from URL segments.
+    return crumbs
+
   } catch (err) {
     console.warn(`[breadcrumbs] could not resolve ancestors for ${key}:`, err)
     return null

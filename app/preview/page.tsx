@@ -184,7 +184,8 @@ async function PreviewPage({ searchParams }: Props) {
           key:           fallbackKey,
           ver:           sp('ver'),
           loc:           sp('loc'),
-          ctx:           pageUrl,
+          path:          pageUrl,
+          ctx:           sp('ctx') === 'preview' ? 'preview' : 'edit',
         })
         pageRedirectUrl = `${baseUrl}/api/draft?${qs}`
       }
@@ -252,7 +253,8 @@ async function PreviewPage({ searchParams }: Props) {
           key:           sp('key'),
           ver:           sp('ver'),
           loc:           sp('loc'),
-          ctx:           slug,
+          path:          slug,
+          ctx:           'preview',
           ext_preview:   '1',
         })
         externalPreviewUrl = `${baseUrl}/api/draft?${qs}`

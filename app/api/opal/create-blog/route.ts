@@ -1,3 +1,4 @@
+import { blogContainerKey } from '@/lib/contentScope'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCmsAccessToken, cmsConfigured } from '@/lib/cmsApi'
 import { buildBlogComposition, type BlogInput } from '@/lib/blogComposition'
@@ -18,7 +19,7 @@ import { authorizeOpal, unwrapOpalParameters } from '@/lib/opalAuth'
  */
 
 const GATEWAY = (process.env.OPTIMIZELY_CMS_API_URL || 'https://api.cms.optimizely.com').replace(/\/$/, '')
-const BLOG_FOLDER = process.env.CMS_BLOG_CONTAINER_KEY || '1330a97ad221400d8048329cda2ca918'
+const BLOG_FOLDER = blogContainerKey()
 
 // Caps exist because the caller may be a model. They bound a runaway generation
 // into something the CMS and the page can actually hold, and they are checked

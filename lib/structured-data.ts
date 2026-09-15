@@ -89,7 +89,7 @@ export function buildJsonLd(
   // ── Breadcrumbs ────────────────────────────────────────────────────────────
   // Derived from the URL unless the caller supplied a trail. Emitted before the
   // page node so the page node can point at it.
-  const crumbs = page.breadcrumbTrail?.length
+  const crumbs = page.breadcrumbTrail != null
     ? page.breadcrumbTrail
     : deriveBreadcrumbTrail(pageUrl, page.seoTitle ?? undefined)
 

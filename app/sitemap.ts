@@ -1,3 +1,4 @@
+import { belongsToSite } from '@/lib/contentScope'
 import type { MetadataRoute } from 'next'
 import { getClient } from '@/lib/optimizely'
 import { DEFAULT_LOCALE } from '@/lib/i18n/config'
@@ -28,7 +29,7 @@ import { DEFAULT_LOCALE } from '@/lib/i18n/config'
 export const revalidate = 3600
 
 /** Content types that produce a public URL. Add a type by adding a line. */
-const PAGE_TYPES = ['BlankExperience', 'OT_BlogPage'] as const
+const PAGE_TYPES = ['BlankExperience', 'OT_BlogPage', 'OT_CampaignPage', 'OT_EventPage', 'OT_TopicHubPage', 'OT_PractitionerPage'] as const
 
 /**
  * Graph's hard ceiling. Asking for more is not clamped — it is a 400:
@@ -39,19 +40,20 @@ const PAGE_TYPES = ['BlankExperience', 'OT_BlogPage'] as const
  * document failed, and a bare `catch { return [] }` turned a loud API error
  * into a silent empty file that robots.txt still pointed crawlers at.
  *
- * Per type, so the real ceiling is 100 × PAGE_TYPES.length. Well clear of this
- * site; if it is ever approached, page with `skip` rather than raising this.
+ * Each type is paged using skip until all published items have been read.
  */
 const GRAPH_MAX_LIMIT = 100
 
 const queryFor = (type: string) => `
-  query Sitemap_${type} {
+  query Sitemap_${type}($skip: Int!) {
     ${type}(
       where: { _metadata: { status: { eq: "Published" } } }
       limit: ${GRAPH_MAX_LIMIT}
+      skip: $skip
+      orderBy: { _metadata: { key: ASC } }
     ) {
       items {
-        _metadata { url { default } lastModified published }
+        _metadata { url { default base } lastModified published }
         noIndex
       }
     }
@@ -87,7 +89,7 @@ function toSiteUrl(raw: string): string {
 
 type GraphItem = {
   _metadata?: {
-    url?: { default?: string | null } | null
+    url?: { default?: string | null; base?: string | null } | null
     lastModified?: string | null
     published?: string | null
   } | null
@@ -96,9 +98,15 @@ type GraphItem = {
 
 async function itemsFor(type: string): Promise<GraphItem[]> {
   try {
-    const data = await getClient().request(queryFor(type), {}) as
-      Record<string, { items?: GraphItem[] } | undefined>
-    return data?.[type]?.items ?? []
+    const items: GraphItem[] = []
+    for (let skip = 0; ; skip += GRAPH_MAX_LIMIT) {
+      const data = await getClient().request(queryFor(type), { skip }) as
+        Record<string, { items?: GraphItem[] } | undefined>
+      const batch = data?.[type]?.items ?? []
+      items.push(...batch)
+      if (batch.length < GRAPH_MAX_LIMIT) break
+    }
+    return items
   } catch (err) {
     // Log and carry on. A broken type must not empty the whole sitemap.
     console.error(`[sitemap] ${type} query failed:`, err)
@@ -127,7 +135,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = []
 
   for (const item of allItems) {
-    if (item.noIndex) continue
+    if (item.noIndex || !belongsToSite(item._metadata?.url?.base, siteUrl)) continue
 
     const raw = item._metadata?.url?.default
     if (!raw) continue
@@ -135,7 +143,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Graph may hand back an absolute URL or a site-relative path.
     let fullUrl: string
     try {
-      fullUrl = toSiteUrl(raw.startsWith('http') ? raw : `${siteUrl}${raw}`)
+      const resolved = new URL(raw, siteUrl)
+      if (!['http:', 'https:'].includes(resolved.protocol)) continue
+      if (!belongsToSite(resolved.origin, siteUrl) && resolved.origin !== new URL(siteUrl).origin) continue
+      fullUrl = toSiteUrl(new URL(resolved.pathname, siteUrl).toString())
     } catch {
       continue
     }
