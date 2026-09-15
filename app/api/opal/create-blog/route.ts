@@ -19,7 +19,6 @@ import { authorizeOpal, unwrapOpalParameters } from '@/lib/opalAuth'
  */
 
 const GATEWAY = (process.env.OPTIMIZELY_CMS_API_URL || 'https://api.cms.optimizely.com').replace(/\/$/, '')
-const BLOG_FOLDER = blogContainerKey()
 
 // Caps exist because the caller may be a model. They bound a runaway generation
 // into something the CMS and the page can actually hold, and they are checked
@@ -126,6 +125,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'CMS credentials are not configured.' }, { status: 503 })
   }
 
+  const BLOG_FOLDER = blogContainerKey()
+  if (!BLOG_FOLDER) return NextResponse.json({ error: 'CMS_BLOG_CONTAINER_KEY is not configured.' }, { status: 503 })
+
   let body: unknown
   try {
     body = await req.json()
@@ -203,11 +205,7 @@ export async function POST(req: NextRequest) {
     // outside that folder means either CMS_BLOG_CONTAINER_KEY is set to the
     // wrong key on this deployment, or the article was made by something other
     // than this tool. Reporting the container distinguishes the two instantly.
-    const usingDefault = !process.env.CMS_BLOG_CONTAINER_KEY
-    console.info(
-      `[opal/create-blog] created ${key} in container ${BLOG_FOLDER}`
-      + `${usingDefault ? ' (built-in default — CMS_BLOG_CONTAINER_KEY is not set)' : ''}`,
-    )
+    console.info(`[opal/create-blog] created ${key} in container ${BLOG_FOLDER}`)
 
     return NextResponse.json({
       status: 'created',

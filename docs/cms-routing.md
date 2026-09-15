@@ -12,8 +12,8 @@ and configured hostnames.
 - `lib/blogIndex.ts` identifies composition articles by the configured blog
   container's key in `_metadata.path`/`container`, including nested folders.
   Renaming the folder or an article's URL does not change membership. The
-  existing LF default key is shared with the Opal writer; other deployments
-  should set `CMS_BLOG_CONTAINER_KEY` explicitly.
+  Opal writer and listing both require explicit `CMS_BLOG_CONTAINER_KEY`;
+  missing configuration returns an error instead of choosing a default folder.
 - Published path lookups never retry without a site filter. Preview requests
   continue to use their CMS key, version, locale and preview token.
 
@@ -90,3 +90,23 @@ server after environment changes; deployment changes need a fresh build.
 - The blog ancestry query and the four added sitemap type queries succeeded
   against the live schema; those four types returned no items at audit time.
 - No deployment, CMS mutation or browser end-to-end test was performed.
+
+## Preview and locale safeguards
+
+Draft fetch failures show a retry/unavailable state and retain the CMS bridge
+for fresh contentSaved messages; they never substitute a published homepage or
+campaign. External preview links carry temporary CMS tokens, valid for five
+minutes after issuance. Copying or reloading a link does not renew its token.
+The expiry notice and retry UI are project choices, not UI prescribed by the
+Optimizely documentation. A fresh CMS preview URL is needed after expiry.
+
+Language options come from this application's published page facets; Graph
+failure returns no inferred language options. Language switching resolves the
+current content key and asks for that key's target-locale URL. Missing
+translations keep the visitor on the current page with a message.
+
+Preview refresh follows the official contentSaved event and consumes the new
+previewUrl/previewToken. It never restores an expired token or previous version
+from the current URL. The shared bridge no longer patches the DOM separately.
+Error/retry messages and the temporary-link expiry notice are application UI
+choices; Optimizely documents token lifetime and refresh, not their UI wording.

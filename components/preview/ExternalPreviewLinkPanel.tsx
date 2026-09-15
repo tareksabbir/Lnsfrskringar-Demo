@@ -93,6 +93,9 @@ export function ExternalPreviewLinkPanel({ url, topic }: Props) {
         </div>
 
       </div>
+      <p className="max-w-screen-xl mx-auto px-lg pb-sm text-sm">
+        Temporary link: the CMS token expires five minutes after issuance, which may be sooner than five minutes from copying. Reopen CMS preview for a fresh link.
+      </p>
     </div>
   )
 }

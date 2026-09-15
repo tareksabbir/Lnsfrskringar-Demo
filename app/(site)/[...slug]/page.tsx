@@ -1,3 +1,4 @@
+import { PreviewUnavailable } from '@/components/preview/PreviewUnavailable'
 import { cache }                from 'react'
 import { notFound, redirect }  from 'next/navigation'
 import { draftMode }           from 'next/headers'
@@ -224,25 +225,7 @@ async function CmsPage({ params, searchParams }: Props) {
       }
     }
 
-    const previewResolveFailed = !exp || exp.__typename === '_Page'
-    if (previewResolveFailed && sp_str('key')) {
-      const fallbackKey = sp_str('key')
-      try {
-        const fallback = await getClient().request(
-          `query FallbackPreview($key: String!) {
-             OT_CampaignPage(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
-               items { __typename _metadata { key url { default } } }
-             }
-           }`,
-          { key: fallbackKey },
-        )
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const campaignExp = (fallback as any)?.OT_CampaignPage?.items?.[0] ?? null
-        if (campaignExp) exp = campaignExp
-      } catch {
-        // fallback failed — leave exp as-is
-      }
-    }
+    if (!exp || exp.__typename === '_Page') return <PreviewUnavailable cmsUrl={cmsUrl} />
   } else {
     // Shared cache with generateMetadata when both run in the same render.
     try {
@@ -401,24 +384,10 @@ async function CmsPage({ params, searchParams }: Props) {
     if (exp?.__typename === 'OT_CampaignPage') {
       const contentKey = exp._metadata?.key as string | undefined
 
-      // In preview mode, map the preview response first. getPreviewContent may
-      // not fully resolve slot items for unpublished content (they're not yet
-      // indexed in Content Graph), so try the published page query as a fallback
-      // when the preview mapping yields no sections.
-      // IMPORTANT: only replace campaignContent with the published result if it
-      // is non-null — a brand-new unsaved page has no published record yet and
-      // getCampaignPage returns null. In that case we keep the (empty) preview
-      // content so the editor sees the page shell rather than a 404.
-      let campaignContent = inPreview ? mapCampaignPageRaw(exp) : null
-      const previewHasContent = !!(
-        campaignContent?.heroSection ||
-        (campaignContent?.bodySection?.length ?? 0) > 0 ||
-        (campaignContent?.closingSection?.length ?? 0) > 0
-      )
-      if (!previewHasContent && contentKey) {
-        const published = await getCampaignPage(contentKey)
-        if (published) campaignContent = published
-      }
+      // Render only the requested draft in preview; an empty draft is valid.
+      const campaignContent = inPreview
+        ? mapCampaignPageRaw(exp)
+        : (contentKey ? await getCampaignPage(contentKey) : null)
       if (!campaignContent) return notFound()
 
       // Require an actual preview_token so a stale draft-mode cookie on the

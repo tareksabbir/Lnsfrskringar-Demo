@@ -1,3 +1,4 @@
+import { PreviewUnavailable } from '@/components/preview/PreviewUnavailable'
 import '@/cms/registry'
 import type { PreviewParams } from '@optimizely/cms-sdk'
 import {
@@ -51,6 +52,7 @@ async function PreviewPage({ searchParams }: Props) {
       lastErr = undefined
       content = await getClient().getPreviewContent(
         params as unknown as PreviewParams,
+        { cache: false },
       )
       break
     } catch (err) {
@@ -91,12 +93,13 @@ async function PreviewPage({ searchParams }: Props) {
     const fallbackKey   = rawKey.replace(/-/g, '')  // Graph stores keys without hyphens
     const fallbackLoc   = sp('loc') || 'en'
     const fallbackToken = sp('preview_token') || undefined  // undefined → SDK uses API-key auth
-    if (fallbackKey) {
+    if (fallbackKey && fallbackToken && sp('ver')) {
       try {
         const raw = await getClient().request(
-          `query GetTokenManagerPreview($key: String!, $loc: [Locales]) {
+          `query GetTokenManagerPreview($key: String!, $loc: [Locales], $ver: String!) {
             OT_TokenManager(
-              where: { _metadata: { key: { eq: $key } } }
+              where: { _metadata: { key: { eq: $key } version: { eq: $ver } } }
+              variation: { include: ALL }
               locale: $loc
               limit: 1
             ) {
@@ -108,8 +111,9 @@ async function PreviewPage({ searchParams }: Props) {
               }
             }
           }`,
-          { key: fallbackKey, loc: [fallbackLoc] },
+          { key: fallbackKey, loc: [fallbackLoc], ver: sp('ver') },
           fallbackToken,
+          false,
         )
         const item = (raw as any)?.OT_TokenManager?.items?.[0]
         if (item) {
@@ -195,16 +199,7 @@ async function PreviewPage({ searchParams }: Props) {
     if (pageRedirectUrl) redirect(pageRedirectUrl)
   }
 
-  if (lastErr || !content) {
-    const msg = lastErr instanceof Error ? lastErr.message : 'Unknown error'
-    return (
-      <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
-        <p><strong>Preview unavailable</strong></p>
-        <p>{msg}</p>
-        <p>The content may not be published or the preview session may have expired. Reload the Visual Builder to get a fresh preview token.</p>
-      </div>
-    )
-  }
+  if (lastErr || !content) return <PreviewUnavailable cmsUrl={cmsUrl} />
 
   const isExperience = Array.isArray(content?.composition?.nodes)
 

@@ -8,7 +8,7 @@ const ts = require('typescript');
 function load(file, deps, env = {}) {
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   vm.runInNewContext(code, {
     exports, require: id => {
@@ -18,7 +18,7 @@ function load(file, deps, env = {}) {
     },
     console, process: { env: { OPTIMIZELY_GRAPH_SINGLE_KEY: 'test', NEXT_PUBLIC_SITE_URL: 'https://site.test', ...env } },
     Headers, URL, URLSearchParams, Response, crypto: globalThis.crypto,
-    setTimeout: () => 0,
+    setTimeout: (callback, ms) => { if (ms < 10000) callback(); return 0; },
   });
   return exports;
 }
@@ -225,4 +225,77 @@ test('only explicitly configured application hosts match, including Swedish loca
   assert.equal(scope.belongsToSite('http://localhost:3000'), true);
   assert.equal(scope.belongsToSite('http://localhost:3001'), false);
   assert.equal(scope.belongsToSite('https://lf-skane-demo.vercel.app'), false);
+});
+test('missing blog container is explicit rather than selecting Stockholm', () => {
+  assert.equal(load('lib/contentScope.ts', {}).blogContainerKey(), null);
+});
+test('translated slugs resolve by the same content key in both directions', async () => {
+  for (const [from, to, current, expected] of [['fr', 'en', '/fr/a-propos', '/about/'], ['en', 'fr', '/about', '/fr/a-propos/']]) {
+    const queries = [];
+    const { translatedPath } = load('lib/i18n/translatedPath.ts', {
+      './config': locales,
+      '@/lib/optimizely': { getClient: () => ({ request: async (query, vars) => {
+        queries.push(vars);
+        return { _Content: { items: [{ _metadata: { key: 'same-page', url: { default: queries.length === 1 ? current : expected, base: 'https://site.test' } } }] } };
+      } }) },
+    });
+    assert.equal(await translatedPath(current, from, to), expected);
+    assert.equal(queries[1].where._metadata.key.eq, 'same-page');
+    assert.equal(queries[1].where._metadata.locale.eq, to);
+  }
+});
+test('unpublished/missing translation does not guess a translated URL', async () => {
+  let calls = 0;
+  const { translatedPath } = load('lib/i18n/translatedPath.ts', {
+    './config': locales,
+    '@/lib/optimizely': { getClient: () => ({ request: async () => ({ _Content: { items: ++calls === 1 ? [{ _metadata: { key: 'same' } }] : [] } }) }) },
+  });
+  assert.equal(await translatedPath('/about', 'en', 'fr'), null);
+});
+test('language discovery scopes its query and returns no invented options on failure', async () => {
+  const variables = [];
+  const deps = {
+    './config': locales,
+    'next/cache': { unstable_cache: f => f },
+    '@/lib/optimizely': { getClient: () => ({ request: async (query, vars) => {
+      variables.push(vars);
+      return { _Page: { facets: { _metadata: { locale: [{ name: 'en', count: 4 }, { name: 'sv', count: 1 }] } } } };
+    } }) },
+  };
+  const enabled = await load('lib/i18n/getEnabledLanguages.ts', deps).getEnabledLanguages();
+  assert.equal(enabled.join(','), 'en,sv');
+  assert.ok(variables[0].origins.includes('https://site.test'));
+  deps['@/lib/optimizely'] = { getClient: () => ({ request: async () => { throw Error('offline'); } }) };
+  assert.equal((await load('lib/i18n/getEnabledLanguages.ts', deps).getEnabledLanguages()).length, 0);
+});
+test('failed home preview never fetches published content', async () => {
+  let publishedReads = 0;
+  const unavailable = Symbol('PreviewUnavailable');
+  const page = load('app/(site)/page.tsx', {
+    'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
+    '@/components/preview/PreviewUnavailable': { PreviewUnavailable: unavailable },
+    'next/navigation': {}, 'next/headers': { draftMode: async () => ({ isEnabled: true }) },
+    '@/lib/optimizely': {
+      getRequestBaseUrl: async () => 'https://site.test', getRequestLocale: async () => 'en', setRequestContext: async () => {},
+      getClient: () => ({ getPreviewContent: async () => { throw Error('expired'); } }),
+      getLocalizedContentByPath: async () => { publishedReads++; return {}; },
+    },
+    '@optimizely/cms-sdk/react/server': { withAppContext: f => f },
+    '@/components/preview/PreviewBridge': {}, '@/lib/fx': {}, '@/lib/CompositionRenderer': {}, '@/lib/structured-data': {}, '@/components/seo/JsonLd': {},
+  }).default;
+  const result = await page({ searchParams: Promise.resolve({ preview_token: 'expired', key: 'a', ver: '1' }) });
+  assert.equal(result.type, unavailable);
+  assert.equal(publishedReads, 0);
+});
+test('contentSaved uses the new CMS token and version without inheriting stale parameters', () => {
+  const { previewNavigation } = load('lib/previewNavigation.ts', {});
+  const current = 'https://site.test/?key=a&ver=99&loc=en&preview_token=old';
+  const next = previewNavigation({ previewUrl: '/api/draft/preview?key=a&ver=2&loc=sv', previewToken: 'fresh' }, current);
+  const url = new URL(next, 'https://site.test');
+  assert.equal(url.searchParams.get('ver'), '2');
+  assert.equal(url.searchParams.get('preview_token'), 'fresh');
+  assert.equal(url.searchParams.get('loc'), 'sv');
+  assert.equal(previewNavigation({ previewUrl: '/?key=a&ver=2&loc=en' }, current), null);
+  assert.equal(previewNavigation({ previewUrl: '/?key=a&loc=en', previewToken: 'fresh' }, current), null);
+  assert.equal(previewNavigation({ previewUrl: 'https://other.test/?key=a&ver=2&loc=en&preview_token=fresh' }, current), null);
 });

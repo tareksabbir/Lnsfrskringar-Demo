@@ -193,8 +193,8 @@ OPAL_TOOL_SECRET=          # bearer token for /api/opal/dam-images and
                            #   /api/opal/create-blog. Both FAIL CLOSED: unset
                            #   means every request is refused. /api/opal/discovery
                            #   is public by design and does not read this.
-CMS_BLOG_CONTAINER_KEY=    # Blog folder. Unset falls back to the folder's own
-                           #   key, hardcoded in the route.
+CMS_BLOG_CONTAINER_KEY=    # Required explicit Blog folder key for this deployment.
+                           #   Missing: writer returns 503; listing reports unavailable.
 ```
 
 `create_blog_article` also needs `OPTIMIZELY_CMS_CLIENT_ID` / `_SECRET` — it

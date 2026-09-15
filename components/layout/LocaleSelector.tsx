@@ -22,7 +22,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { SUPPORTED_LOCALES, getLocaleMeta, localizedHref, isSupportedLocale } from '@/lib/i18n/config'
+import { getLocaleMeta, isSupportedLocale } from '@/lib/i18n/config'
 import type { Locale } from '@/lib/i18n/config'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -38,6 +38,11 @@ function getBrowserPathname(): string {
   return window.location.pathname
 }
 
+function navigateToLanguage(path: string, locale: Locale) {
+  document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000; SameSite=Lax`
+  window.location.assign(path)
+}
+
 type LocaleSelectorProps = {
   /** Locale codes to show in the picker. Omit or pass [] to show all SUPPORTED_LOCALES. */
   enabledLocales?: string[]
@@ -48,6 +53,8 @@ type LocaleSelectorProps = {
 export function LocaleSelector({ enabledLocales }: LocaleSelectorProps) {
   const locale   = useLocale()
   const { t }    = useTranslation()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
   const containerRef    = useRef<HTMLDivElement>(null)
   const triggerRef      = useRef<HTMLButtonElement>(null)
@@ -59,12 +66,10 @@ export function LocaleSelector({ enabledLocales }: LocaleSelectorProps) {
   // Filter against SUPPORTED_LOCALES so only routable, middleware-known locales
   // appear — this prevents broken URLs if an editor types an unsupported code.
   // If the CMS list is empty or not set, fall back to showing all supported locales.
-  const visibleLocales: Locale[] = enabledLocales?.length
+  const visibleLocales: Locale[] = enabledLocales !== undefined
     ? enabledLocales.filter(isSupportedLocale)
-    : [...SUPPORTED_LOCALES]
+    : [locale]
 
-  // If the site only has one language configured, don't render the selector at all
-  if (visibleLocales.length <= 1) return null
 
   // Close on outside click
   useEffect(() => {
@@ -93,29 +98,29 @@ export function LocaleSelector({ enabledLocales }: LocaleSelectorProps) {
     }
   }, [open])
 
-  function selectLocale(next: Locale) {
-    close()
-    if (next === locale) return
-    // Write the NEXT_LOCALE cookie BEFORE navigating. next-intl's middleware
-    // reads this cookie for locale detection. Without this, navigating back to
-    // English ('/') while a stale 'es' cookie is present causes the middleware
-    // to redirect the user back to '/es/' immediately, making English unreachable.
-    // Setting the cookie here ensures the middleware sees the new locale on the
-    // very next request, so no redirect loop occurs.
+  async function selectLocale(next: Locale) {
+    if (next === locale || busy) return
+    setBusy(true)
+    setError('')
     try {
-      document.cookie = `NEXT_LOCALE=${next}; path=/; max-age=31536000; SameSite=Lax`
-    } catch { /* private-mode or restricted context — safe to swallow */ }
-    // Use the actual browser URL (window.location.pathname) not the Next.js
-    // rewritten path (usePathname). next-intl middleware rewrites /es/about →
-    // /about internally, so usePathname() returns '/about' — missing the prefix.
-    // window.location.pathname always shows the real URL bar value.
-    window.location.href = localizedHref(getBrowserPathname(), next)
+      const query = new URLSearchParams({ path: getBrowserPathname(), from: locale, to: next })
+      const response = await fetch(`/api/locale?${query}`)
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Could not switch language.')
+      if (typeof result.path !== 'string' || !result.path.startsWith('/') || result.path.startsWith('//')) throw new Error('Invalid language URL.')
+      navigateToLanguage(result.path, next)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Could not switch language.')
+      setBusy(false)
+    }
   }
 
+  if (visibleLocales.length <= 1) return null
   const meta = getLocaleMeta(locale)
 
   return (
     <div ref={containerRef} className="relative">
+      {error && <p role="status">{error}</p>}
       <button
         ref={triggerRef}
         type="button"
@@ -155,6 +160,7 @@ export function LocaleSelector({ enabledLocales }: LocaleSelectorProps) {
                 role="option"
                 aria-selected={isActive}
                 type="button"
+                disabled={busy}
                 onClick={() => selectLocale(loc)}
                 className="w-full flex items-center justify-between gap-md
                            px-md py-sm
@@ -198,27 +204,37 @@ export function LocaleSelectorMobile({
 }) {
   const locale = useLocale()
   const { t }  = useTranslation()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
-  const visibleLocales: Locale[] = enabledLocales?.length
+  const visibleLocales: Locale[] = enabledLocales !== undefined
     ? enabledLocales.filter(isSupportedLocale)
-    : [...SUPPORTED_LOCALES]
+    : [locale]
 
   // Don't render if only one language is configured
   if (visibleLocales.length <= 1) return null
 
-  function selectLocale(next: Locale) {
-    if (next === locale) { onSelect?.(); return }
-    onSelect?.()
-    // Write NEXT_LOCALE cookie before navigating — prevents stale-cookie redirect loop.
-    // See desktop selectLocale() above for full explanation.
+  async function selectLocale(next: Locale) {
+    if (next === locale || busy) return
+    setBusy(true)
+    setError('')
     try {
-      document.cookie = `NEXT_LOCALE=${next}; path=/; max-age=31536000; SameSite=Lax`
-    } catch { /* private-mode or restricted context — safe to swallow */ }
-    window.location.href = localizedHref(getBrowserPathname(), next)
+      const query = new URLSearchParams({ path: getBrowserPathname(), from: locale, to: next })
+      const response = await fetch(`/api/locale?${query}`)
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Could not switch language.')
+      if (typeof result.path !== 'string' || !result.path.startsWith('/') || result.path.startsWith('//')) throw new Error('Invalid language URL.')
+      onSelect?.()
+      navigateToLanguage(result.path, next)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Could not switch language.')
+      setBusy(false)
+    }
   }
 
   return (
     <div className="border-b border-fg/10 py-md">
+      {error && <p role="status">{error}</p>}
       <p className="text-label text-fg-muted uppercase tracking-widest mb-sm">
         {t('locale.selector')}
       </p>
@@ -231,7 +247,8 @@ export function LocaleSelectorMobile({
             <button
               key={loc}
               type="button"
-              onClick={() => selectLocale(loc)}
+              disabled={busy}
+                onClick={() => selectLocale(loc)}
               className={`flex items-center justify-between px-sm py-xs
                           border transition-colors duration-150 ease-quick
                           text-sm font-semibold

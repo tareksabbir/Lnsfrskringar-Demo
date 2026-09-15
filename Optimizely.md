@@ -592,13 +592,17 @@ The Optimizely Visual Builder opens a preview iframe pointing at the Next.js app
 
 A script served from the CMS instance itself (`${OPTIMIZELY_CMS_URL}/util/javascript/communicationinjector.js`). It must be loaded on every preview page. It sets up `window.epi`, the message bridge between the CMS editor and the front-end iframe.
 
-### `<NextPreviewComponent />`
+### Preview refresh on contentSaved
 
-Imported from `@optimizely/cms-sdk/react/nextjs`. The Next.js-optimised preview client that integrates with the App Router: when an editor saves a change that resolves to the same URL, it calls `router.refresh()` (a soft RSC re-render) instead of a full navigation, giving seamless in-place updates. For same-origin navigations (e.g. switching to a different experience page) it calls `router.push()`. Use this in all preview and draft-mode routes; the generic `PreviewComponent` from `@optimizely/cms-sdk/react/client` is the fallback for non-Next.js frameworks.
+`PreviewBridge` loads the CMS communication injector and `PreviewNavigator`.
+The navigator subscribes to the documented `optimizely:cms:contentSaved` event
+and uses the message's new `previewUrl` and `previewToken`. It refreshes an
+unchanged URL or replaces the route for a new URL. Missing token/version data
+is not backfilled from the old URL. Cross-origin destinations are rejected.
 
-### On-page editing (`components/draft/OnPageEdit.tsx`)
-
-A client component that subscribes to the `contentSaved` event on `window.epi` and updates `innerHTML` of elements marked with `data-epi-property-name` in place — giving instant feedback for simple text edits without a full page reload.
+The legacy `OnPageEdit` DOM-patching component is no longer mounted by the
+shared bridge. Rendering comes from the requested Graph version rather than
+patching every element with a matching property name.
 
 ### `withAppContext`
 
@@ -619,7 +623,7 @@ For standalone blocks, `__composition: { key: contentKey }` is synthesized onto 
 
 ### Draft route group (`app/(draft)/`)
 
-A separate route group layout for draft rendering. Loads `communicationinjector.js` and mounts `<OnPageEditBridge />` (the client-side `OnPageEdit` component). Forced to `dynamic = 'force-dynamic'` and `revalidate = 0` so draft content is never cached.
+A separate route group layout for draft rendering. Uses the same `PreviewBridge` as other preview routes. Forced to `dynamic = 'force-dynamic'` and `revalidate = 0` so draft content is never cached.
 
 ### Default application requirement
 
@@ -921,12 +925,10 @@ The `postMessage` timeline, kept because it is what the support ticket rests on:
 
 Nothing was saved in between.
 
-`components/preview/PreviewNavigator.tsx` still replaces the SDK's
-`NextPreviewComponent`, but for the narrower reasons that survived measurement:
-it backfills preview parameters the incoming URL omits (present ones always
-win), refuses cross-origin previewUrls, and logs `from → to`, because preview
-navigation is invisible when it misbehaves. It does **not** try to veto the
-revert — it cannot.
+`components/preview/PreviewNavigator.tsx` now follows the documented
+contentSaved event. The new CMS message determines the token and version;
+old query parameters are not carried forward to repair incomplete messages.
+This does not attempt to veto CMS iframe navigation.
 
 ### Two fixes that stand on their own
 
@@ -1303,7 +1305,7 @@ The values are providers whose credentials Opal resolves for the user — `googl
 
 ### Live preview is three pieces, and two of them are silent when missing
 
-`communicationinjector.js` (the CMS bridge), `NextPreviewComponent` (refetch on save), and `OnPageEdit` (patch the DOM immediately). A page with two of them is not two-thirds live — it looks like it works and simply never updates. `components/preview/PreviewBridge.tsx` renders all three together so they cannot drift; every preview route uses it.
+`communicationinjector.js` supplies CMS events; `PreviewNavigator` refetches/navigates using the new event URL and token. `PreviewBridge` composes these two pieces. Direct DOM patching is not required by the documented refresh flow and is no longer mounted.
 
 ### `pa()` has two shapes and they do different jobs
 

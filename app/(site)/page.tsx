@@ -1,3 +1,4 @@
+import { PreviewUnavailable } from '@/components/preview/PreviewUnavailable'
 import { notFound } from 'next/navigation'
 import { draftMode } from 'next/headers'
 import {
@@ -95,16 +96,10 @@ async function HomePage({ searchParams }: Props) {
         )
       }
     }
-    if (!exp) {
-      console.error(
-        '[home] preview unavailable — falling back to PUBLISHED content. ' +
-        'Visual Builder will render the page but nothing will be selectable, ' +
-        'because editing attributes only come from a successful preview fetch.',
-      )
-    }
+    if (!exp?.composition?.nodes) return <PreviewUnavailable cmsUrl={cmsUrl} />
   }
 
-  // Published lookup — also the fallback when a preview fetch came back empty.
+  // Published lookup is only used when no preview token was supplied.
   // The path that actually resolved is remembered: the FX branch below has to
   // re-fetch the same content by path to ask for a variation of it, and '/' is
   // not always the path Graph indexed this page at.

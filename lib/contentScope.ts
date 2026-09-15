@@ -21,8 +21,7 @@ export function belongsToSite(base: unknown, requestBase?: string): boolean {
   }
 }
 
-// Same existing LF default as the Opal writer, shared so listing and writing
-// cannot silently disagree. Other deployments configure their own container.
-export function blogContainerKey(): string {
-  return process.env.CMS_BLOG_CONTAINER_KEY?.trim() || '1330a97ad221400d8048329cda2ca918'
+/** Explicit per-deployment folder identity; missing configuration must not select another site's folder. */
+export function blogContainerKey(): string | null {
+  return process.env.CMS_BLOG_CONTAINER_KEY?.trim() || null
 }

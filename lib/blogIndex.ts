@@ -55,7 +55,12 @@ const normalizeKey = (key: string) => key.replace(/-/g, '').toLowerCase()
 
 export const getBlogIndex = cache(async function getBlogIndex(): Promise<BlogIndexResult> {
   const locale = await getRequestLocale()
-  const root = normalizeKey(blogContainerKey())
+  const configuredRoot = blogContainerKey()
+  if (!configuredRoot) {
+    console.error('[blog-index] CMS_BLOG_CONTAINER_KEY is not configured')
+    return null
+  }
+  const root = normalizeKey(configuredRoot)
   const items: BlogItem[] = []
   try {
     for (let skip = 0; ; skip += 100) {
