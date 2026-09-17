@@ -35,6 +35,7 @@ import { OT_DividerBlockDefault }    from '@/cms/display-templates/OT_DividerBlo
 import { OT_EventListingDefault }    from '@/cms/display-templates/OT_EventListingDefault'
 import { OT_PractitionerListingDefault } from '@/cms/display-templates/OT_PractitionerListingDefault'
 import { OT_LocationListingDefault } from '@/cms/display-templates/OT_LocationListingDefault'
+import { OT_MortgageCalculatorDefault } from '@/cms/display-templates/OT_MortgageCalculatorDefault'
 import { OT_ContentRecommendationsDefault } from '@/cms/display-templates/OT_ContentRecommendationsDefault'
 import { OT_ProductRecommendationsDefault } from '@/cms/display-templates/OT_ProductRecommendationsDefault'
 import { OT_ComparisonTableDefault }        from '@/cms/display-templates/OT_ComparisonTableDefault'
@@ -94,6 +95,7 @@ import { OT_PractitionerPage }        from '@/cms/content-types/OT_PractitionerP
 import { OT_PractitionerListingBlock } from '@/cms/content-types/OT_PractitionerListingBlock'
 import { OT_LocationProfile }            from '@/cms/content-types/OT_LocationProfile'
 import { OT_LocationListingBlock }       from '@/cms/content-types/OT_LocationListingBlock'
+import { OT_MortgageCalculatorBlock }    from '@/cms/content-types/OT_MortgageCalculatorBlock'
 import { OT_ContentRecommendationsBlock } from '@/cms/content-types/OT_ContentRecommendationsBlock'
 import { OT_ProductRecommendationsBlock } from '@/cms/content-types/OT_ProductRecommendationsBlock'
 import { OT_ComparisonCell }        from '@/cms/content-types/OT_ComparisonCell'
@@ -157,6 +159,7 @@ import OT_EventListingBlockAdapter     from '@/cms/components/OT_EventListingBlo
 import OT_PractitionerListingBlockAdapter from '@/cms/components/OT_PractitionerListingBlock'
 import OT_PractitionerProfileAdapter      from '@/cms/components/OT_PractitionerProfile'
 import OT_LocationListingBlockAdapter        from '@/cms/components/OT_LocationListingBlock'
+import OT_MortgageCalculatorBlockAdapter     from '@/cms/components/OT_MortgageCalculatorBlock'
 import OT_LocationProfileAdapter             from '@/cms/components/OT_LocationProfile'
 import OT_ContentRecommendationsBlockAdapter from '@/cms/components/OT_ContentRecommendationsBlock'
 import OT_ProductRecommendationsBlockAdapter from '@/cms/components/OT_ProductRecommendationsBlock'
@@ -278,6 +281,7 @@ initDisplayTemplateRegistry([
   OT_EventListingDefault,
   OT_PractitionerListingDefault,
   OT_LocationListingDefault,
+  OT_MortgageCalculatorDefault,
   OT_ContentRecommendationsDefault,
   OT_ProductRecommendationsDefault,
   OT_ComparisonTableDefault,
@@ -337,6 +341,7 @@ initContentTypeRegistry([
   OT_PractitionerListingBlock,
   OT_LocationProfile,
   OT_LocationListingBlock,
+  OT_MortgageCalculatorBlock,
   OT_ContentRecommendationsBlock,
   OT_ProductRecommendationsBlock,
   OT_ComparisonCell,
@@ -389,6 +394,7 @@ initReactComponentRegistry({
     OT_EventListingBlock:     OT_EventListingBlockAdapter,
     OT_PractitionerListingBlock: OT_PractitionerListingBlockAdapter,
     OT_LocationListingBlock:     OT_LocationListingBlockAdapter,
+    OT_MortgageCalculatorBlock:  OT_MortgageCalculatorBlockAdapter,
     OT_ContentRecommendationsBlock: OT_ContentRecommendationsBlockAdapter,
     OT_ProductRecommendationsBlock: OT_ProductRecommendationsBlockAdapter,
     OT_ComparisonTableBlock:        OT_ComparisonTableBlockAdapter,

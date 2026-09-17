@@ -46,6 +46,7 @@ export const CATEGORIES: ShowcaseCategory[] = [
       { label: 'Product Recommendations', slug: 'product-recommendations' },
       { label: 'Comparison Table',        slug: 'comparison-table'        },
       { label: 'Disclosure',              slug: 'disclosure'              },
+      { label: 'Mortgage Calculator',     slug: 'mortgage-calculator'     },
       { label: 'Token Manager',           slug: 'token-manager'           },
     ],
   },

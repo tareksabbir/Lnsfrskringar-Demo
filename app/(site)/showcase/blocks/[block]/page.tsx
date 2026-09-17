@@ -32,6 +32,7 @@ import ProductRecommendationsBlock     from '@/components/blocks/ProductRecommen
 import type { ProductRec }             from '@/components/blocks/ProductRecommendationsBlock'
 import OT_ComparisonTableBlock         from '@/cms/components/OT_ComparisonTableBlock'
 import OT_NotificationBlock            from '@/cms/components/OT_NotificationBlock'
+import OT_MortgageCalculatorBlock      from '@/cms/components/OT_MortgageCalculatorBlock'
 import {
   ArrowRight, Zap, ChevronRight, Play, Download,
   Sparkles, Send, Rocket, Star, Plus,
@@ -68,6 +69,7 @@ const BLOCK_SLUGS = [
   'content-recommendations', 'product-recommendations',
   'comparison-table',
   'disclosure',
+  'mortgage-calculator',
   'token-manager',
 ] as const
 
@@ -96,6 +98,7 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'divider':          { label: 'DividerBlock',          cmsKey: 'OT_DividerBlock',          description: 'Structural section divider that opens deliberate breathing room between stacked sections. Three treatments: mark (a hairline broken by an editable label or an editorial ornament), glow (a precise luminous rule — a chromatic line of light with a soft bloom above and below), and bleed (atmospheric luminance — an elliptical light seam rising from the boundary). One Tone control spans all three — neutral, brand, accent, spectrum, aurora — plus editor-controlled spacing, weight, and an optional draw-in reveal that rides the shared scroll observer.' },
   'event-listing':    { label: 'EventListingBlock',     cmsKey: 'OT_EventListingBlock',     description: 'CMS-driven listing of Event Pages with three toggleable views: card grid, list (calendar-style date blocks), and a monthly calendar with day agenda. A segmented icon control switches views; type-filter chips and a past-events toggle refine the set. Works across technology, healthcare, legal, and financial events on both canvas and surface grounds. In production, events are fetched at render time from published Event Pages; the showcase uses static fixtures.' },
   'practitioner-listing': { label: 'PractitionerListingBlock', cmsKey: 'OT_PractitionerListingBlock', description: 'CMS-driven, vertical-agnostic people directory pulled from Practitioner Profiles. Grid (cards) or list (rows) layout, client-side search across name / credentials / specialty, and three multi-select filters — specialty, location, and language — derived dynamically from the loaded set, never a fixed list. Values OR within a filter and AND across filters. Automatically scoped to the current site via the Site Key field on each profile. Squared portraits with a chromatic brand bloom and a designed initials fallback. In production, practitioners are fetched at render time; the showcase uses static fixtures spanning medical, legal, and technology verticals.' },
+  'mortgage-calculator': { label: 'MortgageCalculatorBlock', cmsKey: 'OT_MortgageCalculatorBlock', description: 'Working mortgage affordability calculator, modelled on Länsförsäkringar\'s own bolånekalkyl. A four-section form on the left, a live result panel on the right: amount borrowed, estimated monthly cost, a rate slider, a breakdown of how the figure was reached, a household budget, and a gauge answering whether the loan is within what the income supports. Amortisation follows the Swedish requirement — 2% of the loan a year above 70% loan-to-value, 1% above 50%, plus a percentage point above 4.5× annual income. The Income, Household and Other expenses sections each have a Hide switch on the block; hiding one removes its questions from the calculation as well as the page, so the numbers always match the questions asked. Shipped defaults reproduce LF\'s published example: 4 250 000 kr at 2.71% with 425 000 kr down is 17 386 kr/month.' },
   'location-listing': { label: 'LocationListingBlock', cmsKey: 'OT_LocationListingBlock', description: 'CMS-driven, vertical-agnostic location directory pulled from Location Profiles. Three toggleable views: a Mapbox dark map paired with a synchronized scrollable location rail (click a marker or rail card to fly + open its popup), an image-plate card grid, and a compact list. Client-side search across name / label / address, and a single-select label filter derived dynamically from the loaded set — never a fixed list, "All" always first. Automatically scoped to the current site via the Site Key field on each profile. Custom brand-beacon markers and fully-restyled dark-glass popups. In production, addresses are geocoded via the Mapbox API at render time (24h ISR cache); the showcase uses static fixtures with pre-resolved coordinates, so it makes no API calls.' },
   'content-recommendations': { label: 'ContentRecommendationsBlock', cmsKey: 'OT_ContentRecommendationsBlock', description: 'Personalized content grid from Optimizely Content Recommendations (Idio). The ia.js tracker builds a per-visitor profile and the block fetches recommendations server-side at render time using the delivery key configured on the ThemeManager. Three color schemes. In production, items are personalized per visitor; the showcase uses static sample articles to demonstrate the layout.' },
   'product-recommendations': { label: 'ProductRecommendationsBlock', cmsKey: 'OT_ProductRecommendationsBlock', description: 'Live product recommendations from Optimizely Product Recommendations (Peerius). The engine returns recommendations client-side (via the peerius:recs event) for the configured widget position; the widget renders a card grid with a "Show all" expand. When the engine returns nothing it shows an empty state. In production, recs are live and personalized; the showcase uses static sample products.' },
@@ -2948,6 +2951,85 @@ function NotificationShowcase() {
   )
 }
 
+const MORTGAGE_CONTENT = {
+  heading:    'How much can I borrow?',
+  intro:      'Estimate how much you can borrow, what it will cost each month, and whether the loan fits your household. Nothing you enter is sent anywhere.',
+  price:       4_250_000,
+  downPayment: 425_000,
+  interestRate: 2.71,
+  income1:     42_000,
+  income2:     38_000,
+  ctaLabel:    'Continue to application',
+  ctaUrl:      { default: '/insurance' },
+  disclaimer:  'An estimate, not an offer. Your rate and the amount you can borrow are set when we review your application.',
+}
+
+function MortgageCalculatorShowcase() {
+  return (
+    <>
+      <BlockHeader slug="mortgage-calculator" />
+
+      <VariantGroup
+        label="All sections"
+        note="The default: every section on. The panel opens on Länsförsäkringar's own published example — 4 250 000 kr at 2.71% with 425 000 kr down — and returns their figure of 17 386 kr/month. Move the rate slider or the price and everything downstream follows."
+      />
+      <div className="border-t border-fg/5">
+        <OT_MortgageCalculatorBlock content={MORTGAGE_CONTENT as any} displaySettings={{}} />
+      </div>
+
+      <VariantGroup
+        label="Income off"
+        note="With no income there is nothing to assess, so the block says so rather than guessing: the gauge greys out, the household budget explains what it needs, and the calculator degrades to a monthly-cost estimator. The questions are gone from the calculation too — a hidden field can never move the figure."
+      />
+      <div className="border-t border-fg/5">
+        <OT_MortgageCalculatorBlock
+          content={{
+            ...MORTGAGE_CONTENT,
+            heading:    'What will the mortgage cost?',
+            hideIncome: true,
+          } as any}
+          displaySettings={{}}
+        />
+      </div>
+
+      <VariantGroup
+        label="Income only · canvas"
+        note="Household and Other expenses switched off, on the canvas ground. The shortest form that still returns an affordability verdict."
+      />
+      <div className="border-t border-fg/5">
+        <OT_MortgageCalculatorBlock
+          content={{
+            ...MORTGAGE_CONTENT,
+            hideHousehold:     true,
+            hideOtherExpenses: true,
+          } as any}
+          displaySettings={{ color: 'canvas' }}
+        />
+      </div>
+
+      <VariantGroup
+        label="Move a mortgage"
+        note="The journey selected on load is a content field. In this one and in Increase, the two property fields become market value and existing mortgage, and the loan is what is already owed rather than the price less a down payment."
+      />
+      <div className="border-t border-fg/5">
+        <OT_MortgageCalculatorBlock
+          content={{
+            ...MORTGAGE_CONTENT,
+            purpose:       'move',
+            heading:       'Move your mortgage to us',
+            intro:         'See what your existing mortgage would cost here, at a rate you can try out below.',
+            downPayment:   2_600_000,
+            hideHousehold: true,
+          } as any}
+          displaySettings={{}}
+        />
+      </div>
+
+      <div className="pb-xl" />
+    </>
+  )
+}
+
 export default async function ShowcaseBlockPage({ params }: Props) {
   const { block } = await params
 
@@ -2979,6 +3061,7 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'product-recommendations': return <ProductRecommendationsShowcase />
     case 'comparison-table':        return <ComparisonTableShowcase />
     case 'disclosure':              return <><BlockHeader slug="disclosure" /><DisclosurePlayground /></>
+    case 'mortgage-calculator':     return <MortgageCalculatorShowcase />
     case 'token-manager':           return <><BlockHeader slug="token-manager" /><TokenManagerPlayground /></>
     default:                 return notFound()
   }
