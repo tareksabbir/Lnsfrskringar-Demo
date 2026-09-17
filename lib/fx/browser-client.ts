@@ -13,6 +13,7 @@
  * `@/lib/fx/track`, which queues events that fire before the client is ready.
  */
 import type { Client, OptimizelyUserContext } from '@optimizely/optimizely-sdk'
+import { FX_ATTRS_COOKIE, parseFxAttributes } from './identity'
 
 declare global {
   interface Window {
@@ -119,7 +120,13 @@ export function initBrowserFxClient(): Promise<BrowserFxClient | null> {
     await client.onReady()
 
     const userId = resolveUserId()
-    const userContext = client.createUserContext(userId)
+    // Same attributes the server sends (see variant-resolver.buildAttributes), read
+    // from the same cookie, so a client-side decide() and a server-side one agree
+    // about who this visitor is. The panel reloads the page after an edit rather
+    // than mutating this context, because the context is created once here and
+    // cached for the life of the tab.
+    const attributes = parseFxAttributes(readCookie(FX_ATTRS_COOKIE))
+    const userContext = client.createUserContext(userId, attributes)
     if (!userContext) {
       console.error('[FX:browser] createUserContext returned null')
       return null

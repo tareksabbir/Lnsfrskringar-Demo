@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { ICON_REGISTRY } from '@/components/icons/iconRegistry'
 import type { NavItem } from '@/components/layout/DesktopNav'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import FxIdentityPanel from '@/components/demo/FxIdentityPanel'
 
 /**
  * The desktop "Menu" drawer — a panel that slides in from the right, holding the
@@ -275,6 +276,14 @@ export default function MenuDrawer({ navItems, shortcuts }: Props) {
                 </>
               )}
             </nav>
+
+            {/* Outside the <nav>: these are demo controls, not navigation, and
+                putting a form inside the nav landmark misreports the menu's
+                contents to a screen reader. The nav's own padding does not reach
+                here, hence the wrapper. */}
+            <div className="px-lg pb-xl">
+              <FxIdentityPanel />
+            </div>
           </div>
         </div>,
         document.body,

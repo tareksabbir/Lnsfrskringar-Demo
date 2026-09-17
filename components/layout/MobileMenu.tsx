@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import { LocaleSelectorMobile } from '@/components/layout/LocaleSelector'
+import FxIdentityPanel from '@/components/demo/FxIdentityPanel'
 import { ICON_REGISTRY } from '@/components/icons/iconRegistry'
 import type { NavItem } from '@/components/layout/DesktopNav'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -201,6 +202,13 @@ export default function MobileMenu({ navItems, ctaLabel, ctaHref, enabledLocales
             {/* Locale selector — below nav links, above CTA */}
             <LocaleSelectorMobile onSelect={close} enabledLocales={enabledLocales} />
           </nav>
+
+          {/* Same demo controls as the desktop drawer — the identity belongs to
+              the browser, so it must be reachable from whichever menu is shown.
+              Outside the <nav> for the reason given in MenuDrawer. */}
+          <div className="px-md">
+            <FxIdentityPanel />
+          </div>
 
           <div className="mt-lg px-md">
             <Button href={ctaHref} onClick={close}>{ctaLabel}</Button>

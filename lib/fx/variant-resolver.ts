@@ -11,6 +11,7 @@ import { cookies, headers } from 'next/headers'
 import type { OptimizelySegmentOption } from '@optimizely/optimizely-sdk'
 import { getOptimizelyClient } from './client'
 import type { VariantDecision, ContentVariantDecision } from './types'
+import { FX_ATTRS_COOKIE, parseFxAttributes } from './identity'
 
 const USER_ID_COOKIE = 'optimizely_user_id'
 
@@ -33,10 +34,27 @@ async function getUserId(): Promise<string> {
   return crypto.randomUUID()
 }
 
-/** Build FX user attributes from the current request. */
-async function buildAttributes(locale: string): Promise<Record<string, string>> {
-  const h = await headers()
+/**
+ * Build FX user attributes from the current request.
+ *
+ * Two sources. `locale` and `host` are facts about the request. The rest come
+ * from the `optimizely_user_attrs` cookie, which the identity panel in the site
+ * menu writes — that is what makes an audience condition testable in a demo
+ * without a real logged-in customer behind it.
+ *
+ * The cookie is parsed through `parseFxAttributes`, so unknown keys and
+ * malformed values are dropped rather than forwarded: FX does not reject a
+ * nonsense attribute, it just fails to match on it, and a silent non-match is
+ * the hardest kind of wrong answer to notice.
+ *
+ * Request facts win over the cookie. Letting a browser-writable cookie claim a
+ * different `host` than the one actually serving the request would make the
+ * attribute meaningless.
+ */
+async function buildAttributes(locale: string): Promise<Record<string, string | number | boolean>> {
+  const [h, jar] = await Promise.all([headers(), cookies()])
   return {
+    ...parseFxAttributes(jar.get(FX_ATTRS_COOKIE)?.value),
     locale,
     host: h.get('host') ?? '',
   }
@@ -88,7 +106,9 @@ export async function resolveVariant(
     const decision = userContext.decide(flagKey)
 
     if (DEV) {
-      console.log('[FX] Decision:', { flagKey, userId, variationKey: decision.variationKey, enabled: decision.enabled, reasons: decision.reasons })
+      // `attributes` is in here deliberately: when an audience refuses to match,
+      // the first thing worth knowing is what was actually sent to decide().
+      console.log('[FX] Decision:', { flagKey, userId, attributes, variationKey: decision.variationKey, enabled: decision.enabled, reasons: decision.reasons })
     }
 
     return {
@@ -182,7 +202,7 @@ export async function resolveContentVariant(
 
     if (DEV) {
       console.log('[FX:Content] Decision:', {
-        flagKey, userId, enabled: decision.enabled, fxVariationKey: raw,
+        flagKey, userId, attributes, enabled: decision.enabled, fxVariationKey: raw,
         [CONTENT_VARIATION_VARIABLE]: fromVariable, contentVariation, reasons: decision.reasons,
       })
     }
