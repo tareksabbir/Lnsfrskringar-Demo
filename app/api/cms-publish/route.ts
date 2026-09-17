@@ -48,37 +48,50 @@ async function readBody(req: NextRequest): Promise<unknown> {
 }
 
 /**
- * Digs the published item's content key out of the payload.
+ * Every plausible content key in the payload, best guess first.
  *
- * The CMS publish payload shape is not pinned down here, and guessing one field
- * name would make this brittle against a schema we do not control — so we accept
- * the spellings the Optimizely APIs use elsewhere and, failing those, take any
- * 32-hex GUID found under a key-ish field name. Anything unrecognised is
- * reported as skipped with the payload logged, which is recoverable; silently
- * registering lineage against the wrong page is not.
+ * The CMS publish payload is not documented and there is no test-fire endpoint
+ * to sample one, so rather than commit to a field name this returns candidates
+ * and lets Graph adjudicate — the caller tries each until one resolves to a real
+ * page. A wrong guess costs one Graph query and resolves to nothing, whereas
+ * being wrong about the one true field name would mean a webhook that fires and
+ * silently does nothing.
+ *
+ * Ordering matters: key-ish field names first, then any 32-hex string anywhere
+ * in the payload. That broad second pass is what lets this survive a shape
+ * nobody here has seen, and it is safe precisely because Graph rejects anything
+ * that is not a routable page.
+ *
+ * `<key>_<version>` composites are reduced to the key half.
  */
-function extractContentKey(body: unknown): string | null {
-  if (!body || typeof body !== 'object') return null
-  const GUID = /^[0-9a-fA-F]{32}$/
+function extractContentKeyCandidates(body: unknown): string[] {
+  if (!body || typeof body !== 'object') return []
   const NAMES = new Set([
     'contentkey', 'content_key', 'key', 'contentguid', 'content_guid',
     'contentlink', 'content_link', 'id', 'contentid', 'content_id',
   ])
+  const GUID_EXACT = /^([0-9a-fA-F]{32})(?:_\d+)?$/
+  const GUID_ANY = /[0-9a-fA-F]{32}/g
 
-  let found: string | null = null
+  const named: string[] = []
+  const anywhere: string[] = []
+
   const visit = (node: unknown, depth: number): void => {
-    if (found || depth > 8 || !node || typeof node !== 'object') return
+    if (depth > 8 || !node || typeof node !== 'object') return
     for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
-      if (found) return
-      if (typeof v === 'string' && NAMES.has(k.toLowerCase()) && GUID.test(v)) {
-        found = v.toLowerCase()
-        return
+      if (typeof v === 'string') {
+        const exact = GUID_EXACT.exec(v.trim())
+        if (exact && NAMES.has(k.toLowerCase())) named.push(exact[1].toLowerCase())
+        GUID_ANY.lastIndex = 0
+        let m: RegExpExecArray | null
+        while ((m = GUID_ANY.exec(v)) !== null) anywhere.push(m[0].toLowerCase())
       }
       visit(v, depth + 1)
     }
   }
   visit(body, 0)
-  return found
+
+  return [...new Set([...named, ...anywhere])]
 }
 
 type Handled = {
@@ -88,10 +101,10 @@ type Handled = {
 }
 
 async function handlePublish(body: unknown, dryRun: boolean): Promise<Handled> {
-  const contentKey = extractContentKey(body)
-  if (!contentKey) {
+  const candidates = extractContentKeyCandidates(body)
+  if (candidates.length === 0) {
     console.warn(
-      '[cms-publish] no 32-hex content key found in payload — nothing to do. Payload:\n'
+      '[cms-publish] no 32-hex content key anywhere in the payload. Payload:\n'
       + JSON.stringify(body, null, 2).slice(0, 4000),
     )
     return {
@@ -101,20 +114,29 @@ async function handlePublish(body: unknown, dryRun: boolean): Promise<Handled> {
     }
   }
 
-  const pageUrl = await resolvePublicPageUrl(contentKey)
-  if (!pageUrl) {
-    return {
-      contentKey,
-      pageUrl: null,
-      lineage: {
-        status: 'skipped',
-        reason: `Graph has no URL for ${contentKey} (not a routable page, or not yet indexed)`,
-      },
-    }
+  // Graph picks the winner: the first candidate that resolves to a public URL is
+  // the page that was published. Event ids, version ids and user ids are all
+  // 32-hex too, and all of them simply fail to resolve.
+  for (const contentKey of candidates) {
+    const pageUrl = await resolvePublicPageUrl(contentKey)
+    if (!pageUrl) continue
+    const lineage = await registerPageAssetLineage({ contentKey, pageUrl, dryRun })
+    return { contentKey, pageUrl, lineage }
   }
 
-  const lineage = await registerPageAssetLineage({ contentKey, pageUrl, dryRun })
-  return { contentKey, pageUrl, lineage }
+  console.warn(
+    `[cms-publish] none of ${candidates.length} candidate key(s) resolved to a page: `
+    + candidates.join(', '),
+  )
+  return {
+    contentKey: candidates[0],
+    pageUrl: null,
+    lineage: {
+      status: 'skipped',
+      reason: 'no candidate key resolved to a routable page in Graph '
+        + '(not a page type, or not yet indexed)',
+    },
+  }
 }
 
 // ── Auth: open by default, on purpose ───────────────────────────────────────
