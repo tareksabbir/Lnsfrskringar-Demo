@@ -148,41 +148,84 @@ function authorized(req: NextRequest): boolean {
 // ── Endpoint verification ───────────────────────────────────────────────────
 //
 // A new webhook stays **Pending** until the endpoint confirms a verification
-// message CMS sends to it; only then does it go **Active**. The shape of that
-// message is not in the CMS (SaaS) webhook guide, not in the REST reference, and
-// not in the OpenAPI schema bundled with @optimizely/cms-cli — so rather than
-// guess one shape, this route is built so that any plausible convention passes:
+// message, and CMS reports "The URL provided could not be validated" when the
+// answer is not the one it wants. The shape is documented nowhere — not the
+// webhook guide, not the REST reference, not the OpenAPI schema bundled with
+// @optimizely/cms-cli — so this handles the two known conventions and records
+// whatever actually arrives.
 //
-//   • it answers 200 to every request, including a body it does not recognise
-//     (an unknown payload is reported as `skipped`, never as an error status);
-//   • if the payload carries anything challenge-shaped, the raw value is echoed
-//     back as text/plain, which is the usual "prove you received it" contract;
-//   • the full payload is logged, so if the webhook does stay Pending the real
-//     format is in the Vercel function logs and can be matched exactly.
+// 1. Azure Event Grid handshake. CMS (SaaS) runs on Azure, and Event Grid
+//    validates a subscriber by POSTing an array whose `data` carries a
+//    `validationCode`, with `aeg-event-type: SubscriptionValidation` set. It
+//    requires a JSON reply of exactly {"validationResponse":"<code>"}. A
+//    plain-text echo of the code does NOT satisfy it — which is what the first
+//    version of this route sent, and why validation failed.
+// 2. Plain challenge echo, for providers that want the raw value back as text.
+//    Checked second so it can never shadow case 1.
 //
-// GET also returns 200, covering a verifier that probes rather than posts.
-const CHALLENGE_FIELDS = [
-  'challenge', 'validationCode', 'validation_code', 'verificationToken',
-  'verification_token', 'verificationCode', 'verification_code',
-]
+// Every request is also captured in memory and served by GET, so the payload
+// CMS really sends can be read off the deployed URL instead of hunting logs.
+const EVENT_GRID_HEADER = 'aeg-event-type'
 
-/** The challenge value from a verification payload, if this looks like one. */
-function findChallenge(body: unknown): string | null {
-  if (!body || typeof body !== 'object') return null
+/** Last request this instance saw. Per-instance and lossy — a debugging aid, not a store. */
+type Captured = {
+  receivedAt: string
+  headers: Record<string, string>
+  body: unknown
+  answeredWith: 'verification' | 'event'
+}
+const captureRef = globalThis as unknown as { __cmsPublishLast?: Captured }
+
+/** First string value under any of `names`, at any depth. */
+function findByKey(body: unknown, names: string[]): string | null {
+  const want = new Set(names.map(n => n.toLowerCase()))
   let hit: string | null = null
   const visit = (node: unknown, depth: number): void => {
-    if (hit || depth > 5 || !node || typeof node !== 'object') return
+    if (hit || depth > 8 || !node || typeof node !== 'object') return
     for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
       if (hit) return
-      if (typeof v === 'string' && v && CHALLENGE_FIELDS.some(f => f.toLowerCase() === k.toLowerCase())) {
-        hit = v
-        return
-      }
+      if (typeof v === 'string' && v && want.has(k.toLowerCase())) { hit = v; return }
       visit(v, depth + 1)
     }
   }
   visit(body, 0)
   return hit
+}
+
+const CHALLENGE_FIELDS = [
+  'challenge', 'verificationToken', 'verification_token',
+  'verificationCode', 'verification_code', 'token',
+]
+
+/**
+ * Answers a verification request, or null when this is a real event.
+ *
+ * Deliberately generous about what counts as verification: mistaking an event
+ * for a handshake costs one lineage pass, while failing a handshake blocks
+ * every event the webhook would ever deliver.
+ */
+function verificationResponse(req: NextRequest, body: unknown): NextResponse | null {
+  // Keyed on the code rather than the header: a gateway can drop a header, and
+  // the code is the part that actually has to come back.
+  const validationCode = findByKey(body, ['validationCode', 'validation_code'])
+  if (validationCode) {
+    console.log(
+      `[cms-publish] Event Grid validation (${req.headers.get(EVENT_GRID_HEADER) ?? 'no aeg header'})`
+      + ` — replying validationResponse=${validationCode}`,
+    )
+    return NextResponse.json({ validationResponse: validationCode })
+  }
+
+  const challenge = findByKey(body, CHALLENGE_FIELDS)
+  if (challenge) {
+    console.log(`[cms-publish] challenge verification — echoing ${challenge}`)
+    return new NextResponse(challenge, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+  }
+
+  return null
 }
 
 export async function POST(req: NextRequest) {
@@ -194,19 +237,23 @@ export async function POST(req: NextRequest) {
   const body = await readBody(req)
   const dryRun = req.nextUrl.searchParams.get('dryRun') === '1'
 
+  // Capture before doing anything, so even a request we mishandle is inspectable.
+  const headers = Object.fromEntries(
+    [...req.headers.entries()].filter(([k]) => k.toLowerCase() !== 'authorization'),
+  )
+  console.log('[cms-publish] POST\n' + JSON.stringify({ headers, body }, null, 2).slice(0, 6000))
+  const capture = (answeredWith: Captured['answeredWith']) => {
+    captureRef.__cmsPublishLast = { receivedAt: new Date().toISOString(), headers, body, answeredWith }
+  }
+
   // Verification comes before anything else: it carries no content to act on,
   // and answering it wrongly leaves the webhook stuck on Pending.
-  const challenge = findChallenge(body)
-  if (challenge) {
-    console.log(
-      '[cms-publish] verification message received — echoing challenge. Payload:\n'
-      + JSON.stringify(body, null, 2).slice(0, 4000),
-    )
-    return new NextResponse(challenge, {
-      status: 200,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    })
+  const verify = verificationResponse(req, body)
+  if (verify) {
+    capture('verification')
+    return verify
   }
+  capture('event')
 
   // Never let a lineage problem fail the webhook: the CMS would retry the
   // delivery, and a retry cannot fix a scope misconfiguration.
@@ -234,6 +281,7 @@ export async function GET() {
       + 'setting CMS_CALLBACK_SECRET turns on verification (sent as the '
       + 'callback-secret header or a ?key= param). Append ?dryRun=1 to log the '
       + 'asset ids without calling CMP.',
+    lastRequest: captureRef.__cmsPublishLast ?? null,
     configured: {
       secretRequired: Boolean(process.env.CMS_CALLBACK_SECRET),
       CMP_CLIENT_ID: Boolean(process.env.CMP_CLIENT_ID),
