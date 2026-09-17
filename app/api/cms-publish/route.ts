@@ -272,6 +272,42 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, dryRun, ...handled })
 }
 
+/**
+ * The WebHook abuse-protection handshake — what CMS actually validates.
+ *
+ * Creating a subscription fails synchronously with "The URL provided could not
+ * be validated" until this exists, and it fails that way for EVERY url,
+ * including https://example.com, which is what gives the game away: CMS is not
+ * judging our payload handling, it is asking the endpoint to prove it consents
+ * to receiving events. That is the handshake from the CloudEvents HTTP spec
+ * (also used by Azure Event Grid, which CMS SaaS runs on):
+ *
+ *   OPTIONS /api/cms-publish
+ *   WebHook-Request-Origin: eventgrid.azure.net
+ *   →
+ *   200 with WebHook-Allowed-Origin: eventgrid.azure.net
+ *
+ * Next.js answers an un-exported OPTIONS with a bare 204 and an Allow header,
+ * which carries no consent and so reads as a refusal.
+ *
+ * The origin is echoed rather than hardcoded, since the header is what the
+ * caller asked us to confirm; `*` is the fallback for a prober that sends no
+ * origin. WebHook-Allowed-Rate is unlimited because the publish rate here is
+ * however fast editors press publish.
+ */
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('webhook-request-origin') ?? '*'
+  console.log(`[cms-publish] abuse-protection handshake — allowing origin ${origin}`)
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'WebHook-Allowed-Origin': origin,
+      'WebHook-Allowed-Rate': '*',
+      Allow: 'GET, HEAD, OPTIONS, POST',
+    },
+  })
+}
+
 export async function GET() {
   return NextResponse.json({
     ok: true,
