@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { verifyCallbackSecret } from '@/lib/webhookAuth'
+import { timingSafeEqualString } from '@/lib/webhookAuth'
 import {
   registerPageAssetLineage,
   resolvePublicPageUrl,
@@ -9,9 +9,8 @@ import {
 // CMS publish webhook → DAM asset lineage.
 //
 // Register this URL as a webhook in Optimizely SaaS CMS for content publish
-// events, with the same secret as CMS_CALLBACK_SECRET. On each delivery we:
-//   1. Verify the inbound `callback-secret` header (fails closed — see
-//      lib/webhookAuth.ts for why that matters).
+// events. On each delivery we:
+//   1. Optionally verify the `callback-secret` header (see the auth note below).
 //   2. Pull the content key out of the payload.
 //   3. Resolve the page's absolute public URL via Graph.
 //   4. Scan every published version for DAM image references and POST one
@@ -118,14 +117,96 @@ async function handlePublish(body: unknown, dryRun: boolean): Promise<Handled> {
   return { contentKey, pageUrl, lineage }
 }
 
+// ── Auth: open by default, on purpose ───────────────────────────────────────
+//
+// A deliberate exception to the fail-closed rule the CMP webhooks follow, and
+// the ONLY route here that runs without a shared secret. Do not copy this to a
+// route that writes CMS content or returns data — the reasoning below is what
+// makes it acceptable, not a general preference.
+//
+// This endpoint cannot be made to say anything untrue. It accepts a content key,
+// not a URL and not an asset id: the page URL comes from Graph, and the asset
+// ids come from that page's own published versions. So the most a stranger can
+// achieve by POSTing here is to register lineage that is already correct, for a
+// real page on this site, for images genuinely on it. The ledger makes a repeat
+// a no-op, and nothing is read back out. The residual risk is wasted API calls.
+//
+// To lock it down later, fill in the webhook's optional "Add Authentication
+// Token" field in the CMS UI and set CMS_CALLBACK_SECRET to the same value. CMS
+// sends it as `Authorization: Bearer <token>` on every request — NOT as the
+// `callback-secret` header the CMP webhooks use, which is a different product's
+// convention. The `?key=` form is accepted too, for pasting the secret into the
+// URL when editing headers is inconvenient.
+function authorized(req: NextRequest): boolean {
+  const expected = process.env.CMS_CALLBACK_SECRET
+  if (!expected) return true // documented above
+  const bearer = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
+  const provided = bearer || req.nextUrl.searchParams.get('key') || ''
+  return Boolean(provided) && timingSafeEqualString(provided, expected)
+}
+
+// ── Endpoint verification ───────────────────────────────────────────────────
+//
+// A new webhook stays **Pending** until the endpoint confirms a verification
+// message CMS sends to it; only then does it go **Active**. The shape of that
+// message is not in the CMS (SaaS) webhook guide, not in the REST reference, and
+// not in the OpenAPI schema bundled with @optimizely/cms-cli — so rather than
+// guess one shape, this route is built so that any plausible convention passes:
+//
+//   • it answers 200 to every request, including a body it does not recognise
+//     (an unknown payload is reported as `skipped`, never as an error status);
+//   • if the payload carries anything challenge-shaped, the raw value is echoed
+//     back as text/plain, which is the usual "prove you received it" contract;
+//   • the full payload is logged, so if the webhook does stay Pending the real
+//     format is in the Vercel function logs and can be matched exactly.
+//
+// GET also returns 200, covering a verifier that probes rather than posts.
+const CHALLENGE_FIELDS = [
+  'challenge', 'validationCode', 'validation_code', 'verificationToken',
+  'verification_token', 'verificationCode', 'verification_code',
+]
+
+/** The challenge value from a verification payload, if this looks like one. */
+function findChallenge(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null
+  let hit: string | null = null
+  const visit = (node: unknown, depth: number): void => {
+    if (hit || depth > 5 || !node || typeof node !== 'object') return
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      if (hit) return
+      if (typeof v === 'string' && v && CHALLENGE_FIELDS.some(f => f.toLowerCase() === k.toLowerCase())) {
+        hit = v
+        return
+      }
+      visit(v, depth + 1)
+    }
+  }
+  visit(body, 0)
+  return hit
+}
+
 export async function POST(req: NextRequest) {
-  const auth = verifyCallbackSecret(req.headers, 'CMS_CALLBACK_SECRET', 'cms-publish')
-  if (!auth.ok) {
-    return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status })
+  if (!authorized(req)) {
+    console.warn('[cms-publish] rejected — CMS_CALLBACK_SECRET is set and the request did not match')
+    return NextResponse.json({ ok: false, error: 'invalid callback secret' }, { status: 401 })
   }
 
   const body = await readBody(req)
   const dryRun = req.nextUrl.searchParams.get('dryRun') === '1'
+
+  // Verification comes before anything else: it carries no content to act on,
+  // and answering it wrongly leaves the webhook stuck on Pending.
+  const challenge = findChallenge(body)
+  if (challenge) {
+    console.log(
+      '[cms-publish] verification message received — echoing challenge. Payload:\n'
+      + JSON.stringify(body, null, 2).slice(0, 4000),
+    )
+    return new NextResponse(challenge, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+  }
 
   // Never let a lineage problem fail the webhook: the CMS would retry the
   // delivery, and a retry cannot fix a scope misconfiguration.
@@ -149,10 +230,12 @@ export async function GET() {
     ok: true,
     message:
       'CMS publish webhook → CMP DAM asset lineage. Register this URL (POST) as a '
-      + 'content-publish webhook in Optimizely SaaS CMS and set CMS_CALLBACK_SECRET '
-      + 'to the same secret. Append ?dryRun=1 to log the asset ids without calling CMP.',
+      + 'content-publish webhook in Optimizely SaaS CMS. No secret is required; '
+      + 'setting CMS_CALLBACK_SECRET turns on verification (sent as the '
+      + 'callback-secret header or a ?key= param). Append ?dryRun=1 to log the '
+      + 'asset ids without calling CMP.',
     configured: {
-      CMS_CALLBACK_SECRET: Boolean(process.env.CMS_CALLBACK_SECRET),
+      secretRequired: Boolean(process.env.CMS_CALLBACK_SECRET),
       CMP_CLIENT_ID: Boolean(process.env.CMP_CLIENT_ID),
       OPTIMIZELY_CMS_CLIENT_ID: Boolean(process.env.OPTIMIZELY_CMS_CLIENT_ID),
     },
