@@ -74,6 +74,60 @@ export async function resolveCmsLocale(locale: string, token: string): Promise<s
     ?? (enabled.includes('en') ? 'en' : enabled[0])
 }
 
+// ─── Reading content versions ───────────────────────────────────────────────
+
+/** One version row from GET /v1/content/{key}/versions. Only the fields we use. */
+export type CmsContentVersion = {
+  key?: string
+  version?: string | number
+  locale?: string
+  /** CMS variation name, or null/absent for the original. */
+  variation?: string | null
+  status?: 'draft' | 'published' | 'previous' | string
+  displayName?: string
+  contentType?: string
+  composition?: unknown
+  properties?: unknown
+}
+
+/**
+ * Every version of a content item, newest-first NOT guaranteed.
+ *
+ * Two traps, both verified against the live API:
+ *   • `?status=published` is IGNORED — the call returns every version regardless,
+ *     so callers must filter in JS. (A published page came back with 19 versions
+ *     across draft/published/previous.)
+ *   • The list is not sorted, so "the last item" is not "the current version".
+ *
+ * A page can also have SEVERAL published versions at once — one per locale and
+ * per CMS variation. Use `publishedVersions()` rather than picking one.
+ *
+ * Returns [] on any failure; the caller decides whether that is fatal.
+ */
+export async function listContentVersions(key: string): Promise<CmsContentVersion[]> {
+  if (!cmsConfigured()) return []
+  try {
+    const token = await getCmsAccessToken()
+    const res = await fetch(`${API}/content/${encodeURIComponent(key)}/versions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) {
+      console.error(`[cms] listContentVersions(${key}) failed: ${res.status} ${await res.text()}`)
+      return []
+    }
+    const page = (await res.json()) as { items?: CmsContentVersion[] }
+    return page.items ?? []
+  } catch (err) {
+    console.error(`[cms] listContentVersions(${key}) threw:`, err)
+    return []
+  }
+}
+
+/** The published versions of an item — every locale and every CMS variation. */
+export async function publishedVersions(key: string): Promise<CmsContentVersion[]> {
+  return (await listContentVersions(key)).filter(v => v.status === 'published')
+}
+
 export type BlogPageProperties = {
   blogStyle?: string
   headline: string
