@@ -257,6 +257,8 @@ Each of these cost real time, so they are written down rather than rediscovered.
 
 ## Project docs
 
+**Step-by-step learning:** [Complete project learning guide](docs/learning/README.md) — architecture, local setup, CMS/DAM editing, CMP/Opal wiring, experiments, forms, deployment, troubleshooting, and hands-on labs.
+
 | Doc | Covers |
 |---|---|
 | [`PRODUCT.md`](PRODUCT.md) | Product purpose, users, brand voice |
